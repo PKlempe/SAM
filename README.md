@@ -9,6 +9,6 @@
 - Information Gathering
 - User Engagement
 - Tutorials
-- ...
+- etc.
 
 As the development progesses, more information about this project will be shared.
