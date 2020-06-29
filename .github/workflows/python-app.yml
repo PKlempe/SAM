@@ -27,13 +27,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Python Code Quality and Lint
-      uses: ricardochaves/python-lint@v1.1.0
-      with:
-       use-pycodestyle: false
-       use-flake8: false
-       use-black: false
-       use-isort: false
+    - name: Lint code with pylint
+      run: |
+        pylint */**.py
+    - name: Static type analysis with Mypy
+      run: |
+        mypy .
     - name: Test with pytest
       run: |
         pytest
