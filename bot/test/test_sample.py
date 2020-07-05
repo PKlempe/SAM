@@ -5,4 +5,5 @@ This is best practice according to: https://github.com/pytest-dev/pytest/issues/
 """
 
 def test_placeholder():
+    """Placeholder Test that always passes"""
     pass
