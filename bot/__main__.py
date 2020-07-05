@@ -8,7 +8,8 @@ initial_extensions = ['bot.util.utilities']
 
 @bot.event
 async def on_ready():
-    "Event handler for Bot entering ready state"
+    """Event handler for Bot entering ready state
+    """
     print('- {0.user} successfully logged in to Discord!'.format(bot))
 
 
