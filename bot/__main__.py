@@ -1,9 +1,9 @@
 """This is the main module of the SAM project."""
 
 from discord.ext import commands
-import settings
+from bot import constants
 
-bot = commands.Bot(command_prefix=settings.BOT_PREFIX)
+bot = commands.Bot(command_prefix=constants.BOT_PREFIX)
 initial_extensions = ['bot.util.utilities']
 
 @bot.event
@@ -17,4 +17,4 @@ if __name__ == '__main__':
         bot.load_extension(extension)
 
     print("- Contacting Discord servers...")
-    bot.run(settings.DISCORD_BOT_TOKEN)
+    bot.run(constants.DISCORD_BOT_TOKEN)

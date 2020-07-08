@@ -3,6 +3,7 @@
 from datetime import datetime
 from discord.ext import commands
 import discord
+from bot import constants
 
 
 class UtilitiesCog(commands.Cog):
@@ -33,31 +34,46 @@ class UtilitiesCog(commands.Cog):
             ctx (Context): The context in which the command was called.
 
         Returns:
-            Embed: An embedded message (Embed) containing a variety of stats and interesting information about the
-                    Discord server.
+            Embed: An embedded message (Embed) containing a variety of stats and information regarding server owner,
+            server boosts, server features, members, channels and roles.
         """
-        str_owner = "{0.display_name}#{0.discriminator}" \
-            .format(ctx.guild.owner)
-        str_boosts = "__Level {0.premium_tier}__\n{0.premium_subscription_count}{1} Boosts" \
-            .format(ctx.guild, determine_boost_level_cap(ctx.guild.premium_subscription_count))
-        str_members = "__Gesamt: {0[0]}__\nBots: {0[1]}\nMenschen: {0[2]}" \
-            .format(get_member_counters(ctx.guild))
-        str_channels = "__Gesamt: {0[0]}__\nText: {0[1]}\nSprach: {0[2]}" \
-            .format(get_channel_counters(ctx.guild))
-        str_roles = "__Gesamt: {0}__" \
-            .format(len(ctx.guild.roles))
-        str_features = generate_features_string(ctx.guild.features)
+        embed_strings = build_serverinfo_strings(ctx.guild)
 
-        embed = discord.Embed(title=ctx.guild.name, timestamp=datetime.now(), color=0x1E90FF)
+        embed = discord.Embed(title=ctx.guild.name, timestamp=datetime.now(), color=constants.EMBED_INFO_COLOR)
         embed.set_thumbnail(url=ctx.guild.icon_url)
         embed.set_footer(text="Erstellungsdatum")
-        embed.add_field(name="Besitzer :crown:", value=str_owner, inline=True)
-        embed.add_field(name="Server Boost <:server_boost:730390579699122256>", value=str_boosts, inline=True)
-        embed.add_field(name="Server Features :tools:", value=str_features, inline=True)
-        embed.add_field(name="Mitglieder :man_raising_hand:", value=str_members, inline=True)
-        embed.add_field(name="Kanäle :dividers:", value=str_channels, inline=True)
-        embed.add_field(name="Rollen :medal:", value=str_roles, inline=True)
+
+        embed.add_field(name="Besitzer :crown:", value=embed_strings[0], inline=True)
+        embed.add_field(name="Server Boost <:server_boost:730390579699122256>", value=embed_strings[1], inline=True)
+        embed.add_field(name="Server Features :tools:", value=embed_strings[2], inline=True)
+        embed.add_field(name="Mitglieder :man_raising_hand:", value=embed_strings[3], inline=True)
+        embed.add_field(name="Kanäle :dividers:", value=embed_strings[4], inline=True)
+        embed.add_field(name="Rollen :medal:", value=embed_strings[5], inline=True)
         await ctx.send(embed=embed)
+
+
+def build_serverinfo_strings(guild):
+    """Function for building the strings needed for the serverinfo embed.
+
+    Args:
+        guild (Guild): A Guild object which represents a Discord server.
+
+    Returns:
+        list: A list containing strings for each individual embed field.
+    """
+    str_owner = "{0.display_name}#{0.discriminator}" \
+        .format(guild.owner)
+    str_boosts = "__Level {0.premium_tier}__\n{0.premium_subscription_count}{1} Boosts" \
+        .format(guild, determine_boost_level_cap(guild.premium_subscription_count))
+    str_members = "__Gesamt: {0[0]}__\nBots: {0[1]}\nMenschen: {0[2]}" \
+        .format(get_member_counters(guild))
+    str_channels = "__Gesamt: {0[0]}__\nText: {0[1]}\nSprach: {0[2]}" \
+        .format(get_channel_counters(guild))
+    str_roles = "__Gesamt: {0}__" \
+        .format(len(guild.roles))
+    str_features = generate_features_string(guild.features)
+
+    return [str_owner, str_boosts, str_features, str_members, str_channels, str_roles]
 
 
 def determine_boost_level_cap(amount_boosts):
@@ -69,16 +85,13 @@ def determine_boost_level_cap(amount_boosts):
     Returns:
         str: A short message indicating how many boosts are needed to level up.
     """
-    level_cap = ""
-
     if amount_boosts < 2:
-        level_cap = "/2"
-    elif 2 <= amount_boosts < 15:
-        level_cap = "/15"
-    elif 15 <= amount_boosts < 30:
-        level_cap = "/30"
-
-    return level_cap
+        return "/{0}".format(constants.DISCORD_BOOST_LVL1_CAP)
+    if constants.DISCORD_BOOST_LVL1_CAP <= amount_boosts < constants.DISCORD_BOOST_LVL2_CAP:
+        return "/{0}".format(constants.DISCORD_BOOST_LVL2_CAP)
+    if constants.DISCORD_BOOST_LVL2_CAP <= amount_boosts < constants.DISCORD_BOOST_LVL3_CAP:
+        return "/{0}".format(constants.DISCORD_BOOST_LVL3_CAP)
+    return ""
 
 
 def get_channel_counters(guild):
@@ -121,30 +134,31 @@ def generate_features_string(features):
     Returns:
         str: A string containing an enumeration of all available server features.
     """
+    if len(features) == 0:
+        return ":no_entry_sign: Keine"
+
     ic_bullet_point = ":white_check_mark: "
-    str_features = ":no_entry_sign: Keine"
+    dict_server_features = {
+        "VIP_REGIONS":              "VIP-Regionen",
+        "VANITY_URL":               "Vanity URL",
+        "INVITE_SPLASH":            "Invite Splash",
+        "VERIFIED":                 "Verifiziert",
+        "PARTNERED":                "Discord-Partner",
+        "MORE_EMOJI":               "Mehr Emojis",
+        "DISCOVERABLE":             "In Server-Browser",
+        "FEATURABLE":               "Featurable",
+        "COMMERCE":                 "Commerce",
+        "PUBLIC":                   "Öffentlich",
+        "NEWS":                     "News-Kanäle",
+        "BANNER":                   "Server-Banner",
+        "ANIMATED_ICON":            "Animiertes Icon",
+        "PUBLIC_DISABLED":          "Public disabled",
+        "WELCOME_SCREEN_ENABLED":   "Begrüßungsbildschirm"
+    }
+    str_features = ""
 
-    if len(features) != 0:
-        str_features = ""
-
-        for feature in features:
-            str_features += {
-                "VIP_REGIONS":              ic_bullet_point + "VIP-Regionen\n",
-                "VANITY_URL":               ic_bullet_point + "Vanity URL\n",
-                "INVITE_SPLASH":            ic_bullet_point + "Invite Splash\n",
-                "VERIFIED":                 ic_bullet_point + "Verifiziert\n",
-                "PARTNERED":                ic_bullet_point + "Discord-Partner\n",
-                "MORE_EMOJI":               ic_bullet_point + "Mehr Emojis\n",
-                "DISCOVERABLE":             ic_bullet_point + "In Server-Browser\n",
-                "FEATURABLE":               ic_bullet_point + "Featurable\n",
-                "COMMERCE":                 ic_bullet_point + "Commerce",
-                "PUBLIC":                   ic_bullet_point + "Öffentlich\n",
-                "NEWS":                     ic_bullet_point + "News-Kanäle\n",
-                "BANNER":                   ic_bullet_point + "Server-Banner\n",
-                "ANIMATED_ICON":            ic_bullet_point + "Animiertes Icon\n",
-                "PUBLIC_DISABLED":          ic_bullet_point + "Public disabled\n",
-                "WELCOME_SCREEN_ENABLED":   ic_bullet_point + "Begrüßungsbildschirm\n"
-            }[feature]
+    for feature in features:
+        str_features += ic_bullet_point + dict_server_features[feature] + "\n"
 
     return str_features
 
