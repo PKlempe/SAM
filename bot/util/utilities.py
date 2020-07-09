@@ -85,7 +85,7 @@ def determine_boost_level_cap(amount_boosts):
     Returns:
         str: A short message indicating how many boosts are needed to level up.
     """
-    if amount_boosts < 2:
+    if amount_boosts < constants.DISCORD_BOOST_LVL1_CAP:
         return "/{0}".format(constants.DISCORD_BOOST_LVL1_CAP)
     if constants.DISCORD_BOOST_LVL1_CAP <= amount_boosts < constants.DISCORD_BOOST_LVL2_CAP:
         return "/{0}".format(constants.DISCORD_BOOST_LVL2_CAP)
