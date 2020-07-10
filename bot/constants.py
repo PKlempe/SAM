@@ -17,7 +17,8 @@ EMBED_INFO_COLOR = 0x1E90FF
 
 # Database
 DB_FILE_PATH = os.getenv("DB_FILE_PATH")
-DB_INIT_SCRIPT = os.getenv("DB_INIT_SCRIPT")
+#absolute path to the init script
+DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
 
 # Database Queries
 INSERT_PROPERTY_QUERY = "INSERT OR REPLACE INTO configs VALUES(?, ?);"
