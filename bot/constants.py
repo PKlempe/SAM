@@ -20,5 +20,5 @@ DB_FILE_PATH = os.getenv("DB_FILE_PATH")
 DB_INIT_SCRIPT = os.getenv("DB_INIT_SCRIPT")
 
 # Database Queries
-INSERT_PROPERTY_QUERY = "INSERT OR REPLACE INTO configs VALUES(?, ?, ?);"
+INSERT_PROPERTY_QUERY = "INSERT OR REPLACE INTO configs VALUES(?, ?);"
 GET_PROPERTY_QUERY = "SELECT val FROM configs WHERE config_key =?"
