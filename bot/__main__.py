@@ -18,4 +18,4 @@ if __name__ == '__main__':
         bot.load_extension(extension)
 
     print("- Contacting Discord servers...")
-    bot.run(constants.DISCORD_API_KEY)
+    bot.run(constants.DISCORD_BOT_TOKEN)
