@@ -6,6 +6,7 @@ from bot import constants
 bot = commands.Bot(command_prefix=constants.BOT_PREFIX)
 initial_extensions = ['bot.util.utilities']
 
+
 @bot.event
 async def on_ready():
     """Event handler for the Bot entering the ready state."""

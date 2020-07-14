@@ -4,12 +4,19 @@ import os
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 
+# API Keys
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
+# Bot Settings
 BOT_PREFIX = '!'
 
+# Embed Colors
+EMBED_INFO_COLOR = 0x1E90FF
+
+# Discord Server Boosts
 DISCORD_BOOST_LVL1_CAP = 2
 DISCORD_BOOST_LVL2_CAP = 15
 DISCORD_BOOST_LVL3_CAP = 30
 
-EMBED_INFO_COLOR = 0x1E90FF
+# Special User IDs
+DISCORD_USER_ID_CONTRIBUTOR = 310100064687226882
