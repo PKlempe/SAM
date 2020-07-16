@@ -131,3 +131,6 @@ dmypy.json
 # JetBrains IDEs
 .idea/
 *.iml
+
+#Database files
+*.sqlite

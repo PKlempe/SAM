@@ -10,7 +10,11 @@ class UtilitiesCog(commands.Cog):
     """Cog for Utility Functions."""
 
     def __init__(self, bot):
-        """Initializes the Cog."""
+        """Initializes the Cog.
+
+        Args:
+            bot (Bot): The bot for which this cog should be enabled.
+        """
         self.bot = bot
 
     @commands.command(name='ping')
@@ -35,7 +39,7 @@ class UtilitiesCog(commands.Cog):
 
         Returns:
             Embed: An embedded message (Embed) containing a variety of stats and information regarding server owner,
-            server boosts, server features, members, channels and roles.
+                server boosts, server features, members, channels and roles.
         """
         embed_strings = build_serverinfo_strings(ctx.guild)
 
@@ -53,7 +57,7 @@ class UtilitiesCog(commands.Cog):
 
 
 def build_serverinfo_strings(guild):
-    """Function for building the strings needed for the serverinfo embed.
+    """Function for building the strings needed for the serverinfo Embed.
 
     Args:
         guild (Guild): A Guild object which represents a Discord server.
@@ -102,7 +106,7 @@ def get_channel_counters(guild):
 
     Returns:
         list: A list containing the total amount of channels, the amount of text channel and the amount of voice
-                channels on a server.
+            channels on a server.
     """
     cntr_vc_channels = len(guild.voice_channels)
     cntr_txt_channels = len(guild.text_channels)
