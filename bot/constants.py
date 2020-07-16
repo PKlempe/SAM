@@ -2,6 +2,7 @@
 
 import os
 from dotenv import load_dotenv, find_dotenv
+
 load_dotenv(find_dotenv())
 
 # API Keys
@@ -20,3 +21,8 @@ DISCORD_BOOST_LVL3_CAP = 30
 
 # Special User IDs
 DISCORD_USER_ID_CONTRIBUTOR = 310100064687226882
+
+# Database
+DB_FILE_PATH = os.getenv("DB_FILE_PATH")
+## Absolute path to the init script.
+DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")

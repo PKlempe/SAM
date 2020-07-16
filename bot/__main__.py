@@ -12,7 +12,6 @@ async def on_ready():
     """Event handler for the Bot entering the ready state."""
     print('- {0.user} successfully logged in to Discord!'.format(bot))
 
-
 if __name__ == '__main__':
     for extension in initial_extensions:
         bot.load_extension(extension)
