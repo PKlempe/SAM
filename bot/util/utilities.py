@@ -13,7 +13,7 @@ class UtilitiesCog(commands.Cog):
         """Initializes the Cog.
 
         Args:
-            bot:
+            bot (Bot): The bot for which this cog should be enabled.
         """
         self.bot = bot
 
@@ -25,8 +25,7 @@ class UtilitiesCog(commands.Cog):
             ctx (Context): The context in which the command was called.
 
         Returns:
-            str: A message containing 'Pong!', as well as the measured latency
-            to the Discord server in milliseconds.
+            str: A message containing 'Pong!', as well as the measured latency to the Discord server in milliseconds.
         """
         latency = round(self.bot.latency * 1000, 2)
         await ctx.send(":ping_pong: **Pong!** - {0} ms".format(latency))
@@ -39,9 +38,8 @@ class UtilitiesCog(commands.Cog):
             ctx (Context): The context in which the command was called.
 
         Returns:
-            Embed: An embedded message (Embed) containing a variety of stats and
-            information regarding server owner, server boosts, server features,
-            members, channels and roles.
+            Embed: An embedded message (Embed) containing a variety of stats and information regarding server owner,
+                server boosts, server features, members, channels and roles.
         """
         embed_strings = build_serverinfo_strings(ctx.guild)
 
@@ -53,13 +51,13 @@ class UtilitiesCog(commands.Cog):
         embed.add_field(name="Server Boost <:server_boost:730390579699122256>", value=embed_strings[1], inline=True)
         embed.add_field(name="Server Features :tools:", value=embed_strings[2], inline=True)
         embed.add_field(name="Mitglieder :man_raising_hand:", value=embed_strings[3], inline=True)
-        embed.add_field(name="KanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤le :dividers:", value=embed_strings[4], inline=True)
+        embed.add_field(name="Kanäle :dividers:", value=embed_strings[4], inline=True)
         embed.add_field(name="Rollen :medal:", value=embed_strings[5], inline=True)
         await ctx.send(embed=embed)
 
 
 def build_serverinfo_strings(guild):
-    """Function for building the strings needed for the serverinfo embed.
+    """Function for building the strings needed for the serverinfo Embed.
 
     Args:
         guild (Guild): A Guild object which represents a Discord server.
@@ -86,8 +84,7 @@ def determine_boost_level_cap(amount_boosts):
     """Function for determining the current server level cap.
 
     Args:
-        amount_boosts (int): The number of Boosts a server has received from its
-            members.
+        amount_boosts (int): The number of Boosts a server has received from its members.
 
     Returns:
         str: A short message indicating how many boosts are needed to level up.
@@ -125,8 +122,7 @@ def get_member_counters(guild):
         guild (Guild): A Guild object which represents a Discord server.
 
     Returns:
-        list: A list containing the total amount of members, the amount of bots
-        and the amount of human members.
+        list: A list containing the total amount of members, the amount of bots and the amount of human members.
     """
     cntr_bots = len(list(filter(lambda user: user.bot, guild.members)))
 
@@ -134,16 +130,13 @@ def get_member_counters(guild):
 
 
 def generate_features_string(features):
-    """Function for creating a string which contains an enumeration of all
-    available server features.
+    """Function for creating a string which contains an enumeration of all available server features.
 
     Args:
-        features (list): A list of available server features for a specific
-            Discord server.
+        features (list): A list of available server features for a specific Discord server.
 
     Returns:
-        str: A string containing an enumeration of all available server
-        features.
+        str: A string containing an enumeration of all available server features.
     """
     if len(features) == 0:
         return ":no_entry_sign: Keine"
@@ -159,12 +152,12 @@ def generate_features_string(features):
         "DISCOVERABLE":             "In Server-Browser",
         "FEATURABLE":               "Featurable",
         "COMMERCE":                 "Commerce",
-        "PUBLIC":                   "ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ffentlich",
-        "NEWS":                     "News-KanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤le",
+        "PUBLIC":                   "Öffentlich",
+        "NEWS":                     "News-Kanäle",
         "BANNER":                   "Server-Banner",
         "ANIMATED_ICON":            "Animiertes Icon",
         "PUBLIC_DISABLED":          "Public disabled",
-        "WELCOME_SCREEN_ENABLED":   "BegrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼ÃƒÆ’Ã†â€™Ãƒâ€¦Ã‚Â¸ungsbildschirm"
+        "WELCOME_SCREEN_ENABLED":   "Begrüßungsbildschirm"
     }
     str_features = ""
 

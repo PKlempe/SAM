@@ -1,7 +1,6 @@
 """This is the main module of the SAM project."""
 
 from discord.ext import commands
-
 from bot import constants
 
 bot = commands.Bot(command_prefix=constants.BOT_PREFIX)

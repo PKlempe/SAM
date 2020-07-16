@@ -1,4 +1,4 @@
-"""Tests for the database and other persistence classes"""
+"""Tests for the database and other persistence classes."""
 
 import os
 from bot import constants
@@ -6,10 +6,10 @@ from bot.persistence import DatabaseConnector
 
 
 def test_db():
-    """Tests if inserts and reads from the database work. Initializes the
-    database, adds a single value, queries the same value by key and finally
-    deletes the db file. Passes if the returned value is found (ie. not None)
-    and equal to the original one
+    """Tests if inserts and reads from the database work.
+
+    Initializes the database, adds a single value, queries the same value by key and finally deletes the db file.
+    Passes if the returned value is found (ie. not None) and equal to the original one.
     """
     conn = DatabaseConnector("./test.sqlite", init_script=constants.DB_INIT_SCRIPT)
     conn.add_config_property("testkey", "testval")

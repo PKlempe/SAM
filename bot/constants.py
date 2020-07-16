@@ -17,5 +17,5 @@ EMBED_INFO_COLOR = 0x1E90FF
 
 # Database
 DB_FILE_PATH = os.getenv("DB_FILE_PATH")
-# absolute path to the init script
+## absolute path to the init script
 DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
