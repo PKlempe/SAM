@@ -55,6 +55,37 @@ class UtilitiesCog(commands.Cog):
         embed.add_field(name="Rollen :medal:", value=embed_strings[5], inline=True)
         await ctx.send(embed=embed)
 
+    @commands.command(name='about')
+    async def about(self, ctx):
+        """Command Handler for the `about` command.
+
+        Args:
+            ctx (Context): The context in which the command was called.
+
+        Returns:
+            Embed: An embedded message (Embed) containing some information about this bot and links regarding the
+                    GitHub repository and donations.
+        """
+        description = "**__SAM__** ist ein multi-funktionaler Discord-Bot, welcher speziell für den Server der " \
+                      "Informatik-Fakultät der Universität Wien entwickelt wurde. Sein Ziel ist es unterschiedlichste" \
+                      " hilfreiche Aufgaben zu erledigen und den Moderatoren das Leben ein wenig zu erleichtern."
+        str_special_thanks = "Großen Dank an **{0.display_name}#{0.discriminator}**, der mich bei der Entwicklung " \
+                             "dieses Bots tatkräftig unterstützt hat." \
+            .format(self.bot.get_user(constants.DISCORD_USER_ID_CONTRIBUTOR))
+        str_links = "- [Bot-Wiki](https://github.com/PKlempe/SAM/wiki)\n" \
+                    "- [GitHub-Repo](https://github.com/PKlempe/SAM)\n" \
+                    "- [Entwickler](https://github.com/PKlempe)\n" \
+                    "- [Donate via Ko-fi](https://ko-fi.com/pklempe)"
+
+        embed = discord.Embed(title="About", color=constants.EMBED_INFO_COLOR, description=description)
+        embed.set_thumbnail(url=self.bot.user.avatar_url)
+        embed.set_footer(text="Made with \U00002764\U0000FE0F and discord.py",
+                         icon_url="https://i.imgur.com/JLl8ocp.png")
+
+        embed.add_field(name="Special Thanks:", value=str_special_thanks)
+        embed.add_field(name="Links:", value=str_links)
+        await ctx.send(embed=embed)
+
 
 def build_serverinfo_strings(guild):
     """Function for building the strings needed for the serverinfo Embed.
