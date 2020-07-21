@@ -34,38 +34,6 @@ class DatabaseConnector:
                     except Error as error:
                         print("Command could not be executed, skipping it: {0}".format(error))
 
-    def add_config_property(self, key: str, val: str):
-        """Adds a new configuration property to the database or updates an existing one if the key already exists.
-
-        Args:
-            key (str): The property key (must be unique among properties).
-            val (str): The value of the property.
-
-        Raises:
-            Error: If the db __init__ method was not called before, as it sets the filename of the database file which
-                is needed to operate on the db. This also ensures that the database exists and works, contains the table
-                prior to calling this method.
-        """
-        with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.QUERY_INSERT_PROPERTY, (key, val))
-            db_manager.commit()
-
-    def get_property(self, key: str):
-        """Searches the config table of the db for a specific property.
-
-        Args:
-            key (str): The property key to search for.
-
-        Returns:
-            Optional[str]: The property value for the specified key or `None` if it doesn't exist.
-        """
-        with DatabaseManager(self._db_file) as db_manager:
-            result = db_manager.execute(queries.QUERY_GET_PROPERTY, (key,))
-            row = result.fetchone()
-            if row is not None:
-                return row[0]
-            return None
-
     def add_modmail(self, msg_id: int):
         """Inserts the message id of a submitted modmail into the database and sets its status to `Open`.
 
@@ -73,7 +41,7 @@ class DatabaseConnector:
             msg_id (int): The message id of the modmail which has been submitted.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.QUERY_INSERT_MODMAIL, (msg_id,))
+            db_manager.execute(queries.INSERT_MODMAIL, (msg_id,))
             db_manager.commit()
 
     def get_modmail_status(self, msg_id: int):
@@ -86,8 +54,7 @@ class DatabaseConnector:
             Optional[ModmailStatus]: The current status of the modmail.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            result = db_manager.execute(queries.QUERY_GET_MODMAIL_STATUS, (msg_id,))
-            db_manager.commit()
+            result = db_manager.execute(queries.GET_MODMAIL_STATUS, (msg_id,))
 
             row = result.fetchone()
             if row is not None:
@@ -102,7 +69,7 @@ class DatabaseConnector:
             status (ModmailStatus): The new status which should be set.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.QUERY_CHANGE_MODMAIL_STATUS, (status.value, msg_id))
+            db_manager.execute(queries.CHANGE_MODMAIL_STATUS, (status.value, msg_id))
             db_manager.commit()
 
     @staticmethod
