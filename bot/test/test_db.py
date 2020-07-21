@@ -18,4 +18,4 @@ def test_db():
 
     os.remove("./test.sqlite")
 
-    assert res == ModmailStatus.OPEN.value
+    assert res == ModmailStatus.OPEN
