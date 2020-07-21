@@ -5,33 +5,34 @@ Todo:
 """
 
 from sqlite3 import Error
-from typing import List, Union
-from .queries import INSERT_PROPERTY_QUERY, GET_PROPERTY_QUERY
+from typing import List
+from bot.moderation import ModmailStatus
+from bot.persistence import queries
 from .database_manager import DatabaseManager
 
 
-class DatabaseConnector():
+class DatabaseConnector:
     """Class used to communicate with the database.
 
     The database is created and initialized using the __init__ method. The other methods support getting or adding
     properties to the database.
     """
-
-    _db_file: Union[str, None] = None
-
     def __init__(self, db_file: str, init_script=None):
         """Create a database connection to a SQLite database and create the default tables form the SQL script in
         init_db.sql.
 
         Args:
             db_file (str): The filename of the SQLite database file.
-            init_script (Union[str, None]): Optional SQL script filename that will be run when the method is called.
+            init_script (Optional[str]): Optional SQL script filename that will be run when the method is called.
         """
+        if db_file is None:
+            raise Error("Database filepath and/or filename hasn't been set.")
+
         self._db_file = db_file
         with DatabaseManager(self._db_file) as db_manager:
             if init_script is not None:
-                queries = self.parse_sql_file(init_script)
-                for query in queries:
+                queries_ = self.parse_sql_file(init_script)
+                for query in queries_:
                     try:
                         db_manager.execute(query)
                     except Error as error:
@@ -49,11 +50,8 @@ class DatabaseConnector():
                 is needed to operate on the db. This also ensures that the database exists and works, contains the table
                 prior to calling this method.
         """
-        if self._db_file is None:
-            raise Error(
-                "Method __init__(filename, init_script=None) has not yet been called. Database filename is not set.")
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(INSERT_PROPERTY_QUERY, (key, val))
+            db_manager.execute(queries.QUERY_INSERT_PROPERTY, (key, val))
             db_manager.commit()
 
     def get_property(self, key: str):
@@ -63,18 +61,34 @@ class DatabaseConnector():
             key (str): The property key to search for.
 
         Returns:
-            Union[str, None]: The property value for the specified key or `None` if it doesn't exist.
+            Optional[str]: The property value for the specified key or `None` if it doesn't exist.
         """
-        if self._db_file is None:
-            raise Error(
-                "Method __init__(filename, init_script=None) has not yet been called. Database filename is not set.")
-
         with DatabaseManager(self._db_file) as db_manager:
-            result = db_manager.execute(GET_PROPERTY_QUERY, (key,))
+            result = db_manager.execute(queries.QUERY_GET_PROPERTY, (key,))
             row = result.fetchone()
             if row is not None:
                 return row[0]
             return None
+
+    def add_modmail(self, msg_id: int):
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.QUERY_INSERT_MODMAIL, (msg_id,))
+            db_manager.commit()
+
+    def get_modmail_status(self, msg_id: int):
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.QUERY_GET_MODMAIL_STATUS, (msg_id,))
+            db_manager.commit()
+
+            row = result.fetchone()
+            if row is not None:
+                return ModmailStatus(row[0])
+            return None
+
+    def change_modmail_status(self, msg_id: int, status: ModmailStatus):
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.QUERY_CHANGE_MODMAIL_STATUS, (status.value, msg_id))
+            db_manager.commit()
 
     @staticmethod
     def parse_sql_file(filename: str) -> List[str]:

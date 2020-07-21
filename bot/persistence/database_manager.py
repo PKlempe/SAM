@@ -17,15 +17,13 @@ class DatabaseManager:
         After the last line in the indented block is executed, the connection will be automatically closed via the exit
         method.
     """
-    connection = None
-
     def __init__(self, db_file: str):
         """Initializes the context manager with the filename of the db.
 
         Args:
             db_file (str): the name (or path) to the db file
         """
-        self.db_file = db_file
+        self._db_file = db_file
         self.connection = None
 
     def __enter__(self):
@@ -37,7 +35,7 @@ class DatabaseManager:
             Connection: The database connection object.
         """
         try:
-            self.connection = sqlite3.connect(self.db_file)
+            self.connection = sqlite3.connect(self._db_file)
         except Error as error:
             print(error)
         return self.connection

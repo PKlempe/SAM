@@ -43,7 +43,7 @@ class UtilitiesCog(commands.Cog):
         """
         embed_strings = build_serverinfo_strings(ctx.guild)
 
-        embed = discord.Embed(title=ctx.guild.name, timestamp=datetime.now(), color=constants.EMBED_INFO_COLOR)
+        embed = discord.Embed(title=ctx.guild.name, timestamp=datetime.utcnow(), color=constants.EMBED_COLOR_INFO)
         embed.set_thumbnail(url=ctx.guild.icon_url)
         embed.set_footer(text="Erstellungsdatum")
 
@@ -71,13 +71,13 @@ class UtilitiesCog(commands.Cog):
                       " hilfreiche Aufgaben zu erledigen und den Moderatoren das Leben ein wenig zu erleichtern."
         str_special_thanks = "Großen Dank an **{0.display_name}#{0.discriminator}**, der mich bei der Entwicklung " \
                              "dieses Bots tatkräftig unterstützt hat." \
-            .format(self.bot.get_user(constants.DISCORD_USER_ID_CONTRIBUTOR))
+            .format(self.bot.get_user(constants.USER_ID_CONTRIBUTOR))
         str_links = "- [Bot-Wiki](https://github.com/PKlempe/SAM/wiki)\n" \
                     "- [GitHub-Repo](https://github.com/PKlempe/SAM)\n" \
                     "- [Entwickler](https://github.com/PKlempe)\n" \
                     "- [Donate via Ko-fi](https://ko-fi.com/pklempe)"
 
-        embed = discord.Embed(title="About", color=constants.EMBED_INFO_COLOR, description=description)
+        embed = discord.Embed(title="About", color=constants.EMBED_COLOR_INFO, description=description)
         embed.set_thumbnail(url=self.bot.user.avatar_url)
         embed.set_footer(text="Made with \U00002764\U0000FE0F and discord.py",
                          icon_url="https://i.imgur.com/JLl8ocp.png")
