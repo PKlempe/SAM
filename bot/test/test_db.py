@@ -12,8 +12,8 @@ def test_db():
     Passes if the returned value is found (ie. not None) and equal to the original one.
     """
     conn = DatabaseConnector("./test.sqlite", init_script=constants.DB_INIT_SCRIPT)
-    conn.add_config_property("testkey", "testval")
-    res = conn.get_property("testkey")
+    conn.add_modmail(47348382920304934)
+    res = conn.get_modmail_status(47348382920304934)
 
     os.remove("./test.sqlite")
 
