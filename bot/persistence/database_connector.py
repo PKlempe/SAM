@@ -1,80 +1,76 @@
-"""Contains logic for connecting to and manipulating the database.
-
-Todo:
-    * Add queries for db tables once the db design is clear.
-"""
+"""Contains logic for connecting to and manipulating the database."""
 
 from sqlite3 import Error
-from typing import List, Union
-from .queries import INSERT_PROPERTY_QUERY, GET_PROPERTY_QUERY
+from typing import List
+from bot.moderation import ModmailStatus
+from bot.persistence import queries
 from .database_manager import DatabaseManager
 
 
-class DatabaseConnector():
+class DatabaseConnector:
     """Class used to communicate with the database.
 
     The database is created and initialized using the __init__ method. The other methods support getting or adding
     properties to the database.
     """
-
-    _db_file: Union[str, None] = None
-
     def __init__(self, db_file: str, init_script=None):
         """Create a database connection to a SQLite database and create the default tables form the SQL script in
         init_db.sql.
 
         Args:
             db_file (str): The filename of the SQLite database file.
-            init_script (Union[str, None]): Optional SQL script filename that will be run when the method is called.
+            init_script (Optional[str]): Optional SQL script filename that will be run when the method is called.
         """
+        if db_file is None:
+            raise Error("Database filepath and/or filename hasn't been set.")
+
         self._db_file = db_file
         with DatabaseManager(self._db_file) as db_manager:
             if init_script is not None:
-                queries = self.parse_sql_file(init_script)
-                for query in queries:
+                queries_ = self.parse_sql_file(init_script)
+                for query in queries_:
                     try:
                         db_manager.execute(query)
                     except Error as error:
                         print("Command could not be executed, skipping it: {0}".format(error))
 
-    def add_config_property(self, key: str, val: str):
-        """Adds a new configuration property to the database or updates an existing one if the key already exists.
+    def add_modmail(self, msg_id: int):
+        """Inserts the message id of a submitted modmail into the database and sets its status to `Open`.
 
         Args:
-            key (str): The property key (must be unique among properties).
-            val (str): The value of the property.
-
-        Raises:
-            Error: If the db __init__ method was not called before, as it sets the filename of the database file which
-                is needed to operate on the db. This also ensures that the database exists and works, contains the table
-                prior to calling this method.
+            msg_id (int): The message id of the modmail which has been submitted.
         """
-        if self._db_file is None:
-            raise Error(
-                "Method __init__(filename, init_script=None) has not yet been called. Database filename is not set.")
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(INSERT_PROPERTY_QUERY, (key, val))
+            db_manager.execute(queries.INSERT_MODMAIL, (msg_id,))
             db_manager.commit()
 
-    def get_property(self, key: str):
-        """Searches the config table of the db for a specific property.
+    def get_modmail_status(self, msg_id: int):
+        """Returns the current status of a modmail associated with the message id given.
 
         Args:
-            key (str): The property key to search for.
+            msg_id (int): The message id of the modmail.
 
         Returns:
-            Union[str, None]: The property value for the specified key or `None` if it doesn't exist.
+            Optional[ModmailStatus]: The current status of the modmail.
         """
-        if self._db_file is None:
-            raise Error(
-                "Method __init__(filename, init_script=None) has not yet been called. Database filename is not set.")
-
         with DatabaseManager(self._db_file) as db_manager:
-            result = db_manager.execute(GET_PROPERTY_QUERY, (key,))
+            result = db_manager.execute(queries.GET_MODMAIL_STATUS, (msg_id,))
+
             row = result.fetchone()
             if row is not None:
-                return row[0]
+                return ModmailStatus(row[0])
             return None
+
+    def change_modmail_status(self, msg_id: int, status: ModmailStatus):
+        """Changes the status of a specific modmail with the given id.
+
+        Args:
+            msg_id (int): The message id of the modmail.
+            status (ModmailStatus): The new status which should be set.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.CHANGE_MODMAIL_STATUS, (status.value, msg_id))
+            db_manager.commit()
 
     @staticmethod
     def parse_sql_file(filename: str) -> List[str]:

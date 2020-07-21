@@ -133,4 +133,4 @@ dmypy.json
 *.iml
 
 #Database files
-*.sqlite
+*.sqlite*
