@@ -1,8 +1,4 @@
-"""Contains logic for connecting to and manipulating the database.
-
-Todo:
-    * Add queries for db tables once the db design is clear.
-"""
+"""Contains logic for connecting to and manipulating the database."""
 
 from sqlite3 import Error
 from typing import List
@@ -71,11 +67,24 @@ class DatabaseConnector:
             return None
 
     def add_modmail(self, msg_id: int):
+        """Inserts the message id of a submitted modmail into the database and sets its status to `Open`.
+
+        Args:
+            msg_id (int): The message id of the modmail which has been submitted.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.QUERY_INSERT_MODMAIL, (msg_id,))
             db_manager.commit()
 
     def get_modmail_status(self, msg_id: int):
+        """Returns the current status of a modmail associated with the message id given.
+
+        Args:
+            msg_id (int): The message id of the modmail.
+
+        Returns:
+            Optional[ModmailStatus]: The current status of the modmail.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(queries.QUERY_GET_MODMAIL_STATUS, (msg_id,))
             db_manager.commit()
@@ -86,6 +95,12 @@ class DatabaseConnector:
             return None
 
     def change_modmail_status(self, msg_id: int, status: ModmailStatus):
+        """Changes the status of a specific modmail with the given id.
+
+        Args:
+            msg_id (int): The message id of the modmail.
+            status (ModmailStatus): The new status which should be set.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.QUERY_CHANGE_MODMAIL_STATUS, (status.value, msg_id))
             db_manager.commit()
