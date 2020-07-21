@@ -2,6 +2,7 @@
 
 import os
 from bot import constants
+from bot.moderation import ModmailStatus
 from bot.persistence import DatabaseConnector
 
 
@@ -17,4 +18,4 @@ def test_db():
 
     os.remove("./test.sqlite")
 
-    assert res == "testval"
+    assert res == ModmailStatus.OPEN.value
