@@ -57,7 +57,12 @@ class ModerationCog(commands.Cog):
                               "__Hier deine Bestätigung:__", embed=embed_confirmation)
 
     @commands.Cog.listener(name='on_raw_reaction_add')
-    async def change_modmail_embed_color_add(self, payload):
+    async def change_modmail_status_add(self, payload):
+        """Changes the status and the embed of a modmail message if a specific reaction has been added by a user.
+
+        Args:
+            payload (discord.RawReactionActionEvent): The payload for the triggered event.
+        """
         if not payload.member.bot and payload.channel_id == constants.CHANNEL_ID_MODMAIL:
             modmail = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
             curr_status = self._db_connector.get_modmail_status(modmail.id)
@@ -76,7 +81,12 @@ class ModerationCog(commands.Cog):
             await modmail.edit(embed=discord.Embed.from_dict(dict_embed))
 
     @commands.Cog.listener(name='on_raw_reaction_remove')
-    async def change_modmail_embed_color_remove(self, payload):
+    async def change_modmail_status_remove(self, payload):
+        """Changes the status and the embed of a modmail message if a specific reaction has been removed by a user.
+
+        Args:
+            payload (discord.RawReactionActionEvent): The payload for the triggered event.
+        """
         if payload.channel_id == constants.CHANNEL_ID_MODMAIL:
             modmail = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
             curr_status = self._db_connector.get_modmail_status(modmail.id)
