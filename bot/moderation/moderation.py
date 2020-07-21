@@ -58,7 +58,8 @@ class ModerationCog(commands.Cog):
 
     @commands.Cog.listener(name='on_raw_reaction_add')
     async def change_modmail_status_add(self, payload):
-        """Changes the status and the embed of a modmail message if a specific reaction has been added by a user.
+        """Event listener which changes the status and the embed of a modmail message if a specific reaction has been
+        added by a user.
 
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
@@ -82,7 +83,8 @@ class ModerationCog(commands.Cog):
 
     @commands.Cog.listener(name='on_raw_reaction_remove')
     async def change_modmail_status_remove(self, payload):
-        """Changes the status and the embed of a modmail message if a specific reaction has been removed by a user.
+        """Event listener which changes the status and the embed of a modmail message if a specific reaction has been
+        removed by a user.
 
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
