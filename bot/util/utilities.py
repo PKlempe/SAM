@@ -86,6 +86,39 @@ class UtilitiesCog(commands.Cog):
         embed.add_field(name="Links:", value=str_links)
         await ctx.send(embed=embed)
 
+    @commands.command(name='embed')
+    async def embed(self, ctx, channel: str, color: str, *, text: str):
+        """Command Handler for the embed command
+
+        Creates and sends an embed in the specified channel with color and title and text. Title and text are separated
+        by a '|' character.
+
+        Args:
+            ctx (Context): The context in which the command was called.
+            channel (str): The channel where to post the message. Can be channel name (starting with #) or channel id.
+            color (str): Color code for the color of the strip.
+            text (str): The text to be posted in the embed. The string contains title and content, which are separated
+                        by a '|' character. If this character is not found, no title will be assumed.
+        """
+        server_channels = ctx.guild.text_channels
+        if channel.startswith('<#'):
+            channel = channel[2:-1]
+        channel_to_post = next((cha for cha in server_channels if cha.id == int(channel)), None)
+
+        if channel_to_post is None:
+            await ctx.send(
+                'Channel to post embed to could not be found. Use channel ID or channel name (linked #)')
+            return
+
+        if '|' in text:
+            title, description = text.split('|')
+        else:
+            title = ''
+            description = text
+
+        embed = discord.Embed(title=title, description=description, color=discord.Color(int('0x' + color, 16)))
+        await channel_to_post.send(embed=embed)
+
 
 def build_serverinfo_strings(guild):
     """Function for building the strings needed for the serverinfo Embed.
@@ -174,21 +207,21 @@ def generate_features_string(features):
 
     ic_bullet_point = ":white_check_mark: "
     dict_server_features = {
-        "VIP_REGIONS":              "VIP-Regionen",
-        "VANITY_URL":               "Vanity URL",
-        "INVITE_SPLASH":            "Invite Splash",
-        "VERIFIED":                 "Verifiziert",
-        "PARTNERED":                "Discord-Partner",
-        "MORE_EMOJI":               "Mehr Emojis",
-        "DISCOVERABLE":             "In Server-Browser",
-        "FEATURABLE":               "Featurable",
-        "COMMERCE":                 "Commerce",
-        "PUBLIC":                   "Öffentlich",
-        "NEWS":                     "News-Kanäle",
-        "BANNER":                   "Server-Banner",
-        "ANIMATED_ICON":            "Animiertes Icon",
-        "PUBLIC_DISABLED":          "Public disabled",
-        "WELCOME_SCREEN_ENABLED":   "Begrüßungsbildschirm"
+        "VIP_REGIONS": "VIP-Regionen",
+        "VANITY_URL": "Vanity URL",
+        "INVITE_SPLASH": "Invite Splash",
+        "VERIFIED": "Verifiziert",
+        "PARTNERED": "Discord-Partner",
+        "MORE_EMOJI": "Mehr Emojis",
+        "DISCOVERABLE": "In Server-Browser",
+        "FEATURABLE": "Featurable",
+        "COMMERCE": "Commerce",
+        "PUBLIC": "Öffentlich",
+        "NEWS": "News-Kanäle",
+        "BANNER": "Server-Banner",
+        "ANIMATED_ICON": "Animiertes Icon",
+        "PUBLIC_DISABLED": "Public disabled",
+        "WELCOME_SCREEN_ENABLED": "Begrüßungsbildschirm"
     }
     str_features = ""
 
@@ -205,3 +238,17 @@ def setup(bot):
         bot (Bot): The bot for which this cog should be enabled.
     """
     bot.add_cog(UtilitiesCog(bot))
+
+
+def is_int(string: str):
+    """Helper function to check if a string is parsable as int.
+
+    Args:
+        s (str): the string to be tested.
+
+    Returns:
+        bool: True if the value is parsable to int, false if not.
+    """
+    if string[0] in ('-', '+'):
+        return string[1:].isdigit()
+    return string.isdigit()
