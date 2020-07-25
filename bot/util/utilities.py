@@ -1,8 +1,12 @@
 """Contains a Cog for all utility funcionality."""
 
+import json
 from datetime import datetime
-from discord.ext import commands
+
 import discord
+import requests
+from discord.ext import commands
+
 from bot import constants
 
 
@@ -100,14 +104,10 @@ class UtilitiesCog(commands.Cog):
             text (str): The text to be posted in the embed. The string contains title and content, which are separated
                         by a '|' character. If this character is not found, no title will be assumed.
         """
-        server_channels = ctx.guild.text_channels
-        if channel.startswith('<#'):
-            channel = channel[2:-1]
-        channel_to_post = next((cha for cha in server_channels if cha.id == int(channel)), None)
-
-        if channel_to_post is None:
-            await ctx.send(
-                'Channel to post embed to could not be found. Use channel ID or channel name (linked #)')
+        try:
+            channel_to_post = get_text_channel(channel, ctx.guild)
+        except ValueError as error:
+            await ctx.send(error)
             return
 
         if '|' in text:
@@ -116,8 +116,45 @@ class UtilitiesCog(commands.Cog):
             title = ''
             description = text
 
-        embed = discord.Embed(title=title, description=description, color=discord.Color(int('0x' + color, 16)))
+        try:
+            col = discord.Color(int('0x' + color, 16))
+        except ValueError:
+            await ctx.send("Color could not be parsed. Please use a valid color code.")
+            return
+
+        embed = discord.Embed(title=title, description=description, color=col)
         await channel_to_post.send(embed=embed)
+
+    @commands.command(name='cembed')
+    async def cembed(self, ctx, channel: str, *, json_string: str):
+        """Command Handler for the embed command.
+
+        Creates and sends an embed in the specified channel parsed from json.
+
+        Args:
+            ctx (Context): The context in which the command was called.
+            channel (str): The channel where to post the message. Can be channel name (starting with #) or channel id.
+            json (str): The json string representing the embed. Alternatively it could also be a pastebin link
+        """
+        try:
+            channel_to_post = get_text_channel(channel, ctx.guild)
+            if is_pastebin_link(json_string):
+                json_string = parse_pastebin_link(json_string)
+            embed_dict = json.loads(json_string)
+            embed = discord.Embed.from_dict(embed_dict)
+            if len(embed) == 0:
+                await ctx.send(
+                    "No valid fields found in json. Please use at least one of the fields found under https://discord.com/developers/docs/resources/channel#embed-object")
+                return
+            await channel_to_post.send(embed=embed)
+        except discord.ext.commands.errors.CommandInvokeError:
+            await ctx.send("Could not parse json. Make sure your last argument is valid JSON.")
+        except discord.errors.HTTPException:
+            await ctx.send("Could not parse json. Make sure your last argument is valid JSON.")
+        except ValueError as error:
+            await ctx.send(error)
+        except TypeError:
+            await ctx.send("Error creating embed. Please check your parameters.")
 
 
 def build_serverinfo_strings(guild):
@@ -231,6 +268,64 @@ def generate_features_string(features):
     return str_features
 
 
+def get_text_channel(channel_id: str, guild: discord.Guild) -> discord.TextChannel:
+    """Parses a message id string and searches the text channel in the passed guild
+
+    Args:
+        channel_id (str): The id of the channel (might also be surrounded by '<#' and '>'
+        guild (discord.Guild): The guild in which the channel is searched.
+
+    Returns:
+        discord.Channel: The found channel.
+
+    Raises:
+        ValueError: If the chanel could not be found.
+    """
+    try:
+        if channel_id.startswith('<#'):
+            channel_id = channel_id[2:-1]
+        channel = guild.get_channel(int(channel_id))
+    except ValueError:
+        raise ValueError('Channel to post embed to could not be found. Use channel ID or channel name (linked #)')
+
+    if channel is None:
+        raise ValueError('Channel to post embed to could not be found. Use channel ID or channel name (linked #)')
+
+    return channel
+
+
+def is_pastebin_link(json_string: str) -> bool:
+    """Verifies if the string is a link to pastebin.com by checking if it contains 'pastebin.com' and does not contain
+    json specific symbols.
+
+    Args:
+        json_string (str): The string to be checked.
+
+    Returns:
+          bool: True if it is a link to pastebin.com, False if not.
+    """
+    return "pastebin.com" in json_string and '{' not in json_string and '}' not in json_string
+
+def parse_pastebin_link(url: str) -> str:
+    """Resolves a link to pastebin.com and returns the raw data behind it.
+        This works with links to the original pastebin (pastebin.com/abc) and to raw links (pastebin.com/raw/abc)
+
+        Args:
+            url (str): The pastebin url to resolve.
+
+        Returns:
+            str: The raw data as string behind the link.
+
+        Raises:
+             Error: If the link could not be resolved for any reasons.
+    """
+    #add raw to url if not contained
+    if "raw" not in url:
+        split_index = url.find(".com/")
+        url = url[:(split_index+5)] + "raw/" + url[(split_index+5):]
+    return requests.get(url).text
+
+
 def setup(bot):
     """Enables the cog for the bot.
 
@@ -238,17 +333,3 @@ def setup(bot):
         bot (Bot): The bot for which this cog should be enabled.
     """
     bot.add_cog(UtilitiesCog(bot))
-
-
-def is_int(string: str):
-    """Helper function to check if a string is parsable as int.
-
-    Args:
-        s (str): the string to be tested.
-
-    Returns:
-        bool: True if the value is parsable to int, false if not.
-    """
-    if string[0] in ('-', '+'):
-        return string[1:].isdigit()
-    return string.isdigit()
