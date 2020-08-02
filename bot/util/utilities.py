@@ -1,8 +1,10 @@
 """Contains a Cog for all utility funcionality."""
 
+import json
 from datetime import datetime
 from typing import List
 import discord
+import requests
 from discord.ext import commands
 from bot import constants
 
@@ -83,6 +85,70 @@ class UtilitiesCog(commands.Cog):
         embed.add_field(name="Special Thanks:", value=str_special_thanks)
         embed.add_field(name="Links:", value=str_links)
         await ctx.send(embed=embed)
+
+    @commands.command(name='embed')
+    async def embed(self, ctx, channel: str, color: str, *, text: str):
+        """Command Handler for the embed command
+
+        Creates and sends an embed in the specified channel with color, title and text. The Title and text are separated
+        by a '|' character.
+
+        Args:
+            ctx (Context): The context in which the command was called.
+            channel (str): The channel where to post the message. Can be channel name (starting with #) or channel id.
+            color (str): Color code for the color of the strip.
+            text (str): The text to be posted in the embed. The string contains title and content, which are separated
+                        by a '|' character. If this character is not found, no title will be assumed.
+        """
+        try:
+            channel_to_post = get_text_channel(channel, ctx.guild)
+        except ValueError as error:
+            await ctx.send(error)
+            return
+
+        if '|' in text:
+            title, description = text.split('|')
+        else:
+            title = ''
+            description = text
+
+        try:
+            col = int('0x' + color, 16)
+            embed = discord.Embed(title=title, description=description, color=col)
+            await channel_to_post.send(embed=embed)
+        except ValueError:
+            await ctx.send("**__Error:__** Hex value could not be parsed. Please use a valid color code.")
+            return
+
+    @commands.command(name='cembed')
+    async def cembed(self, ctx, channel: str, *, json_string: str):
+        """Command Handler for the embed command.
+
+        Creates and sends an embed in the specified channel parsed from json.
+
+        Args:
+            ctx (Context): The context in which the command was called.
+            channel (str): The channel where to post the message. Can be channel name (starting with #) or channel id.
+            json (str): The json string representing the embed. Alternatively it could also be a pastebin link.
+        """
+        try:
+            channel_to_post = get_text_channel(channel, ctx.guild)
+            if is_pastebin_link(json_string):
+                json_string = parse_pastebin_link(json_string)
+            embed_dict = json.loads(json_string)
+            embed = discord.Embed.from_dict(embed_dict)
+            await channel_to_post.send(embed=embed)
+        except discord.ext.commands.errors.CommandInvokeError:
+            await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
+        except discord.errors.HTTPException:
+            await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
+        except discord.DiscordException:
+            await ctx.send(
+                "**__Error:__** Invalid embed. Make sure you have at least title or description set (also for each additional field). You can validate your json at https://leovoel.github.io/embed-visualizer/.")
+        except ValueError as error:
+            await ctx.send(error)
+        except TypeError:
+            await ctx.send("**__Error:__** Error creating embed. Please check your parameters.")
 
 
 def build_serverinfo_strings(guild: discord.Guild) -> List[str]:
@@ -171,21 +237,21 @@ def generate_features_list(features: List[str]) -> str:
 
     ic_bullet_point = ":white_check_mark: "
     dict_server_features = {
-        "VIP_REGIONS":              "VIP-Regionen",
-        "VANITY_URL":               "Vanity URL",
-        "INVITE_SPLASH":            "Invite Splash",
-        "VERIFIED":                 "Verifiziert",
-        "PARTNERED":                "Discord-Partner",
-        "MORE_EMOJI":               "Mehr Emojis",
-        "DISCOVERABLE":             "In Server-Browser",
-        "FEATURABLE":               "Featurable",
-        "COMMERCE":                 "Commerce",
-        "PUBLIC":                   "Öffentlich",
-        "NEWS":                     "News-Kanäle",
-        "BANNER":                   "Server-Banner",
-        "ANIMATED_ICON":            "Animiertes Icon",
-        "PUBLIC_DISABLED":          "Public disabled",
-        "WELCOME_SCREEN_ENABLED":   "Begrüßungsbildschirm"
+        "VIP_REGIONS": "VIP-Regionen",
+        "VANITY_URL": "Vanity URL",
+        "INVITE_SPLASH": "Invite Splash",
+        "VERIFIED": "Verifiziert",
+        "PARTNERED": "Discord-Partner",
+        "MORE_EMOJI": "Mehr Emojis",
+        "DISCOVERABLE": "In Server-Browser",
+        "FEATURABLE": "Featurable",
+        "COMMERCE": "Commerce",
+        "PUBLIC": "Öffentlich",
+        "NEWS": "News-Kanäle",
+        "BANNER": "Server-Banner",
+        "ANIMATED_ICON": "Animiertes Icon",
+        "PUBLIC_DISABLED": "Public disabled",
+        "WELCOME_SCREEN_ENABLED": "Begrüßungsbildschirm"
     }
     str_features = ""
 
@@ -193,6 +259,67 @@ def generate_features_list(features: List[str]) -> str:
         str_features += ic_bullet_point + dict_server_features[feature] + "\n"
 
     return str_features
+
+
+def get_text_channel(channel_id: str, guild: discord.Guild) -> discord.TextChannel:
+    """Parses a message id string and searches the text channel in the passed guild
+
+    Args:
+        channel_id (str): The id of the channel (might also be surrounded by '<#' and '>'
+        guild (discord.Guild): The guild in which the channel is searched.
+
+    Returns:
+        discord.Channel: The found channel.
+
+    Raises:
+        ValueError: If the channel could not be found.
+    """
+    try:
+        if channel_id.startswith('<#'):
+            channel_id = channel_id[2:-1]
+        channel = guild.get_channel(int(channel_id))
+    except ValueError:
+        raise ValueError(
+            'Channel to post embed to could not be found. Use valid channel ID or mention (linked with #).')
+
+    if channel is None:
+        raise ValueError(
+            'Channel to post embed to could not be found. Use valid channel ID or mention (linked with #).')
+
+    return channel
+
+
+def is_pastebin_link(json_string: str) -> bool:
+    """Verifies if the string is a link to pastebin.com by checking if it contains 'pastebin.com' and does not contain
+    json specific symbols.
+
+    Args:
+        json_string (str): The string to be checked.
+
+    Returns:
+          bool: True if it is a link to pastebin.com, False if not.
+    """
+    return "pastebin.com" in json_string and not any(x in json_string for x in ("{", "}"))
+
+
+def parse_pastebin_link(url: str) -> str:
+    """Resolves a link to pastebin.com and returns the raw data behind it.
+        This works with links to the original pastebin (pastebin.com/abc) and to raw links (pastebin.com/raw/abc)
+
+        Args:
+            url (str): The pastebin url to resolve.
+
+        Returns:
+            str: The raw data as string behind the link.
+
+        Raises:
+             Error: If the link could not be resolved for any reasons.
+    """
+    # add raw to url if not contained
+    if "raw" not in url:
+        split_index = url.find(".com/")
+        url = url[:(split_index + 5)] + "raw/" + url[(split_index + 5):]
+    return requests.get(url).text
 
 
 def setup(bot):
