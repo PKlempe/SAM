@@ -197,7 +197,7 @@ def _modmail_create_timestamps_list(messages: List[tuple]) -> str:
 
     for message in messages:
         timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f')
-        string += "{0}\n".format(timestamp.strftime('%d.%m.%Y %H:%M'))
+        string += timestamp.strftime('%d.%m.%Y %H:%M') + "\n"
 
     return string
 
@@ -233,7 +233,7 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
         dict_embed["title"] = "Keine offenen Tickets! :tada:"
         dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_CLOSED
         dict_embed["description"] = "Lehn dich zurück und entspanne ein wenig. Momentan gibt es für dich keine " \
-                                    "Tickets welche du abarbeiten könntest. :beers:"
+                                    "Tickets, welche du abarbeiten könntest. :beers:"
     elif status == ModmailStatus.ASSIGNED:
         dict_embed["title"] = "Keine Tickets in Bearbeitung! :eyes:"
         dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_ASSIGNED
