@@ -1,5 +1,6 @@
 """Contains logic for connecting to and manipulating the database."""
 
+import datetime
 from sqlite3 import Error
 from typing import List
 from bot.moderation import ModmailStatus
@@ -34,14 +35,17 @@ class DatabaseConnector:
                     except Error as error:
                         print("Command could not be executed, skipping it: {0}".format(error))
 
-    def add_modmail(self, msg_id: int):
-        """Inserts the message id of a submitted modmail into the database and sets its status to `Open`.
+    def add_modmail(self, msg_id: int, author: str, timestamp: datetime.datetime):
+        """Inserts the username of the author and the message id of a submitted modmail into the database and
+        sets its status to `Open`.
 
         Args:
             msg_id (int): The message id of the modmail which has been submitted.
+            author (str): The username with the discriminator of the author.
+            timestamp (datetime.datetime): A timestamp representing the moment when the message has been submitted.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.INSERT_MODMAIL, (msg_id,))
+            db_manager.execute(queries.INSERT_MODMAIL, (msg_id, author, timestamp))
             db_manager.commit()
 
     def get_modmail_status(self, msg_id: int):
@@ -71,6 +75,23 @@ class DatabaseConnector:
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.CHANGE_MODMAIL_STATUS, (status.value, msg_id))
             db_manager.commit()
+
+    def get_all_modmail_with_status(self, status: ModmailStatus):
+        """Returns the message id of every modmail with the specified status.
+
+        Args:
+            status (ModmailStatus): The status to look out for.
+
+        Returns:
+            Optional[List]: A list of all modmails with the the status specified.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_ALL_MODMAIL_WITH_STATUS, (status.value,))
+
+            rows = result.fetchall()
+            if rows:
+                return rows
+            return None
 
     @staticmethod
     def parse_sql_file(filename: str) -> List[str]:

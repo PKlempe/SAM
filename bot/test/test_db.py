@@ -1,6 +1,7 @@
 """Tests for the database and other persistence classes."""
 
 import os
+import datetime
 from bot import constants
 from bot.moderation import ModmailStatus
 from bot.persistence import DatabaseConnector
@@ -13,7 +14,7 @@ def test_db():
     Passes if the returned value is found (ie. not None) and equal to the original one.
     """
     conn = DatabaseConnector("./test.sqlite", init_script=constants.DB_INIT_SCRIPT)
-    conn.add_modmail(47348382920304934)
+    conn.add_modmail(47348382920304934, "PKlempe#001", datetime.datetime.now())
     res = conn.get_modmail_status(47348382920304934)
 
     os.remove("./test.sqlite")
