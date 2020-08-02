@@ -87,6 +87,7 @@ class UtilitiesCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name='embed')
+    @commands.has_guild_permissions(administrator=True)
     async def embed(self, ctx, channel: str, color: str, *, text: str):
         """Command Handler for the embed command
 
@@ -121,6 +122,7 @@ class UtilitiesCog(commands.Cog):
             return
 
     @commands.command(name='cembed')
+    @commands.has_guild_permissions(administrator=True)
     async def cembed(self, ctx, channel: str, *, json_string: str):
         """Command Handler for the embed command.
 
