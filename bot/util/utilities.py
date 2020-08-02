@@ -94,7 +94,7 @@ class UtilitiesCog(commands.Cog):
     async def embed(self, ctx, channel: str, color: str, *, text: str):
         """Command Handler for the embed command
 
-        Creates and sends an embed in the specified channel with color and title and text. Title and text are separated
+        Creates and sends an embed in the specified channel with color, title and text. The Title and text are separated
         by a '|' character.
 
         Args:
@@ -117,13 +117,12 @@ class UtilitiesCog(commands.Cog):
             description = text
 
         try:
-            col = discord.Color(int('0x' + color, 16))
+            col = int('0x' + color, 16)
+            embed = discord.Embed(title=title, description=description, color=col)
+            await channel_to_post.send(embed=embed)
         except ValueError:
-            await ctx.send("Color could not be parsed. Please use a valid color code.")
+            await ctx.send("**__Error:__** Hex value could not be parsed. Please use a valid color code.")
             return
-
-        embed = discord.Embed(title=title, description=description, color=col)
-        await channel_to_post.send(embed=embed)
 
     @commands.command(name='cembed')
     async def cembed(self, ctx, channel: str, *, json_string: str):
@@ -134,7 +133,7 @@ class UtilitiesCog(commands.Cog):
         Args:
             ctx (Context): The context in which the command was called.
             channel (str): The channel where to post the message. Can be channel name (starting with #) or channel id.
-            json (str): The json string representing the embed. Alternatively it could also be a pastebin link
+            json (str): The json string representing the embed. Alternatively it could also be a pastebin link.
         """
         try:
             channel_to_post = get_text_channel(channel, ctx.guild)
@@ -142,19 +141,18 @@ class UtilitiesCog(commands.Cog):
                 json_string = parse_pastebin_link(json_string)
             embed_dict = json.loads(json_string)
             embed = discord.Embed.from_dict(embed_dict)
-            if len(embed) == 0:
-                await ctx.send(
-                    "No valid fields found in json. Please use at least one of the fields found under https://discord.com/developers/docs/resources/channel#embed-object")
-                return
             await channel_to_post.send(embed=embed)
         except discord.ext.commands.errors.CommandInvokeError:
-            await ctx.send("Could not parse json. Make sure your last argument is valid JSON.")
+            await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
         except discord.errors.HTTPException:
-            await ctx.send("Could not parse json. Make sure your last argument is valid JSON.")
+            await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
+        except discord.DiscordException:
+            await ctx.send(
+                "**__Error:__** Invalid embed. Make sure you have at least title or description set (also for each additional field). You can validate your json at https://leovoel.github.io/embed-visualizer/.")
         except ValueError as error:
             await ctx.send(error)
         except TypeError:
-            await ctx.send("Error creating embed. Please check your parameters.")
+            await ctx.send("**__Error:__** Error creating embed. Please check your parameters.")
 
 
 def build_serverinfo_strings(guild):
@@ -279,17 +277,19 @@ def get_text_channel(channel_id: str, guild: discord.Guild) -> discord.TextChann
         discord.Channel: The found channel.
 
     Raises:
-        ValueError: If the chanel could not be found.
+        ValueError: If the channel could not be found.
     """
     try:
         if channel_id.startswith('<#'):
             channel_id = channel_id[2:-1]
         channel = guild.get_channel(int(channel_id))
     except ValueError:
-        raise ValueError('Channel to post embed to could not be found. Use channel ID or channel name (linked #)')
+        raise ValueError(
+            'Channel to post embed to could not be found. Use valid channel ID or mention (linked with #).')
 
     if channel is None:
-        raise ValueError('Channel to post embed to could not be found. Use channel ID or channel name (linked #)')
+        raise ValueError(
+            'Channel to post embed to could not be found. Use valid channel ID or mention (linked with #).')
 
     return channel
 
@@ -304,7 +304,8 @@ def is_pastebin_link(json_string: str) -> bool:
     Returns:
           bool: True if it is a link to pastebin.com, False if not.
     """
-    return "pastebin.com" in json_string and '{' not in json_string and '}' not in json_string
+    return "pastebin.com" in json_string and not any(x in json_string for x in ("{", "}"))
+
 
 def parse_pastebin_link(url: str) -> str:
     """Resolves a link to pastebin.com and returns the raw data behind it.
@@ -319,10 +320,10 @@ def parse_pastebin_link(url: str) -> str:
         Raises:
              Error: If the link could not be resolved for any reasons.
     """
-    #add raw to url if not contained
+    # add raw to url if not contained
     if "raw" not in url:
         split_index = url.find(".com/")
-        url = url[:(split_index+5)] + "raw/" + url[(split_index+5):]
+        url = url[:(split_index + 5)] + "raw/" + url[(split_index + 5):]
     return requests.get(url).text
 
 
