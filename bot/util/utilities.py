@@ -159,8 +159,8 @@ class UtilitiesCog(commands.Cog):
 
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
-            channel (Optional[str]): The channel to post the embed to.
-            text (str): The text to be echoed (might begin with the channel mention)
+            channel (Optional[str]): The channel where the message will be posted in.
+            text (str): The text to be echoed
         """
         await (channel or ctx).send(text)
 
