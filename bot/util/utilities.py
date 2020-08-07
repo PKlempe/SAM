@@ -1,11 +1,14 @@
 """Contains a Cog for all utility funcionality."""
 
 import json
+import typing
 from datetime import datetime
 from typing import List
+
 import discord
 import requests
 from discord.ext import commands
+
 from bot import constants
 
 
@@ -151,6 +154,18 @@ class UtilitiesCog(commands.Cog):
             await ctx.send(error)
         except TypeError:
             await ctx.send("**__Error:__** Error creating embed. Please check your parameters.")
+
+    @commands.command(name="echo")
+    async def echo(self, ctx, channel: typing.Optional[discord.TextChannel], *, text: str):
+        """Lets the bot post a simple message to the mentioned channel (or the current channel if none is mentioned).
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            channel (Optional[str]): The channel where the message will be posted in.
+            text (str): The text to be echoed
+        """
+        await (channel or ctx).send(text)
+
 
 
 def build_serverinfo_strings(guild: discord.Guild) -> List[str]:
