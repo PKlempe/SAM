@@ -2,11 +2,14 @@
 
 from datetime import datetime
 from typing import List
-from discord.ext import commands
+
 import discord
-from bot.persistence import DatabaseConnector
-from bot.moderation import ModmailStatus
+from discord.ext import commands
+
 from bot import constants
+from bot.logger import command_log
+from bot.moderation import ModmailStatus
+from bot.persistence import DatabaseConnector
 
 
 class ModerationCog(commands.Cog):
@@ -22,6 +25,7 @@ class ModerationCog(commands.Cog):
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
     @commands.group()
+    @command_log
     async def modmail(self, ctx: discord.ext.commands.Context):
         """Command Handler for the `modmail` command.
 
@@ -61,6 +65,7 @@ class ModerationCog(commands.Cog):
 
     @modmail.command(name='get')
     @commands.has_role(constants.ROLE_ID_MODERATOR)
+    @command_log
     async def get_modmail_with_status(self, ctx: discord.ext.commands.Context, *, status: str):
         """Command Handler for the modmail subcommand `get`.
 
@@ -86,6 +91,7 @@ class ModerationCog(commands.Cog):
                                        .format(status.title()))
 
     @commands.Cog.listener(name='on_raw_reaction_add')
+    @command_log
     async def modmail_reaction_add(self, payload: discord.RawReactionActionEvent):
         """Event listener which triggers if a reaction has been added by a user.
 
@@ -105,6 +111,7 @@ class ModerationCog(commands.Cog):
                 await modmail.edit(embed=new_embed)
 
     @commands.Cog.listener(name='on_raw_reaction_remove')
+    @command_log
     async def modmail_reaction_remove(self, payload: discord.RawReactionActionEvent):
         """Event listener which triggers if a reaction has been removed.
 

@@ -3,10 +3,13 @@
 import json
 from datetime import datetime
 from typing import List
+
 import discord
 import requests
 from discord.ext import commands
+
 from bot import constants
+from bot.logger import command_log
 
 
 class UtilitiesCog(commands.Cog):
@@ -21,6 +24,7 @@ class UtilitiesCog(commands.Cog):
         self.bot = bot
 
     @commands.command(name='ping')
+    @command_log
     async def ping(self, ctx: discord.ext.commands.Context):
         """Command Handler for the `ping` command.
 
@@ -34,6 +38,7 @@ class UtilitiesCog(commands.Cog):
         await ctx.send(":ping_pong: **Pong!** - {0} ms".format(latency))
 
     @commands.command(name='serverinfo')
+    @command_log
     async def server_info(self, ctx: discord.ext.commands.Context):
         """Command Handler for the `serverinfo` command.
 
@@ -58,6 +63,7 @@ class UtilitiesCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name='about')
+    @command_log
     async def about(self, ctx: discord.ext.commands.Context):
         """Command Handler for the `about` command.
 
@@ -88,6 +94,7 @@ class UtilitiesCog(commands.Cog):
 
     @commands.command(name='embed')
     @commands.has_guild_permissions(administrator=True)
+    @command_log
     async def embed(self, ctx, channel: str, color: str, *, text: str):
         """Command Handler for the embed command
 
@@ -123,6 +130,7 @@ class UtilitiesCog(commands.Cog):
 
     @commands.command(name='cembed')
     @commands.has_guild_permissions(administrator=True)
+    @command_log
     async def cembed(self, ctx, channel: str, *, json_string: str):
         """Command Handler for the embed command.
 
@@ -131,7 +139,7 @@ class UtilitiesCog(commands.Cog):
         Args:
             ctx (Context): The context in which the command was called.
             channel (str): The channel where to post the message. Can be channel name (starting with #) or channel id.
-            json (str): The json string representing the embed. Alternatively it could also be a pastebin link.
+            json_string (str): The json string representing the embed. Alternatively it could also be a pastebin link.
         """
         try:
             channel_to_post = get_text_channel(channel, ctx.guild)

@@ -1,6 +1,7 @@
 """File which contains constants used for this bot."""
 
 import os
+
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
@@ -42,3 +43,5 @@ EMOJI_MODMAIL_ASSIGN = "\U0001F4DD"
 DB_FILE_PATH = os.getenv("DB_FILE_PATH")
 ## Absolute path to the init script.
 DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
+LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
+URL_HTTP_CAT = "https://http.cat"
