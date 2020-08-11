@@ -2,7 +2,7 @@
 
 import datetime
 from sqlite3 import Error
-from typing import List
+from typing import List, Optional
 from bot.moderation import ModmailStatus
 from bot.persistence import queries
 from .database_manager import DatabaseManager
@@ -48,7 +48,7 @@ class DatabaseConnector:
             db_manager.execute(queries.INSERT_MODMAIL, (msg_id, author, timestamp))
             db_manager.commit()
 
-    def get_modmail_status(self, msg_id: int):
+    def get_modmail_status(self, msg_id: int) -> Optional[ModmailStatus]:
         """Returns the current status of a modmail associated with the message id given.
 
         Args:
@@ -76,14 +76,14 @@ class DatabaseConnector:
             db_manager.execute(queries.CHANGE_MODMAIL_STATUS, (status.value, msg_id))
             db_manager.commit()
 
-    def get_all_modmail_with_status(self, status: ModmailStatus):
+    def get_all_modmail_with_status(self, status: ModmailStatus) -> Optional[List[tuple]]:
         """Returns the message id of every modmail with the specified status.
 
         Args:
             status (ModmailStatus): The status to look out for.
 
         Returns:
-            Optional[List]: A list of all modmails with the the status specified.
+            Optional[List[tuple]]: A list of all modmails with the the status specified.
         """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(queries.GET_ALL_MODMAIL_WITH_STATUS, (status.value,))

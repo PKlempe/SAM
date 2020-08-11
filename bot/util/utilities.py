@@ -24,7 +24,7 @@ class UtilitiesCog(commands.Cog):
         self.bot = bot
 
     @commands.command(name='ping')
-    async def ping(self, ctx: discord.ext.commands.Context):
+    async def ping(self, ctx: commands.Context):
         """Command Handler for the `ping` command.
 
         Posts a message containing 'Pong!', as well as the measured latency to the Discord server in milliseconds, in
@@ -37,7 +37,7 @@ class UtilitiesCog(commands.Cog):
         await ctx.send(":ping_pong: **Pong!** - {0} ms".format(latency))
 
     @commands.command(name='serverinfo')
-    async def server_info(self, ctx: discord.ext.commands.Context):
+    async def server_info(self, ctx: commands.Context):
         """Command Handler for the `serverinfo` command.
 
         Posts an embedded message (Embed) containing a variety of stats and information regarding the server owner,
@@ -61,7 +61,7 @@ class UtilitiesCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name='about')
-    async def about(self, ctx: discord.ext.commands.Context):
+    async def about(self, ctx: commands.Context):
         """Command Handler for the `about` command.
 
         Posts an embedded message (Embed) containing some information about this bot and useful links regarding the
@@ -134,7 +134,7 @@ class UtilitiesCog(commands.Cog):
         Args:
             ctx (Context): The context in which the command was called.
             channel (str): The channel where to post the message. Can be channel name (starting with #) or channel id.
-            json (str): The json string representing the embed. Alternatively it could also be a pastebin link.
+            json_string (str): The json string representing the embed. Alternatively it could also be a pastebin link.
         """
         try:
             channel_to_post = get_text_channel(channel, ctx.guild)
@@ -143,7 +143,7 @@ class UtilitiesCog(commands.Cog):
             embed_dict = json.loads(json_string)
             embed = discord.Embed.from_dict(embed_dict)
             await channel_to_post.send(embed=embed)
-        except discord.ext.commands.errors.CommandInvokeError:
+        except commands.errors.CommandInvokeError:
             await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
         except discord.errors.HTTPException:
             await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")

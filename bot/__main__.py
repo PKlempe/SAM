@@ -4,8 +4,9 @@ from discord.ext import commands
 from bot import constants
 
 bot = commands.Bot(command_prefix=constants.BOT_PREFIX)
-initial_extensions = ['bot.util.utilities',
-                      'bot.moderation.moderation']
+initial_extensions = ['bot.moderation.moderation',
+                      'bot.university.university',
+                      'bot.util.utilities']
 
 
 @bot.event
