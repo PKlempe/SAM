@@ -13,7 +13,7 @@ from bot import constants
 
 
 class UniversityCog(commands.Cog):
-    """Cog for Functions regarding our university."""
+    """Cog for Functions regarding the IT faculty or the University of Vienna as a whole."""
 
     def __init__(self, bot):
         """Initializes the Cog.
@@ -88,7 +88,7 @@ class UniversityCog(commands.Cog):
         """
         if isinstance(error.original, ValueError):
             await ctx.send("Ich konnte leider niemanden unter dem von dir angegeben Namen finden. :slight_frown: "
-                           "Möglicherweise hast du dich verschrieben.")
+                           "Möglicherweise hast du dich vertippt.")
         else:
             raise error
 
@@ -117,11 +117,11 @@ class UniversityCog(commands.Cog):
         for i in range(len(embed.fields)):
             await message.add_reaction(list_selection_emojis[i])
 
-        def check(_reaction, user):
+        def check_reaction(_reaction, user):
             return user == author and SelectionEmoji(_reaction.emoji) is not None
 
         await message.delete(delay=timeout)
-        reaction = await self.bot.wait_for('reaction_add', timeout=timeout + 0.1, check=check)
+        reaction = await self.bot.wait_for('reaction_add', timeout=timeout + 0.1, check=check_reaction)
         await message.delete()
 
         return list_selection_emojis.index(reaction[0].emoji)

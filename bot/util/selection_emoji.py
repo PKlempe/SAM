@@ -4,7 +4,10 @@ from enum import Enum
 
 
 class SelectionEmoji(Enum):
-    """An Enum class representing all the different emojis used for selection embeds."""
+    """An Enum class representing all the different emojis used for selection embeds.
+
+    These are all number emojis ranging from 1 to 10.
+    """
     ONE = "\U00000031\U0000FE0F\U000020E3"
     TWO = "\U00000032\U0000FE0F\U000020E3"
     THREE = "\U00000033\U0000FE0F\U000020E3"
