@@ -3,6 +3,7 @@ It also provides the decorator for logging command calls.
 """
 import functools
 import logging
+from logging.handlers import RotatingFileHandler
 
 import discord
 
@@ -11,7 +12,7 @@ from bot import constants
 # configure logger for bot
 log = logging.getLogger("bot")
 log.setLevel(logging.INFO)
-file_handler = logging.FileHandler(filename=constants.LOG_FILE_PATH, encoding='utf-8', mode='w')
+file_handler = RotatingFileHandler(filename=constants.LOG_FILE_PATH, encoding='utf-8', mode='a', maxBytes=10*1024*1024)
 file_handler.setFormatter(logging.Formatter('%(levelname)s %(asctime)s: %(message)s'))
 log.addHandler(file_handler)
 stream_handler = logging.StreamHandler()
@@ -22,11 +23,11 @@ log.addHandler(stream_handler)
 # add discord to logging (file and console)
 discord_logger = logging.getLogger('discord')
 discord_logger.setLevel(logging.WARNING)
-discord_logging_file_handler = logging.FileHandler(filename=constants.LOG_FILE_PATH, encoding='utf-8', mode='w')
-discord_logging_file_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+discord_logging_file_handler = RotatingFileHandler(filename=constants.LOG_FILE_PATH, encoding='utf-8', mode='a', maxBytes=10*1024*1024)
+discord_logging_file_handler.setFormatter(logging.Formatter('%(levelname)s %(asctime)s: %(name)s: %(message)s'))
 discord_logger.addHandler(discord_logging_file_handler)
 discord_logging_stream_handler = logging.StreamHandler()
-discord_logging_stream_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+discord_logging_stream_handler.setFormatter(logging.Formatter('%(levelname)s %(asctime)s: %(name)s:  %(message)s'))
 discord_logger.addHandler(discord_logging_stream_handler)
 
 
@@ -53,8 +54,11 @@ def command_log(func):
     async def wrapper(*args, **kwargs):
         ctx = args[1]
         user = ctx.author
+
+        full_command_name = str(ctx.command) + str(ctx.invoked_subcommand or "")
+
         channelname = 'direct message' if isinstance(ctx.channel, discord.DMChannel) else ctx.channel.name
-        log.info("Command %s called by %s in channel %s ", func.__name__, user, channelname)
+        log.info("Command %s called by %s in channel %s ", full_command_name, user, channelname)
         await func(*args, **kwargs)
 
     return wrapper
