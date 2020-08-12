@@ -91,7 +91,6 @@ class ModerationCog(commands.Cog):
                                        .format(status.title()))
 
     @commands.Cog.listener(name='on_raw_reaction_add')
-    @command_log
     async def modmail_reaction_add(self, payload: discord.RawReactionActionEvent):
         """Event listener which triggers if a reaction has been added by a user.
 
@@ -111,7 +110,6 @@ class ModerationCog(commands.Cog):
                 await modmail.edit(embed=new_embed)
 
     @commands.Cog.listener(name='on_raw_reaction_remove')
-    @command_log
     async def modmail_reaction_remove(self, payload: discord.RawReactionActionEvent):
         """Event listener which triggers if a reaction has been removed.
 
