@@ -63,7 +63,6 @@ def command_log(func):
         command = ctx.command
         if is_deepest_subcommand(command, msg):
             user = ctx.author
-            # full_command_name = f"{' '.join([c.name for c in command.parents][::-1])} {command.name}"
             full_command_name = str(ctx.command)
             channelname = 'direct message' if isinstance(ctx.channel, discord.DMChannel) else ctx.channel.name
             log.info("Command %s called by %s in channel %s ", full_command_name, user, channelname)
