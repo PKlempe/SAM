@@ -64,7 +64,7 @@ class ModerationCog(commands.Cog):
             await ctx.author.send("Deine Nachricht wurde erfolgreich an die Moderatoren weitergeleitet!\n"
                                   "__Hier deine Bestätigung:__", embed=embed_confirmation)
 
-    @modmail.command(name='get')
+    @modmail.command(name='get', hidden=True)
     @commands.has_role(constants.ROLE_ID_MODERATOR)
     @command_log
     async def get_modmail_with_status(self, ctx: commands.Context, *, status: str):

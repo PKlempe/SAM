@@ -11,7 +11,8 @@ from bot import constants
 from bot.logger import log
 
 bot = commands.Bot(command_prefix=constants.BOT_PREFIX)
-initial_extensions = ['bot.moderation.moderation',
+initial_extensions = ['bot.admin.admin',
+                      'bot.moderation.moderation',
                       'bot.university.university',
                       'bot.util.utilities']
 
