@@ -1,15 +1,18 @@
 """Contains a Cog for all functionality regarding our University."""
 
-import xml.etree.ElementTree as ET
 import re
-from typing import Dict, List, Optional, Union
+import xml.etree.ElementTree as ET
 from datetime import datetime
-import requests
+from typing import Dict, List, Optional, Union
+
 import discord
+import requests
 from discord.ext import commands
-from bot.util import SelectionEmoji
-from bot.persistence import DatabaseConnector
+
 from bot import constants
+from bot.logger import command_log
+from bot.persistence import DatabaseConnector
+from bot.util import SelectionEmoji
 
 
 class UniversityCog(commands.Cog):
@@ -25,6 +28,7 @@ class UniversityCog(commands.Cog):
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
     @commands.group(name="ufind")
+    @command_log
     async def ufind(self, ctx: commands.Context):
         """Command Handler for the `ufind` command.
 
@@ -39,6 +43,7 @@ class UniversityCog(commands.Cog):
             await ctx.send_help(ctx.command)
 
     @ufind.command(name='staff')
+    @command_log
     async def ufind_get_staff_data(self, ctx: commands.Context, *, search_term: str):
         """Command Handler for the `ufind` subcommand `staff`.
 
@@ -76,6 +81,7 @@ class UniversityCog(commands.Cog):
             response.raise_for_status()
 
     @ufind_get_staff_data.error
+    @command_log
     async def ufind_error(self, ctx, error: commands.CommandError):
         """Error Handler for the `ufind` subcommand `staff`.
 
@@ -86,7 +92,7 @@ class UniversityCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             error (commands.CommandError): The error raised during the execution of the command.
         """
-        if isinstance(error.original, ValueError):
+        if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
             await ctx.send("Ich konnte leider niemanden unter dem von dir angegeben Namen finden. :slight_frown: "
                            "Möglicherweise hast du dich vertippt.")
         else:
@@ -280,7 +286,7 @@ def _create_staff_embed_weblinks(staff_id: Optional[str], homepage: Optional[str
     if homepage is not None:
         str_weblinks += "- [Homepage]({0})\n".format(homepage)
     if ucris is not None:
-        embed_friendly_link = ucris.replace("(", "%28").replace(")", "%29")         # URL Encoding
+        embed_friendly_link = ucris.replace("(", "%28").replace(")", "%29")  # URL Encoding
         str_weblinks += "- [Publikationen]({0})\n".format(embed_friendly_link)
 
     return str_weblinks
