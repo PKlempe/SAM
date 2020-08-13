@@ -74,11 +74,13 @@ class UtilitiesCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
+        contributor = await commands.MemberConverter().convert(ctx, str(constants.USER_ID_CONTRIBUTOR))
+
         description = "**__SAM__** ist ein multi-funktionaler Discord-Bot, welcher speziell für den Server der " \
                       "Informatik-Fakultät der Universität Wien entwickelt wurde. Sein Ziel ist es unterschiedlichste" \
                       " hilfreiche Aufgaben zu erledigen und den Moderatoren das Leben ein wenig zu erleichtern."
         str_special_thanks = "Großen Dank an **{0}**, der mich bei der Entwicklung dieses Bots tatkräftig " \
-                             "unterstützt hat.".format(self.bot.get_user(constants.USER_ID_CONTRIBUTOR))
+                             "unterstützt hat.".format(contributor)
         str_links = "- [Bot-Wiki](https://github.com/PKlempe/SAM/wiki)\n" \
                     "- [GitHub-Repo](https://github.com/PKlempe/SAM)\n" \
                     "- [Entwickler](https://github.com/PKlempe)\n" \
@@ -96,7 +98,7 @@ class UtilitiesCog(commands.Cog):
     @commands.command(name='embed')
     @commands.has_guild_permissions(administrator=True)
     @command_log
-    async def embed(self, ctx: commands.Context, channel: str, color: str, *, text: str):
+    async def embed(self, ctx: commands.Context, channel: discord.TextChannel, color: discord.Colour, *, text: str):
         """Command Handler for the embed command
 
         Creates and sends an embed in the specified channel with color, title and text. The Title and text are separated
@@ -109,30 +111,19 @@ class UtilitiesCog(commands.Cog):
             text (str): The text to be posted in the embed. The string contains title and content, which are separated
                         by a '|' character. If this character is not found, no title will be assumed.
         """
-        try:
-            channel_to_post = get_text_channel(channel, ctx.guild)
-        except ValueError as error:
-            await ctx.send(error)
-            return
-
         if '|' in text:
             title, description = text.split('|')
         else:
             title = ''
             description = text
 
-        try:
-            col = int('0x' + color, 16)
-            embed = discord.Embed(title=title, description=description, color=col)
-            await channel_to_post.send(embed=embed)
-        except ValueError:
-            await ctx.send("**__Error:__** Hex value could not be parsed. Please use a valid color code.")
-            return
+        embed = discord.Embed(title=title, description=description, color=color)
+        await channel.send(embed=embed)
 
     @commands.command(name='cembed')
     @commands.has_guild_permissions(administrator=True)
     @command_log
-    async def cembed(self, ctx: commands.Context, channel: str, *, json_string: str):
+    async def cembed(self, ctx: commands.Context, channel: discord.TextChannel, *, json_string: str):
         """Command Handler for the embed command.
 
         Creates and sends an embed in the specified channel parsed from json.
@@ -143,12 +134,11 @@ class UtilitiesCog(commands.Cog):
             json_string (str): The json string representing the embed. Alternatively it could also be a pastebin link.
         """
         try:
-            channel_to_post = get_text_channel(channel, ctx.guild)
             if is_pastebin_link(json_string):
                 json_string = parse_pastebin_link(json_string)
             embed_dict = json.loads(json_string)
             embed = discord.Embed.from_dict(embed_dict)
-            await channel_to_post.send(embed=embed)
+            await channel.send(embed=embed)
         except commands.errors.CommandInvokeError:
             await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
         except discord.errors.HTTPException:
@@ -176,7 +166,7 @@ class UtilitiesCog(commands.Cog):
 
     @commands.group(name="bot")
     @commands.has_guild_permissions(administrator=True)
-    async def bot_cmd(self, ctx: commands.Context):
+    async def cmd_for_bot_stuff(self, ctx: commands.Context):
         """Command handler for the `bot` command.
 
         This is a command group regarding everything directly bot related. It provides a variety of subcommands for
@@ -190,7 +180,7 @@ class UtilitiesCog(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
-    @bot_cmd.group(name="presence")
+    @cmd_for_bot_stuff.group(name="presence")
     async def change_discord_presence(self, ctx: commands.Context):
         """Command handler for the `bot` subcommand `presence`.
 
@@ -387,7 +377,7 @@ def generate_features_list(features: List[str]) -> str:
         "MORE_EMOJI": "Mehr Emojis",
         "DISCOVERABLE": "In Server-Browser",
         "FEATURABLE": "Featurable",
-        "COMMERCE": "Commerce",
+        "COMMERCE": "Kommerziell",
         "PUBLIC": "Öffentlich",
         "NEWS": "News-Kanäle",
         "BANNER": "Server-Banner",
@@ -401,34 +391,6 @@ def generate_features_list(features: List[str]) -> str:
         str_features += ic_bullet_point + dict_server_features[feature] + "\n"
 
     return str_features
-
-
-def get_text_channel(channel_id: str, guild: discord.Guild) -> discord.TextChannel:
-    """Parses a message id string and searches the text channel in the passed guild
-
-    Args:
-        channel_id (str): The id of the channel (might also be surrounded by '<#' and '>'
-        guild (discord.Guild): The guild in which the channel is searched.
-
-    Returns:
-        discord.Channel: The found channel.
-
-    Raises:
-        ValueError: If the channel could not be found.
-    """
-    try:
-        if channel_id.startswith('<#'):
-            channel_id = channel_id[2:-1]
-        channel = guild.get_channel(int(channel_id))
-    except ValueError:
-        raise ValueError(
-            'Channel to post embed to could not be found. Use valid channel ID or mention (linked with #).')
-
-    if channel is None:
-        raise ValueError(
-            'Channel to post embed to could not be found. Use valid channel ID or mention (linked with #).')
-
-    return channel
 
 
 def is_pastebin_link(json_string: str) -> bool:
