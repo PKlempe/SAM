@@ -183,8 +183,8 @@ def _modmail_create_hyperlinks_list(messages: List[tuple]) -> str:
     string = ""
 
     for message in messages:
-        string += "- [{0[1]}](" + constants.URL_DISCORD + "/channels/{1}/{2}/{0[0]})\n" \
-            .format(message, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
+        string += "- [{0[1]}]({1}/channels/{2}/{3}/{0[0]})\n" \
+            .format(message, constants.URL_DISCORD, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
 
     return string
 
