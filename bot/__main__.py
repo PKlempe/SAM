@@ -56,6 +56,8 @@ async def on_command_error(ctx, exception):
         embed = discord.Embed(title="HTTP Error: {0}".format(status_code), description=reason,
                               image=constants.URL_HTTP_CAT + "/{0}.jpg".format(status_code))
         await ctx.channel.send(content="Oh, oh. Anscheinend gibt es momentan ein Verbindungsproblem:", embed=embed)
+    elif isinstance(exception, discord.errors.InvalidArgument):
+        await ctx.send_help(ctx.command)
 
 
 if __name__ == '__main__':
