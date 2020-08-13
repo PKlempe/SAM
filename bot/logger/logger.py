@@ -75,15 +75,16 @@ def command_log(func):
 def is_deepest_subcommand(command: Command, msg: str) -> bool:
     """Checks whether the passed command is the deepest subcommand called in the message.
 
-        Args:
-            command (Command): The command containing to be reviewed.
-            msg (str): The message where the command was sent in.
+    Args:
+        command (Command): The command containing to be reviewed.
+        msg (str): The message where the command was sent in.
 
-        Returns:
-            bool: true if it is the deepest command, false if there is yet uncalled deeper subcommand.
+    Returns:
+        bool: true if it is the deepest command, false if there is yet uncalled deeper subcommand.
     """
     # remove prefix and make all lowercase
-    msg = msg[1::].lower()
+    prefix_length = len(constants.BOT_PREFIX)
+    msg = msg[prefix_length::].lower()
     # can only not be deepest if it is a group
     if isinstance(command, Group):
         sub_commands = command.commands
