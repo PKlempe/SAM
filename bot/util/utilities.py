@@ -3,7 +3,7 @@
 import json
 import typing
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import discord
 import requests
@@ -91,7 +91,7 @@ class UtilitiesCog(commands.Cog):
 
     @commands.command(name='embed')
     @commands.has_guild_permissions(administrator=True)
-    async def embed(self, ctx, channel: str, color: str, *, text: str):
+    async def embed(self, ctx: commands.Context, channel: str, color: str, *, text: str):
         """Command Handler for the embed command
 
         Creates and sends an embed in the specified channel with color, title and text. The Title and text are separated
@@ -126,7 +126,7 @@ class UtilitiesCog(commands.Cog):
 
     @commands.command(name='cembed')
     @commands.has_guild_permissions(administrator=True)
-    async def cembed(self, ctx, channel: str, *, json_string: str):
+    async def cembed(self, ctx: commands.Context, channel: str, *, json_string: str):
         """Command Handler for the embed command.
 
         Creates and sends an embed in the specified channel parsed from json.
@@ -148,24 +148,144 @@ class UtilitiesCog(commands.Cog):
         except discord.errors.HTTPException:
             await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
         except discord.DiscordException:
-            await ctx.send(
-                "**__Error:__** Invalid embed. Make sure you have at least title or description set (also for each additional field). You can validate your json at https://leovoel.github.io/embed-visualizer/.")
+            await ctx.send("**__Error:__** Invalid embed. Make sure you have at least title or description set (also "
+                           "for each additional field). You can validate your json at "
+                           "https://leovoel.github.io/embed-visualizer/.")
         except ValueError as error:
             await ctx.send(error)
         except TypeError:
             await ctx.send("**__Error:__** Error creating embed. Please check your parameters.")
 
     @commands.command(name="echo")
-    async def echo(self, ctx, channel: typing.Optional[discord.TextChannel], *, text: str):
+    async def echo(self, ctx: commands.Context, channel: typing.Optional[discord.TextChannel], *, text: str):
         """Lets the bot post a simple message to the mentioned channel (or the current channel if none is mentioned).
 
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
             channel (Optional[str]): The channel where the message will be posted in.
-            text (str): The text to be echoed
+            text (str): The text to be echoed.
         """
         await (channel or ctx).send(text)
 
+    @commands.group(name="bot")
+    @commands.has_guild_permissions(administrator=True)
+    async def bot_cmd(self, ctx: commands.Context):
+        """Command handler for the `bot` command.
+
+        This is a command group regarding everything directly bot related. It provides a variety of subcommands for
+        special tasks like rebooting the bot or changing its Discord presence. For every single subcommand administrator
+        permissions are needed. If no subcommand has been provided, the corresponding help message will be posted
+        instead.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+        """
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @bot_cmd.group(name="presence")
+    async def change_discord_presence(self, ctx: commands.Context):
+        """Command handler for the `bot` subcommand `presence`.
+
+        This is a command group for changing the bots Discord presence. For every user-settable activity type there is
+        a corresponding subcommand. Each of these subcommands takes two arguments (Discord status, activity name),
+        except for `streaming` which takes an additional argument named "stream_url". For removing the currently set
+        activity and reset the bots Discord presence, simply use the `clear` subcommand.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+        """
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @change_discord_presence.command(name="watching")
+    async def change_discord_presence_watching(self, ctx: commands.Context,
+                                               status: Optional[discord.Status] = discord.Status.online,
+                                               *, activity_name: str):
+        """Command handler for the `presence` subcommand `watching`.
+
+        This is a command that changes the bots Discord presence to a watching activity with the specified name. The
+        Discord status can also be set via the optional status argument.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            status (Optional[discord.Status]): The status which should be displayed.
+            activity_name (str): The name of the activity shown.
+        """
+        activity = discord.Activity(type=discord.ActivityType.watching, name=activity_name)
+        await self.bot.change_presence(activity=activity, status=status)
+
+    @change_discord_presence.command(name="listening")
+    async def change_discord_presence_listening(self, ctx: commands.Context,
+                                                status: Optional[discord.Status] = discord.Status.online,
+                                                *, activity_name: str):
+        """Command handler for the `presence` subcommand `listening`.
+
+        This is a command that changes the bots Discord presence to a listening activity with the specified name. The
+        Discord status can also be set via the optional status argument.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            status (Optional[discord.Status]): The status which should be displayed.
+            activity_name (str): The name of the activity shown.
+        """
+        activity = discord.Activity(type=discord.ActivityType.listening, name=activity_name)
+        await self.bot.change_presence(activity=activity, status=status)
+
+    @change_discord_presence.command(name="playing")
+    async def change_discord_presence_playing(self, ctx: commands.Context,
+                                              status: Optional[discord.Status] = discord.Status.online,
+                                              *, activity_name: str):
+        """Command handler for the `presence` subcommand `playing`.
+
+        This is a command that changes the bots Discord presence to a playing activity with the specified name. The
+        Discord status can also be set via the optional status argument.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            status (Optional[discord.Status]): The status which should be displayed.
+            activity_name (str): The name of the activity shown.
+        """
+        activity = discord.Game(name=activity_name)
+        await self.bot.change_presence(activity=activity, status=status)
+
+    @change_discord_presence.command(name="streaming")
+    async def change_discord_presence_streaming(self, ctx: commands.Context, stream_url: str,
+                                                status: Optional[discord.Status] = discord.Status.online,
+                                                *, activity_name: str):
+        """Command handler for the `presence` subcommand `streaming`.
+
+        This is a command that changes the bots Discord presence to a streaming activity with the specified name and
+        stream URL. The Discord status can also be set via the optional status argument.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            stream_url (str): The URL of the stream. (The watch button will redirect to this link if clicked)
+            status (Optional[discord.Status]): The status which should be displayed.
+            activity_name (str): The name of the activity shown.
+        """
+        # Everything other than Twitch probably won't work because of a clientside bug in Discord.
+        # More info here: https://github.com/Rapptz/discord.py/issues/5118
+        activity = discord.Streaming(name=activity_name, url=stream_url)
+        if "twitch" in stream_url:
+            activity.platform = "Twitch"
+        elif "youtube" in stream_url:
+            activity.platform = "YouTube"
+        else:
+            activity.platform = None
+
+        await self.bot.change_presence(activity=activity, status=status)
+
+    @change_discord_presence.command(name="clear")
+    async def change_discord_presence_clear(self, ctx: commands.Context):
+        """Command handler for the `presence` subcommand `clear`.
+
+        This is a command that clears the currently set activity and sets the Discord status to "Online".
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+        """
+        await self.bot.change_presence(activity=None)
 
 
 def build_serverinfo_strings(guild: discord.Guild) -> List[str]:
