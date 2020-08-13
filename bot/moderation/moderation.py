@@ -26,7 +26,8 @@ class ModerationCog(commands.Cog):
 
     @commands.group()
     @command_log
-    async def modmail(self, ctx: discord.ext.commands.Context):
+    async def modmail(self, ctx: commands.Context):
+
         """Command Handler for the `modmail` command.
 
         Allows users to write a message to all the moderators of the server. The message is going to be posted in a
@@ -66,7 +67,7 @@ class ModerationCog(commands.Cog):
     @modmail.command(name='get')
     @commands.has_role(constants.ROLE_ID_MODERATOR)
     @command_log
-    async def get_modmail_with_status(self, ctx: discord.ext.commands.Context, *, status: str):
+    async def get_modmail_with_status(self, ctx: commands.Context, *, status: str):
         """Command Handler for the modmail subcommand `get`.
 
         Allows moderators to generate an embeded message (Embed) in the modmail channel which contains a list of all
@@ -182,7 +183,7 @@ def _modmail_create_hyperlinks_list(messages: List[tuple]) -> str:
     string = ""
 
     for message in messages:
-        string += "- [{0[1]}](https://discordapp.com/channels/{1}/{2}/{0[0]})\n" \
+        string += "- [{0[1]}](" + constants.URL_DISCORD + "/channels/{1}/{2}/{0[0]})\n" \
             .format(message, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
 
     return string

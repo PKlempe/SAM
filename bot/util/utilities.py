@@ -1,6 +1,7 @@
 """Contains a Cog for all utility funcionality."""
 
 import json
+import typing
 from datetime import datetime
 from typing import List
 
@@ -25,7 +26,7 @@ class UtilitiesCog(commands.Cog):
 
     @commands.command(name='ping')
     @command_log
-    async def ping(self, ctx: discord.ext.commands.Context):
+    async def ping(self, ctx: commands.Context):
         """Command Handler for the `ping` command.
 
         Posts a message containing 'Pong!', as well as the measured latency to the Discord server in milliseconds, in
@@ -39,7 +40,7 @@ class UtilitiesCog(commands.Cog):
 
     @commands.command(name='serverinfo')
     @command_log
-    async def server_info(self, ctx: discord.ext.commands.Context):
+    async def server_info(self, ctx: commands.Context):
         """Command Handler for the `serverinfo` command.
 
         Posts an embedded message (Embed) containing a variety of stats and information regarding the server owner,
@@ -64,7 +65,7 @@ class UtilitiesCog(commands.Cog):
 
     @commands.command(name='about')
     @command_log
-    async def about(self, ctx: discord.ext.commands.Context):
+    async def about(self, ctx: commands.Context):
         """Command Handler for the `about` command.
 
         Posts an embedded message (Embed) containing some information about this bot and useful links regarding the
@@ -148,7 +149,7 @@ class UtilitiesCog(commands.Cog):
             embed_dict = json.loads(json_string)
             embed = discord.Embed.from_dict(embed_dict)
             await channel_to_post.send(embed=embed)
-        except discord.ext.commands.errors.CommandInvokeError:
+        except commands.errors.CommandInvokeError:
             await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
         except discord.errors.HTTPException:
             await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
@@ -159,6 +160,18 @@ class UtilitiesCog(commands.Cog):
             await ctx.send(error)
         except TypeError:
             await ctx.send("**__Error:__** Error creating embed. Please check your parameters.")
+
+    @commands.command(name="echo")
+    async def echo(self, ctx, channel: typing.Optional[discord.TextChannel], *, text: str):
+        """Lets the bot post a simple message to the mentioned channel (or the current channel if none is mentioned).
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            channel (Optional[str]): The channel where the message will be posted in.
+            text (str): The text to be echoed
+        """
+        await (channel or ctx).send(text)
+
 
 
 def build_serverinfo_strings(guild: discord.Guild) -> List[str]:
