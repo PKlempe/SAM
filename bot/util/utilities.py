@@ -188,9 +188,7 @@ class UtilitiesCog(commands.Cog):
         """Command handler for the `bot` subcommand `presence`.
 
         This is a command group for changing the bots Discord presence. For every user-settable activity type there is
-        a corresponding subcommand. Each of these subcommands takes two arguments (Discord status, activity name),
-        except for `streaming` which takes an additional argument named "stream_url". For removing the currently set
-        activity and reset the bots Discord presence, simply use the `clear` subcommand.
+        a corresponding subcommand.
 
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
@@ -210,7 +208,7 @@ class UtilitiesCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
             status (Optional[discord.Status]): The status which should be displayed.
-            activity_name (str): The name of the activity shown.
+            activity_name (str): The name of whatever the bot should be watching.
         """
         activity = discord.Activity(type=discord.ActivityType.watching, name=activity_name)
         await self.bot.change_presence(activity=activity, status=status)
@@ -227,7 +225,7 @@ class UtilitiesCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
             status (Optional[discord.Status]): The status which should be displayed.
-            activity_name (str): The name of the activity shown.
+            activity_name (str): The name of what the bot should be listening to.
         """
         activity = discord.Activity(type=discord.ActivityType.listening, name=activity_name)
         await self.bot.change_presence(activity=activity, status=status)
@@ -244,7 +242,7 @@ class UtilitiesCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
             status (Optional[discord.Status]): The status which should be displayed.
-            activity_name (str): The name of the activity shown.
+            activity_name (str): The name of the game which the bot should play.
         """
         activity = discord.Game(name=activity_name)
         await self.bot.change_presence(activity=activity, status=status)
@@ -262,7 +260,7 @@ class UtilitiesCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
             stream_url (str): The URL of the stream. (The watch button will redirect to this link if clicked)
             status (Optional[discord.Status]): The status which should be displayed.
-            activity_name (str): The name of the activity shown.
+            activity_name (str): The name of whatever the bot should be streaming.
         """
         # Everything other than Twitch probably won't work because of a clientside bug in Discord.
         # More info here: https://github.com/Rapptz/discord.py/issues/5118
