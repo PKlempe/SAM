@@ -2,11 +2,14 @@
 
 from datetime import datetime
 from typing import List
-from discord.ext import commands
+
 import discord
-from bot.persistence import DatabaseConnector
-from bot.moderation import ModmailStatus
+from discord.ext import commands
+
 from bot import constants
+from bot.logger import command_log
+from bot.moderation import ModmailStatus
+from bot.persistence import DatabaseConnector
 
 
 class ModerationCog(commands.Cog):
@@ -22,7 +25,9 @@ class ModerationCog(commands.Cog):
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
     @commands.group()
+    @command_log
     async def modmail(self, ctx: commands.Context):
+
         """Command Handler for the `modmail` command.
 
         Allows users to write a message to all the moderators of the server. The message is going to be posted in a
@@ -61,6 +66,7 @@ class ModerationCog(commands.Cog):
 
     @modmail.command(name='get')
     @commands.has_role(constants.ROLE_ID_MODERATOR)
+    @command_log
     async def get_modmail_with_status(self, ctx: commands.Context, *, status: str):
         """Command Handler for the modmail subcommand `get`.
 

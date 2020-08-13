@@ -10,6 +10,7 @@ import requests
 from discord.ext import commands
 
 from bot import constants
+from bot.logger import command_log
 
 
 class UtilitiesCog(commands.Cog):
@@ -24,6 +25,7 @@ class UtilitiesCog(commands.Cog):
         self.bot = bot
 
     @commands.command(name='ping')
+    @command_log
     async def ping(self, ctx: commands.Context):
         """Command Handler for the `ping` command.
 
@@ -37,6 +39,7 @@ class UtilitiesCog(commands.Cog):
         await ctx.send(":ping_pong: **Pong!** - {0} ms".format(latency))
 
     @commands.command(name='serverinfo')
+    @command_log
     async def server_info(self, ctx: commands.Context):
         """Command Handler for the `serverinfo` command.
 
@@ -61,6 +64,7 @@ class UtilitiesCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name='about')
+    @command_log
     async def about(self, ctx: commands.Context):
         """Command Handler for the `about` command.
 
@@ -91,6 +95,7 @@ class UtilitiesCog(commands.Cog):
 
     @commands.command(name='embed')
     @commands.has_guild_permissions(administrator=True)
+    @command_log
     async def embed(self, ctx: commands.Context, channel: str, color: str, *, text: str):
         """Command Handler for the embed command
 
@@ -126,6 +131,7 @@ class UtilitiesCog(commands.Cog):
 
     @commands.command(name='cembed')
     @commands.has_guild_permissions(administrator=True)
+    @command_log
     async def cembed(self, ctx: commands.Context, channel: str, *, json_string: str):
         """Command Handler for the embed command.
 
@@ -157,6 +163,7 @@ class UtilitiesCog(commands.Cog):
             await ctx.send("**__Error:__** Error creating embed. Please check your parameters.")
 
     @commands.command(name="echo")
+    @commands.has_guild_permissions(administrator=True)
     async def echo(self, ctx: commands.Context, channel: typing.Optional[discord.TextChannel], *, text: str):
         """Lets the bot post a simple message to the mentioned channel (or the current channel if none is mentioned).
 

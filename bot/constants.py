@@ -1,6 +1,7 @@
 """File which contains constants used for this bot."""
 
 import os
+
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
@@ -54,11 +55,12 @@ ZERO_WIDTH_SPACE = "\U0000200B"
 DB_FILE_PATH = os.getenv("DB_FILE_PATH")
 ## Absolute path to the init script.
 DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
+LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
+
 
 # Important URLs
 URL_DISCORD = "https://discordapp.com"
 URL_UFIND = "https://ufind.univie.ac.at/de"
 URL_UFIND_API = "https://m-ufind.univie.ac.at"
 URL_UFIND_LOGO = "https://blog.univie.ac.at/relaunch/wp-content/uploads/2016/07/ufind-1-300x130.png"
-
 URL_HTTP_CAT = "https://http.cat"
