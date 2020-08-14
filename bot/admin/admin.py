@@ -1,13 +1,14 @@
 """Contains a Cog for all administrative funcionality."""
 
 import json
-import typing
-from typing import Optional
+from typing import Optional, Mapping
+from datetime import datetime
 
 import discord
 import requests
 from discord.ext import commands
 
+from bot import constants
 from bot.logger import command_log
 
 
@@ -24,11 +25,11 @@ class AdminCog(commands.Cog):
 
     # A special method that registers as a commands.check() for every command and subcommand in this cog.
     async def cog_check(self, ctx):
-        return ctx.author == ctx.guild.owner  # Only the server owner can use the commands defined in this Cog.
+        return await self.bot.is_owner(ctx.author)  # Only owners of the bot can use the commands defined in this Cog.
 
     @commands.command(name="echo", hidden=True)
     @command_log
-    async def echo(self, ctx: commands.Context, channel: typing.Optional[discord.TextChannel], *, text: str):
+    async def echo(self, ctx: commands.Context, channel: Optional[discord.TextChannel], *, text: str):
         """Lets the bot post a simple message to the mentioned channel (or the current channel if none is mentioned).
 
         Args:
@@ -108,6 +109,29 @@ class AdminCog(commands.Cog):
         """
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
+
+    @cmd_for_bot_stuff.group(name="cogs")
+    @command_log
+    async def embed_available_cogs(self, ctx: commands.Context):
+        """Command handler for the `bot` subcommand `cogs`.
+
+        Creates an Embed containing a list of all available Cogs and their current status (un-/loaded). This embed will
+        then be posted in the configured bot channel.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+        """
+        ch_bot = ctx.guild.get_channel(constants.CHANNEL_ID_BOT)
+        str_cogs = _create_cogs_embed_string(self.bot.cogs)
+        description = "Auflistung sämtlich vorhandener \"Cogs\" des Bots. Die Farbe vor den Namen signalisiert, ob " \
+                      "die jeweilige Erweiterung momentan geladen oder ungeladen ist."
+
+        embed = discord.Embed(title="Verfügbare \"Cogs\"", color=constants.EMBED_COLOR_SYSTEM, description=description,
+                              timestamp=datetime.utcnow())
+        embed.set_footer(text="Erstellt am")
+        embed.add_field(name="Status", value=str_cogs)
+
+        await ch_bot.send(embed=embed)
 
     @cmd_for_bot_stuff.group(name="presence")
     @command_log
@@ -249,6 +273,30 @@ def parse_pastebin_link(url: str) -> str:
         split_index = url.find(".com/")
         url = url[:(split_index + 5)] + "raw/" + url[(split_index + 5):]
     return requests.get(url).text
+
+
+def _create_cogs_embed_string(loaded_cogs: Mapping[str, commands.Cog]) -> str:
+    """Method for creating the string used in the cogs embed.
+
+    Builds a string containing a list of all available Cogs. Each entry has an emoji representing if a Cog is currently
+    loaded or not.
+
+    Args:
+        loaded_cogs (Mapping[str, commands.Cog]): A Mapping containing all currently loaded Cogs.
+
+    Returns:
+        str: String containing the list of all Cogs and their current status.
+    """
+    string = ""
+
+    for cog in constants.INITIAL_EXTNS.keys():
+        if cog in loaded_cogs.keys():
+            string += constants.EMOJI_AVAILABLE
+        else:
+            string += constants.EMOJI_UNAVAILABLE
+        string += " --> {0}\n".format(cog[:-3])
+
+    return string
 
 
 def setup(bot):

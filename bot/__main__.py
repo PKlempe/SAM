@@ -11,10 +11,6 @@ from bot import constants
 from bot.logger import log
 
 bot = commands.Bot(command_prefix=constants.BOT_PREFIX)
-initial_extensions = ['bot.admin.admin',
-                      'bot.moderation.moderation',
-                      'bot.university.university',
-                      'bot.util.utilities']
 
 
 @bot.event
@@ -64,7 +60,7 @@ async def on_command_error(ctx, exception):
 
 
 if __name__ == '__main__':
-    for extension in initial_extensions:
+    for extension in constants.INITIAL_EXTNS.values():
         bot.load_extension(extension)
 
     print("- Contacting Discord servers...")

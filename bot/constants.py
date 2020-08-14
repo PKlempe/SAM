@@ -14,10 +14,15 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 # Bot Settings
 BOT_PREFIX = '!'
+INITIAL_EXTNS = {"AdminCog":        'bot.admin.admin',
+                 "ModerationCog":   'bot.moderation.moderation',
+                 "UniversityCog":   'bot.university.university',
+                 "UtilitiesCog":    'bot.util.utilities'}
 
 
 # Embed Colors
 EMBED_COLOR_INFO = 0xFFDF00
+EMBED_COLOR_SYSTEM = 0xD1E231
 EMBED_COLOR_UNIVERSITY = 0x1E90FF
 EMBED_COLOR_SELECTION = 0xFF6700
 
@@ -37,6 +42,7 @@ ROLE_ID_MODERATOR = 356080544670285825
 
 
 # Special Channel IDs
+CHANNEL_ID_BOT = 729066220627951757
 CHANNEL_ID_MODMAIL = 729066220627951757
 
 
@@ -45,6 +51,9 @@ USER_ID_CONTRIBUTOR = 310100064687226882
 
 
 # Special Emojis
+EMOJI_AVAILABLE = "\U0001F7E2"
+EMOJI_UNAVAILABLE = "\U0001F534"
+
 EMOJI_MODMAIL_DONE = "\U00002705"
 EMOJI_MODMAIL_ASSIGN = "\U0001F4DD"
 
