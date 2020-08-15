@@ -48,7 +48,7 @@ it's probably good to go.
 * Code should follow the [PEP-8 guidelines](https://www.python.org/dev/peps/pep-0008/).
 * "Pythonic" design patterns should be used to the best of our knowledge.
 * Code should always be checked by linters ([Pylint](https://www.pylint.org/), [MyPy](http://mypy-lang.org/)) to find errors early.
-* Methods that are a part of a module API or any other type of contract, or just methods that have a high complexity, will be documented using Docstrings and [type hints](https://docs.python.org/3/library/typing.html).
+* Methods that are a part of a module API or any other type of contract, or just methods that have a high complexity, will be documented using [Google Style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) and [type hints](https://docs.python.org/3/library/typing.html).
 * PRs have to be reviewed by at least one other contributer before merging and a merge will only be feasible if all existing tests pass. (Assuming any tests have been written).
 * Defined APIs (also internal, e.g. the public methods of a module) will not be changed, only extended, except if absolutely neccessary and with the okay from the bots creators.
 
