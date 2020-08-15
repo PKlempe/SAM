@@ -95,8 +95,6 @@ class UniversityCog(commands.Cog):
         if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
             await ctx.send("Ich konnte leider niemanden unter dem von dir angegeben Namen finden. :slight_frown: "
                            "Möglicherweise hast du dich vertippt.")
-        else:
-            raise error
 
     async def _staff_selection(self, author: discord.User, channel: discord.TextChannel, persons: List[ET.Element]) \
             -> int:
