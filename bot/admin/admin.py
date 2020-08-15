@@ -98,11 +98,12 @@ class AdminCog(commands.Cog):
         # put custom Error Handlers here
         async def handle_http_exception(ctx: commands.Context, error: discord.HTTPException):
             await ctx.send(
-                'Der übergebene JSON String war leer oder ein Feld hat einen ungültigen Typ. Du kannst dein' +
-                ' JSON hier validieren: https://leovoel.github.io/embed-visualizer/.')
+                'Der übergebene JSON-String war entweder leer oder eines der Felder besaß einen ungültigen Typ.\n' +
+                'Du kannst dein JSON auf folgender Seite validieren und gegebenenfalls anpassen: ' +
+                'https://leovoel.github.io/embed-visualizer/.')
 
         async def handle_json_decode_error(ctx: commands.Context, error: json.JSONDecodeError):
-            await ctx.send("Der übergebene JSON String konnte nicht geparsed werden: {0}".format(str(error)))
+            await ctx.send("Der übergebene JSON-String konnte nicht geparsed werden: {0}".format(str(error)))
 
         handler_mapper = {
             discord.errors.HTTPException: handle_http_exception,
