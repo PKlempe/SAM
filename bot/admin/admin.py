@@ -133,7 +133,7 @@ class AdminCog(commands.Cog):
 
         await ch_bot.send(embed=embed)
 
-    @cmd_for_bot_stuff.group(name="presence")
+    @cmd_for_bot_stuff.group(name="presence", hidden=True)
     @command_log
     async def change_discord_presence(self, ctx: commands.Context):
         """Command handler for the `bot` subcommand `presence`.

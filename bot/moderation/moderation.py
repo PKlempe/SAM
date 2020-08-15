@@ -171,8 +171,12 @@ class ModerationCog(commands.Cog):
         return discord.Embed.from_dict(dict_embed)
 
 
-def _modmail_create_hyperlinks_list(messages: List[tuple]) -> str:
-    """Method which creates a string representing a list of hyperlinks with specific Discord messages as their targets.
+def _modmail_create_ticket_list(messages: List[tuple]) -> str:
+    """Method which creates a string representing a list of modmail tickets.
+
+    Each entry of the list consists of a timestamp representing the moment this ticket has been submitted and a link to
+    the corresponding embedded message in the modmail channel. The text of each hyperlink represents the user who
+    submitted the ticket.
 
     Args:
         messages (List[tuple]): A list containing tuples consisting of a message id and the authors name.
@@ -183,27 +187,10 @@ def _modmail_create_hyperlinks_list(messages: List[tuple]) -> str:
     string = ""
 
     for message in messages:
-        string += "- [{0[1]}]({1}/channels/{2}/{3}/{0[0]})\n" \
-            .format(message, constants.URL_DISCORD, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
+        timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f').strftime('%d.%m.%Y %H:%M')
 
-    return string
-
-
-def _modmail_create_timestamps_list(messages: List[tuple]) -> str:
-    """Method which creates a string representing a list of dates and times for when the individual messages provided
-    have been created.
-
-    Args:
-        messages (List[tuple]): A list containing tuples consisting of a message id, the authors name and a timestamp.
-
-    Returns:
-        str: A listing of dates and times.
-    """
-    string = ""
-
-    for message in messages:
-        timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f')
-        string += timestamp.strftime('%d.%m.%Y %H:%M') + "\n"
+        string += "- {0} | [{1[1]}]({2}/channels/{3}/{4}/{1[0]})\n" \
+            .format(timestamp, message, constants.URL_DISCORD, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
 
     return string
 
@@ -223,9 +210,8 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
     dict_embed = embed.to_dict()
 
     if modmail is not None:
-        embed.add_field(name="Eingereicht von:", value=_modmail_create_hyperlinks_list(modmail), inline=True)
-        embed.add_field(name="Eingereicht am:", value=_modmail_create_timestamps_list(modmail), inline=True)
         dict_embed = embed.to_dict()
+        dict_embed["description"] = _modmail_create_ticket_list(modmail)
 
         if status == ModmailStatus.OPEN:
             dict_embed["title"] = "Offenen Tickets: " + str(len(modmail))
