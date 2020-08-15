@@ -20,6 +20,22 @@ INITIAL_EXTNS = {"AdminCog":        'bot.admin.admin',
                  "UtilitiesCog":    'bot.util.utilities'}
 
 
+# Filepaths
+LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
+
+## SQLite Database
+DB_FILE_PATH = os.getenv("DB_FILE_PATH")
+DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
+
+
+# Important URLs
+URL_DISCORD = "https://discordapp.com"
+URL_UFIND = "https://ufind.univie.ac.at/de"
+URL_UFIND_API = "https://m-ufind.univie.ac.at"
+URL_UFIND_LOGO = "https://blog.univie.ac.at/relaunch/wp-content/uploads/2016/07/ufind-1-300x130.png"
+URL_HTTP_CAT = "https://http.cat"
+
+
 # Embed Colors
 EMBED_COLOR_INFO = 0xFFDF00
 EMBED_COLOR_SYSTEM = 0xD1E231
@@ -58,18 +74,3 @@ EMOJI_MODMAIL_DONE = "\U00002705"
 EMOJI_MODMAIL_ASSIGN = "\U0001F4DD"
 
 ZERO_WIDTH_SPACE = "\U0000200B"
-
-
-# SQLite Database
-DB_FILE_PATH = os.getenv("DB_FILE_PATH")
-## Absolute path to the init script.
-DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
-LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
-
-
-# Important URLs
-URL_DISCORD = "https://discordapp.com"
-URL_UFIND = "https://ufind.univie.ac.at/de"
-URL_UFIND_API = "https://m-ufind.univie.ac.at"
-URL_UFIND_LOGO = "https://blog.univie.ac.at/relaunch/wp-content/uploads/2016/07/ufind-1-300x130.png"
-URL_HTTP_CAT = "https://http.cat"
