@@ -1,4 +1,4 @@
-# ![SAM-Banner](https://user-images.githubusercontent.com/49726903/90315974-e5c38e00-df1f-11ea-900e-9b92d814a7c3.png)
+# ![SAM-Banner](https://user-images.githubusercontent.com/49726903/90317288-95046300-df28-11ea-97b9-c2d32a0b8fb1.png)
 
 #### [-- In Active Development --]
 
