@@ -3,6 +3,7 @@
 import datetime
 from sqlite3 import Error
 from typing import List, Optional
+
 from bot.moderation import ModmailStatus
 from bot.persistence import queries
 from .database_manager import DatabaseManager
@@ -92,6 +93,43 @@ class DatabaseConnector:
             if rows:
                 return rows
             return None
+
+    def is_botonly(self, channel):
+        """Runs a query checking if a channel is marked as botonly in the db.
+
+        Args:
+            channel (discord.TextChannel): The channel to be queried.
+
+        Returns:
+            bool: true if the channel is botonly, false if not or no entry is found
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.IS_BOTONLY, (channel.name,))
+            rows = result.fetchone()
+            if rows:
+                return rows[0]
+            return 0
+
+
+    def enable_botonly(self, channel):
+        """Executes a query that adds the channel as bot-only.
+
+        Args:
+            channel (discord.TextChannel): The channel to be made bot-only.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.ENABLE_BOTONLY, (channel.name,))
+            db_manager.commit()
+
+    def disable_botonly(self, channel):
+        """Executes a query that adds the channel as not bot-only.
+
+        Args:
+            channel (discord.TextChannel): The channel to be made not bot-only.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.DISABLE_BOTONLY, (channel.name,))
+            db_manager.commit()
 
     @staticmethod
     def parse_sql_file(filename: str) -> List[str]:

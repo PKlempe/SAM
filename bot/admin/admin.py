@@ -9,7 +9,8 @@ import requests
 from discord.ext import commands
 
 from bot import constants
-from bot.logger import command_log
+from bot.logger import command_log, log
+from bot.persistence import DatabaseConnector
 
 
 class AdminCog(commands.Cog):
@@ -22,6 +23,7 @@ class AdminCog(commands.Cog):
             bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
         """
         self.bot = bot
+        self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
     # A special method that registers as a commands.check() for every command and subcommand in this cog.
     async def cog_check(self, ctx):
@@ -258,6 +260,60 @@ class AdminCog(commands.Cog):
         """
         await self.bot.change_presence(activity=None)
 
+    @commands.command(name="botonly")
+    @command_log
+    async def botonly(self, ctx: commands.Context, channel: discord.TextChannel):
+        """Command handler for the `botonly` command.
+
+        This command marks a channel in the database as bot-only, so every message posted by someone else than the bot
+        will be deleted immediately.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            channel (discord.Textchannel): The channel that is to be made bot-only
+        """
+        is_channel_botonly = self._db_connector.is_botonly(channel)
+        if is_channel_botonly:
+            log.info("Activated botonly for channel {0}".format(channel))
+            self._db_connector.disable_botonly(channel)
+        else:
+            log.info("Deactivated botonly for channel {0}".format(channel))
+            self._db_connector.enable_botonly(channel)
+
+        is_enabled_string = 'aktiviert' if not is_channel_botonly else 'deaktiviert'
+        embed = _create_botonly_embed(is_enabled_string)
+        await channel.send(embed=embed)
+        message = await ctx.send("Bot-Only wurde für den Channel {0} {1}".format(channel.mention, is_enabled_string))
+        await message.delete(delay=60.0)
+
+        @commands.command(name="purge")
+        @command_log
+        async def purge_channel(self, ctx: commands.Context, channel: discord.TextChannel):
+            """Command handler for the `purge` command.
+
+            Removes all messages in a channel.
+
+            Args:
+                ctx (discord.ext.commands.Context): The context from which this command is invoked.
+                channel (discord.Textchannel): The channel that is to purge
+            """
+            #todo: implement
+            print("Implementation missing")
+
+    @commands.Cog.listener(name='on_message')
+    async def on_message(self, ctx: discord.Message):
+        """Event Handler for new messages.
+
+        Deletes a message if the channel it was posted in is a botonly channel and the message was not by a bot
+
+        Args:
+            ctx (discord.Message): The context this method was called in. Must always be a message.
+        """
+        if ctx.author == self.bot.user:
+            return
+        if self._db_connector.is_botonly(ctx.channel):
+            await ctx.delete()
+
 
 def is_pastebin_link(json_string: str) -> bool:
     """Verifies if the string is a link to pastebin.com by checking if it contains 'pastebin.com' and does not contain
@@ -314,6 +370,14 @@ def _create_cogs_embed_string(loaded_cogs: Mapping[str, commands.Cog]) -> str:
         string += " --> {0}\n".format(cog[:-3])
 
     return string
+
+
+def _create_botonly_embed(is_enabled_string):
+    title = 'Bot-Only Funktionalität wurde für diesen Channel {0}'.format(is_enabled_string)
+    description = 'Ein Bot-Only Channel ist ein Channel in dem nur ein Bot Nachrichten posten kann. Jede Nachricht von' \
+                  'anderen Usern wird sofort gelöscht.'
+    #TODO: find fitting embed color
+    return discord.Embed(title=title, description=description, color=constants.EMBED_COLOR_UNIVERSITY)
 
 
 def setup(bot):
