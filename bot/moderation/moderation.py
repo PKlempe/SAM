@@ -24,7 +24,7 @@ class ModerationCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     @command_log
     async def modmail(self, ctx: commands.Context):
 
@@ -37,32 +37,31 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
-        if ctx.invoked_subcommand is None:
-            msg_content = ctx.message.content
-            msg_attachments = ctx.message.attachments
-            msg_author_name = str(ctx.message.author)
-            msg_timestamp = ctx.message.created_at
-            await ctx.message.delete()
+        msg_content = ctx.message.content
+        msg_attachments = ctx.message.attachments
+        msg_author_name = str(ctx.message.author)
+        msg_timestamp = ctx.message.created_at
+        await ctx.message.delete()
 
-            ch_modmail = ctx.guild.get_channel(constants.CHANNEL_ID_MODMAIL)
-            msg_content = msg_content[len(ctx.prefix + ctx.command.name):]
+        ch_modmail = ctx.guild.get_channel(constants.CHANNEL_ID_MODMAIL)
+        msg_content = msg_content[len(ctx.prefix + ctx.command.name):]
 
-            embed = discord.Embed(title="Status: Offen", color=constants.EMBED_COLOR_MODMAIL_OPEN,
-                                  timestamp=datetime.utcnow(), description=msg_content)
-            embed.set_author(name=ctx.author.name + "#" + ctx.author.discriminator, icon_url=ctx.author.avatar_url)
-            embed.set_footer(text="Erhalten am")
+        embed = discord.Embed(title="Status: Offen", color=constants.EMBED_COLOR_MODMAIL_OPEN,
+                              timestamp=datetime.utcnow(), description=msg_content)
+        embed.set_author(name=ctx.author.name + "#" + ctx.author.discriminator, icon_url=ctx.author.avatar_url)
+        embed.set_footer(text="Erhalten am")
 
-            msg_modmail = await ch_modmail.send(embed=embed, files=msg_attachments)
-            self._db_connector.add_modmail(msg_modmail.id, msg_author_name, msg_timestamp)
-            await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_DONE)
-            await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_ASSIGN)
+        msg_modmail = await ch_modmail.send(embed=embed, files=msg_attachments)
+        self._db_connector.add_modmail(msg_modmail.id, msg_author_name, msg_timestamp)
+        await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_DONE)
+        await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_ASSIGN)
 
-            embed_confirmation = embed.to_dict()
-            embed_confirmation["title"] = "Deine Nachricht:"
-            embed_confirmation["color"] = constants.EMBED_COLOR_INFO
-            embed_confirmation = discord.Embed.from_dict(embed_confirmation)
-            await ctx.author.send("Deine Nachricht wurde erfolgreich an die Moderatoren weitergeleitet!\n"
-                                  "__Hier deine Bestätigung:__", embed=embed_confirmation)
+        embed_confirmation = embed.to_dict()
+        embed_confirmation["title"] = "Deine Nachricht:"
+        embed_confirmation["color"] = constants.EMBED_COLOR_INFO
+        embed_confirmation = discord.Embed.from_dict(embed_confirmation)
+        await ctx.author.send("Deine Nachricht wurde erfolgreich an die Moderatoren weitergeleitet!\n"
+                              "__Hier deine Bestätigung:__", embed=embed_confirmation)
 
     @modmail.command(name='get', hidden=True)
     @commands.has_role(constants.ROLE_ID_MODERATOR)
