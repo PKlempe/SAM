@@ -124,7 +124,7 @@ class AdminCog(commands.Cog):
         ch_bot = ctx.guild.get_channel(constants.CHANNEL_ID_BOT)
         str_cogs = _create_cogs_embed_string(self.bot.cogs)
         description = "Auflistung sämtlich vorhandener \"Cogs\" des Bots. Die Farbe vor den Namen signalisiert, ob " \
-                      "die jeweilige Erweiterung momentan geladen oder ungeladen ist."
+                      "die jeweilige Erweiterung momentan geladen ist oder nicht."
 
         embed = discord.Embed(title="Verfügbare \"Cogs\"", color=constants.EMBED_COLOR_SYSTEM, description=description,
                               timestamp=datetime.utcnow())
