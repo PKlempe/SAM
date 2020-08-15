@@ -1,8 +1,8 @@
 """Contains a Cog for all administrative funcionality."""
 
 import json
-from typing import Optional, Mapping
 from datetime import datetime
+from typing import Optional, Mapping
 
 import discord
 import requests
@@ -39,7 +39,7 @@ class AdminCog(commands.Cog):
         """
         await (channel or ctx).send(text)
 
-    @commands.command(name='embed', hidden=True)
+    @commands.group(name='embed', hidden=True, invoke_without_command=True)
     @command_log
     async def embed(self, ctx: commands.Context, channel: discord.TextChannel, color: discord.Colour, *, text: str):
         """Command Handler for the embed command
@@ -63,9 +63,9 @@ class AdminCog(commands.Cog):
         embed = discord.Embed(title=title, description=description, color=color)
         await channel.send(embed=embed)
 
-    @commands.command(name='cembed', hidden=True)
+    @embed.command(name='json', hidden=True)
     @command_log
-    async def cembed(self, ctx: commands.Context, channel: discord.TextChannel, *, json_string: str):
+    async def embed_by_json(self, ctx: commands.Context, channel: discord.TextChannel, *, json_string: str):
         """Command Handler for the embed command.
 
         Creates and sends an embed in the specified channel parsed from json.
@@ -75,26 +75,45 @@ class AdminCog(commands.Cog):
             channel (str): The channel where to post the message. Can be channel name (starting with #) or channel id.
             json_string (str): The json string representing the embed. Alternatively it could also be a pastebin link.
         """
-        try:
-            if is_pastebin_link(json_string):
-                json_string = parse_pastebin_link(json_string)
-            embed_dict = json.loads(json_string)
-            embed = discord.Embed.from_dict(embed_dict)
-            await channel.send(embed=embed)
-        except commands.errors.CommandInvokeError:
-            await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
-        except discord.errors.HTTPException:
-            await ctx.send("**__Error:__** Could not parse json. Make sure your last argument is valid JSON.")
-        except discord.DiscordException:
-            await ctx.send("**__Error:__** Invalid embed. Make sure you have at least title or description set (also "
-                           "for each additional field). You can validate your json at "
-                           "https://leovoel.github.io/embed-visualizer/.")
-        except ValueError as error:
-            await ctx.send(error)
-        except TypeError:
-            await ctx.send("**__Error:__** Error creating embed. Please check your parameters.")
+        if is_pastebin_link(json_string):
+            json_string = parse_pastebin_link(json_string)
+        embed_dict = json.loads(json_string)
+        embed = discord.Embed.from_dict(embed_dict)
+        await channel.send(embed=embed)
 
-    @commands.group(name="bot", hidden=True)
+    @embed.error
+    @embed_by_json.error
+    async def embed_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Error Handler for the 'embed' command and its subcommand 'embed json'
+
+        Handles errors specific for the embed commands. Others will be handled globally
+
+        Args:
+            ctx (commands.Context): The context in which the command was called.
+            error (commands.CommandError): The error raised during the execution of the command.
+        """
+        root_error = error if not isinstance(error, commands.CommandInvokeError) else error.original
+        error_type = type(root_error)
+
+        # put custom Error Handlers here
+        async def handle_http_exception(ctx: commands.Context, error: discord.HTTPException):
+            await ctx.send(
+                'Der übergebene JSON-String war entweder leer oder eines der Felder besaß einen ungültigen Typ.\n' +
+                'Du kannst dein JSON auf folgender Seite validieren und gegebenenfalls anpassen: ' +
+                'https://leovoel.github.io/embed-visualizer/.')
+
+        async def handle_json_decode_error(ctx: commands.Context, error: json.JSONDecodeError):
+            await ctx.send("Der übergebene JSON-String konnte nicht geparsed werden: {0}".format(str(error)))
+
+        handler_mapper = {
+            discord.errors.HTTPException: handle_http_exception,
+            json.JSONDecodeError: handle_json_decode_error
+        }
+
+        if error_type in handler_mapper:
+            await handler_mapper[error_type](ctx, root_error)
+
+    @commands.group(name="bot", hidden=True, invoke_without_command=True)
     @command_log
     async def cmd_for_bot_stuff(self, ctx: commands.Context):
         """Command handler for the `bot` command.
@@ -107,10 +126,9 @@ class AdminCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+        await ctx.send_help(ctx.command)
 
-    @cmd_for_bot_stuff.group(name="cogs")
+    @cmd_for_bot_stuff.command(name="cogs")
     @command_log
     async def embed_available_cogs(self, ctx: commands.Context):
         """Command handler for the `bot` subcommand `cogs`.
@@ -133,7 +151,7 @@ class AdminCog(commands.Cog):
 
         await ch_bot.send(embed=embed)
 
-    @cmd_for_bot_stuff.group(name="presence")
+    @cmd_for_bot_stuff.group(name="presence", invoke_without_command=True)
     @command_log
     async def change_discord_presence(self, ctx: commands.Context):
         """Command handler for the `bot` subcommand `presence`.
@@ -144,8 +162,7 @@ class AdminCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+        await ctx.send_help(ctx.command)
 
     @change_discord_presence.command(name="watching")
     @command_log
