@@ -81,7 +81,6 @@ class UniversityCog(commands.Cog):
             response.raise_for_status()
 
     @ufind_get_staff_data.error
-    @command_log
     async def ufind_error(self, ctx, error: commands.CommandError):
         """Error Handler for the `ufind` subcommand `staff`.
 

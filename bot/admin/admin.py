@@ -9,7 +9,7 @@ import requests
 from discord.ext import commands
 
 from bot import constants
-from bot.logger import command_log
+from bot.logger import command_log, log
 
 
 class AdminCog(commands.Cog):
@@ -94,7 +94,7 @@ class AdminCog(commands.Cog):
         except TypeError:
             await ctx.send("**__Error:__** Error creating embed. Please check your parameters.")
 
-    @commands.group(name="bot", hidden=True)
+    @commands.group(name="bot", hidden=True, invoke_without_command=True)
     @command_log
     async def cmd_for_bot_stuff(self, ctx: commands.Context):
         """Command handler for the `bot` command.
@@ -107,10 +107,9 @@ class AdminCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+        await ctx.send_help(ctx.command)
 
-    @cmd_for_bot_stuff.group(name="cogs")
+    @cmd_for_bot_stuff.command(name="cogs", hidden=True)
     @command_log
     async def embed_available_cogs(self, ctx: commands.Context):
         """Command handler for the `bot` subcommand `cogs`.
@@ -133,10 +132,36 @@ class AdminCog(commands.Cog):
 
         await ch_bot.send(embed=embed)
 
-    @cmd_for_bot_stuff.command(name='load', hidden=True)
+    @cmd_for_bot_stuff.group(name="cog", hidden=True, invoke_without_command=True)
+    @command_log
+    async def management_cog(self, ctx: commands.Context):
+        """Command handler for the `bot` subcommand group `cog`.
+
+        This group contains subcommands for reloading, unloading or simply loading Cogs of the bot.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+        """
+        await ctx.send_help(ctx.command)
+
+    @management_cog.error
+    async def management_cog_error(self, ctx, error: commands.CommandError):
+        """Error handler for the `bot` subcommand group `cog`.
+
+        Special errors occurring during reloading, unloading or loading of a Cog are handled in here.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            error (commands.CommandError): The error raised during the execution of a command.
+        """
+        if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, KeyError):
+            await ctx.guild.get_channel(constants.CHANNEL_ID_BOT).send("Es konnte leider kein Cog mit diesem Namen "
+                                                                       "gefunden werden.")
+
+    @management_cog.command(name='load', hidden=True)
     @command_log
     async def load_extension(self, ctx: commands.Context, extn_name: str):
-        """Command handler for the `bot` subcommand `load`.
+        """Command handler for the `bot cog` subcommand `load`.
 
         Loads an extension (Cog) with the specified name into the bot.
 
@@ -144,20 +169,15 @@ class AdminCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
             extn_name (str): The name of the extension (Cog).
         """
-        extn_name = extn_name.capitalize()
-
-        if "Cog" and "cog" not in extn_name:
-            extn_name += "Cog"
-        elif "cog" in extn_name:
-            extn_name = extn_name[:-3] + "Cog"
+        extn_name = _get_cog_name(extn_name)
 
         self.bot.load_extension(constants.INITIAL_EXTNS[extn_name])
-        print(f"\t* {extn_name} has been loaded.")
+        log.warning("%s has been loaded.", extn_name)
 
-    @cmd_for_bot_stuff.command(name='unload', hidden=True)
+    @management_cog.command(name='unload', hidden=True)
     @command_log
     async def unload_extension(self, ctx: commands.Context, extn_name: str):
-        """Command handler for the `bot` subcommand `unload`.
+        """Command handler for the `bot cog` subcommand `unload`.
 
         Removes an extension (Cog) with the specified name from the bot.
 
@@ -165,20 +185,15 @@ class AdminCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
             extn_name (str): The name of the extension (Cog).
         """
-        extn_name = extn_name.capitalize()
-
-        if "Cog" and "cog" not in extn_name:
-            extn_name += "Cog"
-        elif "cog" in extn_name:
-            extn_name = extn_name[:-3] + "Cog"
+        extn_name = _get_cog_name(extn_name)
 
         self.bot.unload_extension(constants.INITIAL_EXTNS[extn_name])
-        print(f"\t* {extn_name} has been unloaded.")
+        log.warning("%s has been unloaded.", extn_name)
 
-    @cmd_for_bot_stuff.group(name='reload', hidden=True, invoke_without_command=True)
+    @management_cog.group(name='reload', hidden=True, invoke_without_command=True)
     @command_log
     async def reload_extension(self, ctx: commands.Context, extn_name: str):
-        """Command handler for the `bot` subcommand `reload`.
+        """Command handler for the `bot cog` subcommand `reload`.
 
         Reloads an extension (Cog) with the specified name from the bot. If changes to the code inside a Cog have been
         made, this is going to apply them without taking the bot offline.
@@ -187,20 +202,15 @@ class AdminCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
             extn_name (str): The name of the extension (Cog).
         """
-        extn_name = extn_name.capitalize()
-
-        if "Cog" and "cog" not in extn_name:
-            extn_name += "Cog"
-        elif "cog" in extn_name:
-            extn_name = extn_name[:-3] + "Cog"
+        extn_name = _get_cog_name(extn_name)
 
         self.bot.reload_extension(constants.INITIAL_EXTNS[extn_name])
-        print(f"\t* {extn_name} has been reloaded.")
+        log.warning("%s has been reloaded.", extn_name)
 
     @reload_extension.command(name='all', hidden=True)
     @command_log
     async def reload_all_extension(self, ctx: commands.Context):
-        """Command handler for the `bot reload` subcommand `all`.
+        """Command handler for the `bot cog reload` subcommand `all`.
 
         Reloads all the extension (Cogs) from the bot. If changes to the code inside a Cog have been
         made, this is going to apply them without taking the bot offline.
@@ -208,9 +218,9 @@ class AdminCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
-        for extn in constants.INITIAL_EXTNS:
-            self.bot.reload_extension(constants.INITIAL_EXTNS[extn])
-            print(f"\t* {extn} has been reloaded.")
+        for cog_name, path in constants.INITIAL_EXTNS.items():
+            self.bot.reload_extension(path)
+            log.warning("%s has been reloaded.", cog_name)
 
     @cmd_for_bot_stuff.group(name="presence")
     @command_log
@@ -352,6 +362,27 @@ def parse_pastebin_link(url: str) -> str:
         split_index = url.find(".com/")
         url = url[:(split_index + 5)] + "raw/" + url[(split_index + 5):]
     return requests.get(url).text
+
+
+def _get_cog_name(extn_name: str) -> str:
+    """Method for converting user input into a valid Cog name if possible.
+
+    Fixes capitalization and extends the Extension/Cog name if needed.
+
+    Args:
+        extn_name (str): The name (or part of it) of an Extension/Cog.
+
+    Returns:
+        str: String containing the desired Cog name.
+    """
+    cog_name = extn_name.capitalize()
+
+    if not cog_name.endswith(("Cog", "cog")):
+        cog_name += "Cog"
+    elif cog_name.endswith("cog"):
+        cog_name = cog_name[:-3] + "Cog"
+
+    return cog_name
 
 
 def _create_cogs_embed_string(loaded_cogs: Mapping[str, commands.Cog]) -> str:
