@@ -53,11 +53,11 @@ class UtilitiesCog(commands.Cog):
         embed.set_footer(text="Erstellungsdatum")
 
         embed.add_field(name="Besitzer :crown:", value=embed_strings[0], inline=True)
-        embed.add_field(name="Server Boost <:server_boost:730390579699122256>", value=embed_strings[1], inline=True)
-        embed.add_field(name="Server Features :tools:", value=embed_strings[2], inline=True)
+        embed.add_field(name="Server Boost <:server_boost:722778309309759559>", value=embed_strings[1], inline=True)
         embed.add_field(name="Mitglieder :man_raising_hand:", value=embed_strings[3], inline=True)
         embed.add_field(name="Kanäle :dividers:", value=embed_strings[4], inline=True)
         embed.add_field(name="Rollen :medal:", value=embed_strings[5], inline=True)
+        embed.add_field(name="Server Features :tools:", value=embed_strings[2], inline=True)
         await ctx.send(embed=embed)
 
     @commands.command(name='about')
@@ -179,6 +179,7 @@ def generate_features_list(features: List[str]) -> str:
 
     ic_bullet_point = ":white_check_mark: "
     dict_server_features = {
+        "COMMUNITY": "Community-Server",
         "VIP_REGIONS": "VIP-Regionen",
         "VANITY_URL": "Vanity URL",
         "INVITE_SPLASH": "Invite Splash",

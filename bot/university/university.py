@@ -27,7 +27,7 @@ class UniversityCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
-    @commands.group(name="ufind")
+    @commands.group(name="ufind", invoke_without_command=True)
     @command_log
     async def ufind(self, ctx: commands.Context):
         """Command Handler for the `ufind` command.
@@ -39,8 +39,7 @@ class UniversityCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+        await ctx.send_help(ctx.command)
 
     @ufind.command(name='staff')
     @command_log

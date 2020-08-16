@@ -24,7 +24,7 @@ class ModerationCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     @command_log
     async def modmail(self, ctx: commands.Context):
 
@@ -37,32 +37,31 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
-        if ctx.invoked_subcommand is None:
-            msg_content = ctx.message.content
-            msg_attachments = ctx.message.attachments
-            msg_author_name = str(ctx.message.author)
-            msg_timestamp = ctx.message.created_at
-            await ctx.message.delete()
+        msg_content = ctx.message.content
+        msg_attachments = ctx.message.attachments
+        msg_author_name = str(ctx.message.author)
+        msg_timestamp = ctx.message.created_at
+        await ctx.message.delete()
 
-            ch_modmail = ctx.guild.get_channel(constants.CHANNEL_ID_MODMAIL)
-            msg_content = msg_content[len(ctx.prefix + ctx.command.name):]
+        ch_modmail = ctx.guild.get_channel(constants.CHANNEL_ID_MODMAIL)
+        msg_content = msg_content[len(ctx.prefix + ctx.command.name):]
 
-            embed = discord.Embed(title="Status: Offen", color=constants.EMBED_COLOR_MODMAIL_OPEN,
-                                  timestamp=datetime.utcnow(), description=msg_content)
-            embed.set_author(name=ctx.author.name + "#" + ctx.author.discriminator, icon_url=ctx.author.avatar_url)
-            embed.set_footer(text="Erhalten am")
+        embed = discord.Embed(title="Status: Offen", color=constants.EMBED_COLOR_MODMAIL_OPEN,
+                              timestamp=datetime.utcnow(), description=msg_content)
+        embed.set_author(name=ctx.author.name + "#" + ctx.author.discriminator, icon_url=ctx.author.avatar_url)
+        embed.set_footer(text="Erhalten am")
 
-            msg_modmail = await ch_modmail.send(embed=embed, files=msg_attachments)
-            self._db_connector.add_modmail(msg_modmail.id, msg_author_name, msg_timestamp)
-            await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_DONE)
-            await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_ASSIGN)
+        msg_modmail = await ch_modmail.send(embed=embed, files=msg_attachments)
+        self._db_connector.add_modmail(msg_modmail.id, msg_author_name, msg_timestamp)
+        await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_DONE)
+        await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_ASSIGN)
 
-            embed_confirmation = embed.to_dict()
-            embed_confirmation["title"] = "Deine Nachricht:"
-            embed_confirmation["color"] = constants.EMBED_COLOR_INFO
-            embed_confirmation = discord.Embed.from_dict(embed_confirmation)
-            await ctx.author.send("Deine Nachricht wurde erfolgreich an die Moderatoren weitergeleitet!\n"
-                                  "__Hier deine Bestätigung:__", embed=embed_confirmation)
+        embed_confirmation = embed.to_dict()
+        embed_confirmation["title"] = "Deine Nachricht:"
+        embed_confirmation["color"] = constants.EMBED_COLOR_INFO
+        embed_confirmation = discord.Embed.from_dict(embed_confirmation)
+        await ctx.author.send("Deine Nachricht wurde erfolgreich an die Moderatoren weitergeleitet!\n"
+                              "__Hier deine Bestätigung:__", embed=embed_confirmation)
 
     @modmail.command(name='get', hidden=True)
     @commands.has_role(constants.ROLE_ID_MODERATOR)
@@ -171,8 +170,12 @@ class ModerationCog(commands.Cog):
         return discord.Embed.from_dict(dict_embed)
 
 
-def _modmail_create_hyperlinks_list(messages: List[tuple]) -> str:
-    """Method which creates a string representing a list of hyperlinks with specific Discord messages as their targets.
+def _modmail_create_ticket_list(messages: List[tuple]) -> str:
+    """Method which creates a string representing a list of modmail tickets.
+
+    Each entry of the list consists of a timestamp representing the moment this ticket has been submitted and a link to
+    the corresponding embedded message in the modmail channel. The text of each hyperlink represents the user who
+    submitted the ticket.
 
     Args:
         messages (List[tuple]): A list containing tuples consisting of a message id and the authors name.
@@ -183,27 +186,10 @@ def _modmail_create_hyperlinks_list(messages: List[tuple]) -> str:
     string = ""
 
     for message in messages:
-        string += "- [{0[1]}]({1}/channels/{2}/{3}/{0[0]})\n" \
-            .format(message, constants.URL_DISCORD, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
+        timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f').strftime('%d.%m.%Y %H:%M')
 
-    return string
-
-
-def _modmail_create_timestamps_list(messages: List[tuple]) -> str:
-    """Method which creates a string representing a list of dates and times for when the individual messages provided
-    have been created.
-
-    Args:
-        messages (List[tuple]): A list containing tuples consisting of a message id, the authors name and a timestamp.
-
-    Returns:
-        str: A listing of dates and times.
-    """
-    string = ""
-
-    for message in messages:
-        timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f')
-        string += timestamp.strftime('%d.%m.%Y %H:%M') + "\n"
+        string += "- {0} | [{1[1]}]({2}/channels/{3}/{4}/{1[0]})\n" \
+            .format(timestamp, message, constants.URL_DISCORD, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
 
     return string
 
@@ -223,9 +209,8 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
     dict_embed = embed.to_dict()
 
     if modmail is not None:
-        embed.add_field(name="Eingereicht von:", value=_modmail_create_hyperlinks_list(modmail), inline=True)
-        embed.add_field(name="Eingereicht am:", value=_modmail_create_timestamps_list(modmail), inline=True)
         dict_embed = embed.to_dict()
+        dict_embed["description"] = _modmail_create_ticket_list(modmail)
 
         if status == ModmailStatus.OPEN:
             dict_embed["title"] = "Offenen Tickets: " + str(len(modmail))
