@@ -112,7 +112,7 @@ class DatabaseConnector:
 
 
     def enable_botonly(self, channel):
-        """Executes a query that enables bot-only on a channel.
+        """Executes a query that enables bot-only mode for a channel.
 
         Args:
             channel (discord.TextChannel): The channel to be made bot-only.
