@@ -325,7 +325,7 @@ class AdminCog(commands.Cog):
         """Handles a confirmation dialog and returns the user reaction.
 
         Posts an embed and adds reactions for confirmation and cancellation. The reaction that is clicked will be
-        returned. If no reaction is clicked before a timeout None is returned instead.
+        returned. If no reaction is clicked before a timeout has been reached, `None` is returned instead.
         Regardless of the return value the embed message will be deleted again.
 
         Args:
