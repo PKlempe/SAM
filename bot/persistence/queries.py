@@ -7,6 +7,6 @@ GET_MODMAIL_STATUS = "SELECT StatusID FROM Modmail WHERE ID = ?"
 GET_ALL_MODMAIL_WITH_STATUS = "SELECT ID, Author, Timestamp FROM Modmail WHERE StatusID = ?"
 
 #botonly
-IS_BOTONLY = "SELECT IsBotonly FROM BotOnly WHERE Channel = ?"
-ENABLE_BOTONLY = "REPLACE INTO BotOnly (Channel, IsBotonly) VALUES (?, True)"
-DISABLE_BOTONLY = "REPLACE INTO BotOnly (Channel, IsBotonly) VALUES (?, False)"
+IS_CHANNEL_BOTONLY = "SELECT EXISTS(SELECT 1 FROM BotOnlyChannels WHERE Channel = ?)"
+ACTIVATE_BOTONLY_FOR_CHANNEL = "INSERT INTO BotOnlyChannels (Channel) VALUES (?)"
+DEACTIVATE_BOTONLY_FOR_CHANNEL = "DELETE FROM BotOnlyChannels WHERE Channel =  ?"

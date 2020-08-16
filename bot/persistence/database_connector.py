@@ -104,7 +104,7 @@ class DatabaseConnector:
             bool: true if the channel is botonly, false if not or no entry is found
         """
         with DatabaseManager(self._db_file) as db_manager:
-            result = db_manager.execute(queries.IS_BOTONLY, (channel.name,))
+            result = db_manager.execute(queries.IS_CHANNEL_BOTONLY, (channel.name,))
             rows = result.fetchone()
             if rows:
                 return rows[0]
@@ -112,23 +112,23 @@ class DatabaseConnector:
 
 
     def enable_botonly(self, channel):
-        """Executes a query that adds the channel as bot-only.
+        """Executes a query that enables bot-only on a channel.
 
         Args:
             channel (discord.TextChannel): The channel to be made bot-only.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.ENABLE_BOTONLY, (channel.name,))
+            db_manager.execute(queries.ACTIVATE_BOTONLY_FOR_CHANNEL, (channel.name,))
             db_manager.commit()
 
     def disable_botonly(self, channel):
-        """Executes a query that adds the channel as not bot-only.
+        """Executes a query that disables bot-only for a channel.
 
         Args:
             channel (discord.TextChannel): The channel to be made not bot-only.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.DISABLE_BOTONLY, (channel.name,))
+            db_manager.execute(queries.DEACTIVATE_BOTONLY_FOR_CHANNEL, (channel.name,))
             db_manager.commit()
 
     @staticmethod
