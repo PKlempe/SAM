@@ -14,7 +14,7 @@
 
 As the development progesses, more information about this project will be shared.
 
-| ![ufind-command](https://user-images.githubusercontent.com/49726903/90322332-4e782e00-df53-11ea-9947-c39831568656.gif) | ![2](https://www.cowgirlcontractcleaning.com/wp-content/uploads/sites/360/2018/05/placeholder-img.jpg) |
+| ![serverinfo-command](https://user-images.githubusercontent.com/49726903/90332893-11e31b80-dfc1-11ea-8ca9-fc244f79ba07.gif) | ![ufind-command](https://user-images.githubusercontent.com/49726903/90322332-4e782e00-df53-11ea-9947-c39831568656.gif) |
 |---------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------:|
 | ![3](https://www.cowgirlcontractcleaning.com/wp-content/uploads/sites/360/2018/05/placeholder-img.jpg) | ![4](https://www.cowgirlcontractcleaning.com/wp-content/uploads/sites/360/2018/05/placeholder-img.jpg) |
 
