@@ -282,7 +282,7 @@ class AdminCog(commands.Cog):
             self._db_connector.enable_botonly(channel)
 
         is_enabled_string = 'aktiviert' if not is_channel_botonly else 'deaktiviert'
-        embed = _create_botonly_embed(is_enabled_string)
+        embed = _build_botonly_embed(is_enabled_string)
         await channel.send(embed=embed)
         message = await ctx.send("Bot-Only wurde für den Channel {0} {1}".format(channel.mention, is_enabled_string))
         await message.delete(delay=60.0)
@@ -414,7 +414,16 @@ def _create_cogs_embed_string(loaded_cogs: Mapping[str, commands.Cog]) -> str:
     return string
 
 
-def _create_botonly_embed(is_enabled_string):
+def _build_botonly_embed(is_enabled_string: str):
+    """Creates an embed for the botonly command.
+
+    Args:
+        is_enabled_string (str): A string which will be interpolated into the title. Should contain the word 'aktiviert'
+        or 'deaktiviert'.
+
+    Returns:
+        (discord.Embed): An embed containing information, if the botonly feature was en- or disabled for a channel.
+    """
     title = 'Bot-Only Funktionalität wurde für diesen Channel {0}'.format(is_enabled_string)
     description = 'Ein Bot-Only Channel ist ein Channel in dem nur ein Bot Nachrichten posten kann. Jede Nachricht von' \
                   'anderen Usern wird sofort gelöscht.'
