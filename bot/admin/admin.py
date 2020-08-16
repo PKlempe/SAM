@@ -275,10 +275,10 @@ class AdminCog(commands.Cog):
         """
         is_channel_botonly = self._db_connector.is_botonly(channel)
         if is_channel_botonly:
-            log.info("Activated botonly for channel {0}".format(channel))
+            log.info("Deactivated botonly for channel {0}".format(channel))
             self._db_connector.disable_botonly(channel)
         else:
-            log.info("Deactivated botonly for channel {0}".format(channel))
+            log.info("Activated botonly for channel {0}".format(channel))
             self._db_connector.enable_botonly(channel)
 
         is_enabled_string = 'aktiviert' if not is_channel_botonly else 'deaktiviert'
