@@ -133,6 +133,85 @@ class AdminCog(commands.Cog):
 
         await ch_bot.send(embed=embed)
 
+    @cmd_for_bot_stuff.command(name='load', hidden=True)
+    @command_log
+    async def load_extension(self, ctx: commands.Context, extn_name: str):
+        """Command handler for the `bot` subcommand `load`.
+
+        Loads an extension (Cog) with the specified name into the bot.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            extn_name (str): The name of the extension (Cog).
+        """
+        extn_name = extn_name.capitalize()
+
+        if "Cog" and "cog" not in extn_name:
+            extn_name += "Cog"
+        elif "cog" in extn_name:
+            extn_name = extn_name[:-3] + "Cog"
+
+        self.bot.load_extension(constants.INITIAL_EXTNS[extn_name])
+        print(f"\t* {extn_name} has been loaded.")
+
+    @cmd_for_bot_stuff.command(name='unload', hidden=True)
+    @command_log
+    async def unload_extension(self, ctx: commands.Context, extn_name: str):
+        """Command handler for the `bot` subcommand `unload`.
+
+        Removes an extension (Cog) with the specified name from the bot.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            extn_name (str): The name of the extension (Cog).
+        """
+        extn_name = extn_name.capitalize()
+
+        if "Cog" and "cog" not in extn_name:
+            extn_name += "Cog"
+        elif "cog" in extn_name:
+            extn_name = extn_name[:-3] + "Cog"
+
+        self.bot.unload_extension(constants.INITIAL_EXTNS[extn_name])
+        print(f"\t* {extn_name} has been unloaded.")
+
+    @cmd_for_bot_stuff.group(name='reload', hidden=True, invoke_without_command=True)
+    @command_log
+    async def reload_extension(self, ctx: commands.Context, extn_name: str):
+        """Command handler for the `bot` subcommand `reload`.
+
+        Reloads an extension (Cog) with the specified name from the bot. If changes to the code inside a Cog have been
+        made, this is going to apply them without taking the bot offline.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            extn_name (str): The name of the extension (Cog).
+        """
+        extn_name = extn_name.capitalize()
+
+        if "Cog" and "cog" not in extn_name:
+            extn_name += "Cog"
+        elif "cog" in extn_name:
+            extn_name = extn_name[:-3] + "Cog"
+
+        self.bot.reload_extension(constants.INITIAL_EXTNS[extn_name])
+        print(f"\t* {extn_name} has been reloaded.")
+
+    @reload_extension.command(name='all', hidden=True)
+    @command_log
+    async def reload_all_extension(self, ctx: commands.Context):
+        """Command handler for the `bot reload` subcommand `all`.
+
+        Reloads all the extension (Cogs) from the bot. If changes to the code inside a Cog have been
+        made, this is going to apply them without taking the bot offline.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+        """
+        for extn in constants.INITIAL_EXTNS:
+            self.bot.reload_extension(constants.INITIAL_EXTNS[extn])
+            print(f"\t* {extn} has been reloaded.")
+
     @cmd_for_bot_stuff.group(name="presence")
     @command_log
     async def change_discord_presence(self, ctx: commands.Context):
@@ -289,7 +368,7 @@ def _create_cogs_embed_string(loaded_cogs: Mapping[str, commands.Cog]) -> str:
     """
     string = ""
 
-    for cog in constants.INITIAL_EXTNS.keys():
+    for cog in constants.INITIAL_EXTNS:
         if cog in loaded_cogs.keys():
             string += constants.EMOJI_AVAILABLE
         else:

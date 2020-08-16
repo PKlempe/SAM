@@ -16,13 +16,13 @@ bot = commands.Bot(command_prefix=constants.BOT_PREFIX)
 @bot.event
 async def on_ready():
     """Event handler for the Bot entering the ready state."""
-    print('- {0.user} successfully logged in to Discord!'.format(bot))
+    print('- {0.user} successfully logged in to Discord!\n'.format(bot))
 
 
 @bot.event
 async def on_disconnect():
     """Event handler for when the Bot disconnects from Discord."""
-    print('- {0.user} has disconnected.'.format(bot))
+    print('\n- {0.user} has disconnected.'.format(bot))
 
 
 @bot.event
