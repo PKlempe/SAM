@@ -313,7 +313,7 @@ class AdminCog(commands.Cog):
         Deletes a message if the channel it was posted in is a botonly channel and the message was not by a bot
 
         Args:
-            ctx (discord.Message): The context this m ethod was called in. Must always be a message.
+            ctx (discord.Message): The context this method was called in. Must always be a message.
         """
         if ctx.author == self.bot.user:
             return
