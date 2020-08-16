@@ -326,7 +326,7 @@ class AdminCog(commands.Cog):
 
         Posts an embed and adds reactions for confirmation and cancellation. The reaction that is clicked will be
         returned. If no reaction is clicked before a timeout has been reached, `None` is returned instead.
-        Regardless of the return value the embed message will be deleted again.
+        Regardless of the return value the embed will be deleted shortly after.
 
         Args:
             ctx (commands.Context): The context of invokation. Used to send the message.
