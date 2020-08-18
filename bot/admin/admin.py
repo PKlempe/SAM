@@ -14,7 +14,8 @@ from bot.logger import command_log, log
 from bot.persistence import DatabaseConnector
 
 
-
+# disables too many public methods for now TODO: fix this (maybe with mixins)
+# pylint: disable=R0904
 class AdminCog(commands.Cog):
     """Cog for administrative Functions."""
 
@@ -354,7 +355,7 @@ class AdminCog(commands.Cog):
 
     @commands.command(name="botonly")
     @command_log
-    async def botonly(self, ctx: commands.Context, channel: discord.TextChannel):
+    async def botonly(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
         """Command handler for the `botonly` command.
 
         This command marks a channel in the database as bot-only, so every message posted by someone else than the bot
@@ -364,17 +365,18 @@ class AdminCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
             channel (discord.Textchannel): The channel that is to be made bot-only
         """
-        is_channel_botonly = self._db_connector.is_botonly(channel)
+        target_channel = channel if channel is not None else ctx.channel
+        is_channel_botonly = self._db_connector.is_botonly(target_channel)
         if is_channel_botonly:
-            log.info("Deactivated botonly for channel {0}".format(channel))
-            self._db_connector.disable_botonly(channel)
+            log.info("Deactivated bot-only mode for channel {0}".format(target_channel))
+            self._db_connector.deactivate_botonly(target_channel)
         else:
-            log.info("Activated botonly for channel {0}".format(channel))
-            self._db_connector.enable_botonly(channel)
+            log.info("Activated bot-only mode for channel {0}".format(target_channel))
+            self._db_connector.activate_botonly(target_channel)
 
         is_enabled_string = 'aktiviert' if not is_channel_botonly else 'deaktiviert'
         embed = _build_botonly_embed(is_enabled_string)
-        await channel.send(embed=embed)
+        await target_channel.send(embed=embed)
 
     # todo comment in when issue demands so
 
@@ -401,7 +403,7 @@ class AdminCog(commands.Cog):
     async def on_message(self, ctx: discord.Message):
         """Event Handler for new messages.
 
-        Deletes a message if the channel it was posted in is a botonly channel and the message was not by a bot
+        Deletes a message if the channel it was posted in is in bot-only mode and the author isn't SAM.
 
         Args:
             ctx (discord.Message): The context this method was called in. Must always be a message.
@@ -426,8 +428,8 @@ class AdminCog(commands.Cog):
             timeout (float): The timeout until the dialog will be canceled
 
         Returns:
-            (Optional[Tuple[discord.Reaction, discord.User]]): A tuple of the user-reaction and reacting user if a reaction is clicked
-            before the timeout. If the dialog runs in the timeout, None is returned.
+            (Optional[Tuple[discord.Reaction, discord.User]]):A tuple consisting of a reaction and the user who has
+            reacted. If the dialog runs in the timeout, None is returned.
         """
         embed_msg = await ctx.send(embed=embed, delete_after=timeout)
         await embed_msg.add_reaction(constants.EMOJI_CONFIRM)

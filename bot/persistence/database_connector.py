@@ -111,7 +111,7 @@ class DatabaseConnector:
             return 0
 
 
-    def enable_botonly(self, channel):
+    def activate_botonly(self, channel):
         """Executes a query that enables bot-only mode for a channel.
 
         Args:
@@ -121,7 +121,7 @@ class DatabaseConnector:
             db_manager.execute(queries.ACTIVATE_BOTONLY_FOR_CHANNEL, (channel.name,))
             db_manager.commit()
 
-    def disable_botonly(self, channel):
+    def deactivate_botonly(self, channel):
         """Executes a query that disables bot-only for a channel.
 
         Args:
