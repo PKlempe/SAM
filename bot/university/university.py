@@ -83,8 +83,8 @@ class UniversityCog(commands.Cog):
     async def ufind_error(self, ctx, error: commands.CommandError):
         """Error Handler for the `ufind` subcommand `staff`.
 
-        Handles specific exceptions which occur during the execution of this command. Other exceptions will be simply
-        re-raised so that they can be handled somewhere else.
+        Handles specific exceptions which occur during the execution of this command. The global error handler will
+        still be called for every error thrown.
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
