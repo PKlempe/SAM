@@ -50,15 +50,15 @@ class ModerationCog(commands.Cog):
     async def report_error(self, ctx: commands.Context, error: commands.CommandError):
         """Error Handler for the `report` command.
 
-        Handles specific exceptions which occur during the execution of this command. The global error handler is still
-        being called for every error thrown.
+        Handles specific exceptions which occur during the execution of this command. The global error handler will
+        still be called for every error thrown.
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             error (commands.CommandError): The error raised during the execution of the command.
         """
         if isinstance(error, commands.BadArgument):
-            regex = re.search("\"(.*)\"", error.args[0])
+            regex = re.search("\"(.*)\"", error.args[0])  # Regex to get the text between two quotes.
             user = regex.group(1) if regex is not None else None
 
             await ctx.author.send(f"Ich konnte leider keinen Nutzer namens **{user}** finden. :confused:\nHast du dich "
