@@ -14,6 +14,7 @@ from bot.logger import command_log, log
 from bot.persistence import DatabaseConnector
 
 
+
 class AdminCog(commands.Cog):
     """Cog for administrative Functions."""
 
@@ -44,14 +45,14 @@ class AdminCog(commands.Cog):
 
     @commands.group(name='embed', hidden=True, invoke_without_command=True)
     @command_log
-    async def embed(self, ctx: commands.Context, channel: discord.TextChannel, color: discord.Colour, *, text: str):
+    async def embed(self, _ctx: commands.Context, channel: discord.TextChannel, color: discord.Colour, *, text: str):
         """Command Handler for the embed command
 
         Creates and sends an embed in the specified channel with color, title and text. The Title and text are separated
         by a '|' character.
 
         Args:
-            ctx (Context): The context in which the command was called.
+            _ctx (Context): The context in which the command was called.
             channel (str): The channel where to post the message. Can be channel name (starting with #) or channel id.
             color (str): Color code for the color of the strip.
             text (str): The text to be posted in the embed. The string contains title and content, which are separated
@@ -68,13 +69,13 @@ class AdminCog(commands.Cog):
 
     @embed.command(name='json', hidden=True)
     @command_log
-    async def embed_by_json(self, ctx: commands.Context, channel: discord.TextChannel, *, json_string: str):
+    async def embed_by_json(self, _ctx: commands.Context, channel: discord.TextChannel, *, json_string: str):
         """Command Handler for the embed command.
 
         Creates and sends an embed in the specified channel parsed from json.
 
         Args:
-            ctx (Context): The context in which the command was called.
+            _ctx (Context): The context in which the command was called.
             channel (str): The channel where to post the message. Can be channel name (starting with #) or channel id.
             json_string (str): The json string representing the embed. Alternatively it could also be a pastebin link.
         """
@@ -99,7 +100,7 @@ class AdminCog(commands.Cog):
         error_type = type(root_error)
 
         # put custom Error Handlers here
-        async def handle_http_exception(ctx: commands.Context, error: discord.HTTPException):
+        async def handle_http_exception(ctx: commands.Context, _error: discord.HTTPException):
             await ctx.send(
                 'Der übergebene JSON-String war entweder leer oder eines der Felder besaß einen ungültigen Typ.\n' +
                 'Du kannst dein JSON auf folgender Seite validieren und gegebenenfalls anpassen: ' +
@@ -131,7 +132,7 @@ class AdminCog(commands.Cog):
         """
         await ctx.send_help(ctx.command)
 
-    @cmd_for_bot_stuff.command(name="cogs")
+    @cmd_for_bot_stuff.command(name="cogs", hidden=True)
     @command_log
     async def embed_available_cogs(self, ctx: commands.Context):
         """Command handler for the `bot` subcommand `cogs`.
@@ -154,6 +155,96 @@ class AdminCog(commands.Cog):
 
         await ch_bot.send(embed=embed)
 
+    @cmd_for_bot_stuff.group(name="cog", hidden=True, invoke_without_command=True)
+    @command_log
+    async def management_cog(self, ctx: commands.Context):
+        """Command handler for the `bot` subcommand group `cog`.
+
+        This group contains subcommands for reloading, unloading or simply loading Cogs of the bot.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+        """
+        await ctx.send_help(ctx.command)
+
+    @management_cog.error
+    async def management_cog_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Error handler for the `bot` subcommand group `cog`.
+
+        Special errors occurring during reloading, unloading or loading of a Cog are handled in here.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            error (commands.CommandError): The error raised during the execution of a command.
+        """
+        if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, KeyError):
+            await ctx.guild.get_channel(constants.CHANNEL_ID_BOT).send("Es konnte leider kein Cog mit diesem Namen "
+                                                                       "gefunden werden.")
+
+    @management_cog.command(name='load', hidden=True)
+    @command_log
+    async def load_extension(self, _ctx: commands.Context, extn_name: str):
+        """Command handler for the `bot cog` subcommand `load`.
+
+        Loads an extension (Cog) with the specified name into the bot.
+
+        Args:
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            extn_name (str): The name of the extension (Cog).
+        """
+        extn_name = _get_cog_name(extn_name)
+
+        self.bot.load_extension(constants.INITIAL_EXTNS[extn_name])
+        log.warning("%s has been loaded.", extn_name)
+
+    @management_cog.command(name='unload', hidden=True)
+    @command_log
+    async def unload_extension(self, _ctx: commands.Context, extn_name: str):
+        """Command handler for the `bot cog` subcommand `unload`.
+
+        Removes an extension (Cog) with the specified name from the bot.
+
+        Args:
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            extn_name (str): The name of the extension (Cog).
+        """
+        extn_name = _get_cog_name(extn_name)
+
+        self.bot.unload_extension(constants.INITIAL_EXTNS[extn_name])
+        log.warning("%s has been unloaded.", extn_name)
+
+    @management_cog.group(name='reload', hidden=True, invoke_without_command=True)
+    @command_log
+    async def reload_extension(self, _ctx: commands.Context, extn_name: str):
+        """Command handler for the `bot cog` subcommand `reload`.
+
+        Reloads an extension (Cog) with the specified name from the bot. If changes to the code inside a Cog have been
+        made, this is going to apply them without taking the bot offline.
+
+        Args:
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            extn_name (str): The name of the extension (Cog).
+        """
+        extn_name = _get_cog_name(extn_name)
+
+        self.bot.reload_extension(constants.INITIAL_EXTNS[extn_name])
+        log.warning("%s has been reloaded.", extn_name)
+
+    @reload_extension.command(name='all', hidden=True)
+    @command_log
+    async def reload_all_extension(self, _ctx: commands.Context):
+        """Command handler for the `bot cog reload` subcommand `all`.
+
+        Reloads all the extension (Cogs) from the bot. If changes to the code inside a Cog have been
+        made, this is going to apply them without taking the bot offline.
+
+        Args:
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
+        """
+        for cog_name, path in constants.INITIAL_EXTNS.items():
+            self.bot.reload_extension(path)
+            log.warning("%s has been reloaded.", cog_name)
+
     @cmd_for_bot_stuff.group(name="presence", invoke_without_command=True)
     @command_log
     async def change_discord_presence(self, ctx: commands.Context):
@@ -169,7 +260,7 @@ class AdminCog(commands.Cog):
 
     @change_discord_presence.command(name="watching")
     @command_log
-    async def change_discord_presence_watching(self, ctx: commands.Context,
+    async def change_discord_presence_watching(self, _ctx: commands.Context,
                                                status: Optional[discord.Status] = discord.Status.online,
                                                *, activity_name: str):
         """Command handler for the `presence` subcommand `watching`.
@@ -178,7 +269,7 @@ class AdminCog(commands.Cog):
         Discord status can also be set via the optional status argument.
 
         Args:
-            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
             status (Optional[discord.Status]): The status which should be displayed.
             activity_name (str): The name of whatever the bot should be watching.
         """
@@ -187,7 +278,7 @@ class AdminCog(commands.Cog):
 
     @change_discord_presence.command(name="listening")
     @command_log
-    async def change_discord_presence_listening(self, ctx: commands.Context,
+    async def change_discord_presence_listening(self, _ctx: commands.Context,
                                                 status: Optional[discord.Status] = discord.Status.online,
                                                 *, activity_name: str):
         """Command handler for the `presence` subcommand `listening`.
@@ -196,7 +287,7 @@ class AdminCog(commands.Cog):
         Discord status can also be set via the optional status argument.
 
         Args:
-            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
             status (Optional[discord.Status]): The status which should be displayed.
             activity_name (str): The name of what the bot should be listening to.
         """
@@ -205,7 +296,7 @@ class AdminCog(commands.Cog):
 
     @change_discord_presence.command(name="playing")
     @command_log
-    async def change_discord_presence_playing(self, ctx: commands.Context,
+    async def change_discord_presence_playing(self, _ctx: commands.Context,
                                               status: Optional[discord.Status] = discord.Status.online,
                                               *, activity_name: str):
         """Command handler for the `presence` subcommand `playing`.
@@ -214,7 +305,7 @@ class AdminCog(commands.Cog):
         Discord status can also be set via the optional status argument.
 
         Args:
-            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
             status (Optional[discord.Status]): The status which should be displayed.
             activity_name (str): The name of the game which the bot should play.
         """
@@ -223,7 +314,7 @@ class AdminCog(commands.Cog):
 
     @change_discord_presence.command(name="streaming")
     @command_log
-    async def change_discord_presence_streaming(self, ctx: commands.Context, stream_url: str,
+    async def change_discord_presence_streaming(self, _ctx: commands.Context, stream_url: str,
                                                 status: Optional[discord.Status] = discord.Status.online,
                                                 *, activity_name: str):
         """Command handler for the `presence` subcommand `streaming`.
@@ -232,7 +323,7 @@ class AdminCog(commands.Cog):
         stream URL. The Discord status can also be set via the optional status argument.
 
         Args:
-            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
             stream_url (str): The URL of the stream. (The watch button will redirect to this link if clicked)
             status (Optional[discord.Status]): The status which should be displayed.
             activity_name (str): The name of whatever the bot should be streaming.
@@ -251,13 +342,13 @@ class AdminCog(commands.Cog):
 
     @change_discord_presence.command(name="clear")
     @command_log
-    async def change_discord_presence_clear(self, ctx: commands.Context):
+    async def change_discord_presence_clear(self, _ctx: commands.Context):
         """Command handler for the `presence` subcommand `clear`.
 
         This is a command that clears the currently set activity and sets the Discord status to "Online".
 
         Args:
-            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
         await self.bot.change_presence(activity=None)
 
@@ -390,6 +481,27 @@ def parse_pastebin_link(url: str) -> str:
     return requests.get(url).text
 
 
+def _get_cog_name(extn_name: str) -> str:
+    """Method for converting user input into a valid Cog name if possible.
+
+    Fixes capitalization and extends the Extension/Cog name if needed.
+
+    Args:
+        extn_name (str): The name (or part of it) of an Extension/Cog.
+
+    Returns:
+        str: String containing the desired Cog name.
+    """
+    cog_name = extn_name.capitalize()
+
+    if not cog_name.endswith(("Cog", "cog")):
+        cog_name += "Cog"
+    elif cog_name.endswith("cog"):
+        cog_name = cog_name[:-3] + "Cog"
+
+    return cog_name
+
+
 def _create_cogs_embed_string(loaded_cogs: Mapping[str, commands.Cog]) -> str:
     """Method for creating the string used in the cogs embed.
 
@@ -404,7 +516,7 @@ def _create_cogs_embed_string(loaded_cogs: Mapping[str, commands.Cog]) -> str:
     """
     string = ""
 
-    for cog in constants.INITIAL_EXTNS.keys():
+    for cog in constants.INITIAL_EXTNS:
         if cog in loaded_cogs.keys():
             string += constants.EMOJI_AVAILABLE
         else:

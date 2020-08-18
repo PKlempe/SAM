@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import List
+import re
 
 import discord
 from discord.ext import commands
@@ -24,10 +25,48 @@ class ModerationCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
-    @commands.group(invoke_without_command=True)
+    @commands.command(name='report')
+    @command_log
+    async def report_user(self, ctx: commands.Context, offender: discord.Member, *, description: str):
+        """Command Handler for the `report` command.
+
+        Allows users to report other members to the moderators by using their ID, name + discriminator, name, nickname
+        or by simply mentioning them. Everything after that will be used as the description for the report. The
+        complete report will then be posted in the configured report channel, which (hopefully) can only be accessed by
+        by the moderators.
+        If no member could be found, the user who invoked the command will be informed via a direct message.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            offender (discord.Member): The person accused of doing something wrong.
+            description (str): A description of why this person has been reported.
+        """
+        await ctx.message.delete()
+
+        embed = _create_report_embed(offender, ctx.author, ctx.channel, ctx.message, description)
+        await ctx.guild.get_channel(constants.CHANNEL_ID_REPORT).send(embed=embed)
+
+    @report_user.error
+    async def report_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Error Handler for the `report` command.
+
+        Handles specific exceptions which occur during the execution of this command. The global error handler will
+        still be called for every error thrown.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            error (commands.CommandError): The error raised during the execution of the command.
+        """
+        if isinstance(error, commands.BadArgument):
+            regex = re.search(r"\"(.*)\"", error.args[0])  # Regex to get the text between two quotes.
+            user = regex.group(1) if regex is not None else None
+
+            await ctx.author.send(f"Ich konnte leider keinen Nutzer namens **{user}** finden. :confused:\nHast du dich "
+                                  f"möglicherweise vertippt?")
+
+    @commands.group(name='modmail', invoke_without_command=True)
     @command_log
     async def modmail(self, ctx: commands.Context):
-
         """Command Handler for the `modmail` command.
 
         Allows users to write a message to all the moderators of the server. The message is going to be posted in a
@@ -170,8 +209,43 @@ class ModerationCog(commands.Cog):
         return discord.Embed.from_dict(dict_embed)
 
 
-def _modmail_create_hyperlinks_list(messages: List[tuple]) -> str:
-    """Method which creates a string representing a list of hyperlinks with specific Discord messages as their targets.
+def _create_report_embed(offender: discord.Member, reporter: discord.Member, channel: discord.TextChannel,
+                         message: discord.Message, description: str) -> discord.Embed:
+    """Method which creates an embed containing information about a possible incident on the server.
+
+    Each embed consists of information about the person who reported a problem, the possible offender and a description
+    about why the person has been reported.
+
+    Args:
+        offender (discord.Member): The user who has been reported.
+        reporter (discord.Member): The person who submitted the report.
+        channel (discord.TextChannel): The channel from where the report has been submitted.
+        message (discord.Message): The message which invoked the command.
+        description (str): The description why this person has been reported.
+
+    Returns:
+        discord.Embed: An embedded message containing information about a possible offender.
+    """
+    joined_at = offender.joined_at.strftime("%d.%m.%Y - %H:%M")
+    created_at = offender.created_at.strftime("%d.%m.%Y - %H:%M")
+
+    embed = discord.Embed(title="Nutzer-Infos", color=constants.EMBED_COLOR_REPORT, timestamp=datetime.utcnow(),
+                          description=f"**Name:** {offender}\n**Beitritt am:** {joined_at}\n"
+                                      f"**Erstellt am:** {created_at}")
+    embed.set_author(name=f"Neue Meldung aus [#{channel}]")
+    embed.set_footer(text=f"Gemeldet von {reporter}", icon_url=reporter.avatar_url)
+    embed.add_field(name="Beschreibung:", value=f"{description}\n[Gehe zum Channel]({message.jump_url})")
+    embed.set_thumbnail(url=offender.avatar_url)
+
+    return embed
+
+
+def _modmail_create_ticket_list(messages: List[tuple]) -> str:
+    """Method which creates a string representing a list of modmail tickets.
+
+    Each entry of the list consists of a timestamp representing the moment this ticket has been submitted and a link to
+    the corresponding embedded message in the modmail channel. The text of each hyperlink represents the user who
+    submitted the ticket.
 
     Args:
         messages (List[tuple]): A list containing tuples consisting of a message id and the authors name.
@@ -182,27 +256,10 @@ def _modmail_create_hyperlinks_list(messages: List[tuple]) -> str:
     string = ""
 
     for message in messages:
-        string += "- [{0[1]}]({1}/channels/{2}/{3}/{0[0]})\n" \
-            .format(message, constants.URL_DISCORD, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
+        timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f').strftime('%d.%m.%Y %H:%M')
 
-    return string
-
-
-def _modmail_create_timestamps_list(messages: List[tuple]) -> str:
-    """Method which creates a string representing a list of dates and times for when the individual messages provided
-    have been created.
-
-    Args:
-        messages (List[tuple]): A list containing tuples consisting of a message id, the authors name and a timestamp.
-
-    Returns:
-        str: A listing of dates and times.
-    """
-    string = ""
-
-    for message in messages:
-        timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f')
-        string += timestamp.strftime('%d.%m.%Y %H:%M') + "\n"
+        string += "- {0} | [{1[1]}]({2}/channels/{3}/{4}/{1[0]})\n" \
+            .format(timestamp, message, constants.URL_DISCORD, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
 
     return string
 
@@ -222,9 +279,8 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
     dict_embed = embed.to_dict()
 
     if modmail is not None:
-        embed.add_field(name="Eingereicht von:", value=_modmail_create_hyperlinks_list(modmail), inline=True)
-        embed.add_field(name="Eingereicht am:", value=_modmail_create_timestamps_list(modmail), inline=True)
         dict_embed = embed.to_dict()
+        dict_embed["description"] = _modmail_create_ticket_list(modmail)
 
         if status == ModmailStatus.OPEN:
             dict_embed["title"] = "Offenen Tickets: " + str(len(modmail))
