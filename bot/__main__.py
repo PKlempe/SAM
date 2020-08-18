@@ -55,8 +55,6 @@ async def on_command_error(ctx, exception):
         await ctx.channel.send(content="Oh, oh. Anscheinend gibt es momentan ein Verbindungsproblem:", embed=embed)
     elif isinstance(exception, commands.MissingRequiredArgument):
         await ctx.send_help(ctx.command)
-    elif isinstance(exception, commands.UserInputError):
-        await ctx.send(exception)
 
 
 if __name__ == '__main__':
