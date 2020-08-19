@@ -114,8 +114,8 @@ class UtilitiesCog(commands.Cog):
                     await message.pin(reason="Ausreichend Nutzer haben mit dem Pin-Emoji reagiert.")
                     log.info("A message has been pinned in channel %s via user reactions.", channel)
                 except discord.HTTPException:
-                    channel.send("Es sieht so aus, als ob bereits zu viele Nachrichten in diesem Channel angepinnt "
-                                 "wurden. :pushpin:\nEin <@&{0}> könnte in diesem Fall die Pins ein wenig aufräumen. "
+                    channel.send("Es sieht so aus, als wurden bereits zu viele Nachrichten in diesem Channel angepinnt. "
+                                 ":pushpin:\nEin <@&{0}> könnte in diesem Fall die Pins ein wenig aufräumen. "
                                  ":broom:".format(constants.ROLE_ID_MODERATOR))
 
 
