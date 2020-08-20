@@ -36,6 +36,10 @@ URL_UFIND_LOGO = "https://blog.univie.ac.at/relaunch/wp-content/uploads/2016/07/
 URL_HTTP_CAT = "https://http.cat"
 
 
+# LIMITS
+LIMIT_PINS = 1
+
+
 # Special Channel IDs
 CHANNEL_ID_BOT = 729066220627951757
 CHANNEL_ID_REPORT = 729066220627951757
@@ -71,6 +75,8 @@ DISCORD_BOOST_LVL3_CAP = 30
 
 
 # Special Emojis
+EMOJI_PIN = "\U0001F4CC"
+
 EMOJI_AVAILABLE = "\U0001F7E2"
 EMOJI_UNAVAILABLE = "\U0001F534"
 

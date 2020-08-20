@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 
 from bot import constants
-from bot.logger import command_log
+from bot.logger import command_log, log
 
 
 class UtilitiesCog(commands.Cog):
@@ -91,6 +91,32 @@ class UtilitiesCog(commands.Cog):
         embed.add_field(name="Special Thanks:", value=str_special_thanks)
         embed.add_field(name="Links:", value=str_links)
         await ctx.send(embed=embed)
+
+    @commands.Cog.listener(name='on_raw_reaction_add')
+    async def pin_message(self, payload: discord.RawReactionActionEvent):
+        """Event listener which triggers if a reaction has been added to a message.
+
+        If enough users have reacted with the specified pin emoji to a specific message, it will be pinned in the
+        corresponding channel by SAM. If the maximum of pinned messages in a channel has been reached, a message will
+        be posted to inform the members.
+
+        Args:
+            payload (discord.RawReactionActionEvent): The payload for the triggered event.
+        """
+        if payload.emoji.name == constants.EMOJI_PIN:
+            channel = self.bot.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+
+            reaction = next(x for x in message.reactions if x.emoji == constants.EMOJI_PIN)
+
+            if not message.pinned and reaction.count >= constants.LIMIT_PINS:
+                try:
+                    await message.pin(reason="Ausreichend Nutzer haben mit dem Pin-Emoji reagiert.")
+                    log.info("A message has been pinned in channel %s via user reactions.", channel)
+                except discord.HTTPException:
+                    channel.send("Es sieht so aus, als wurden bereits zu viele Nachrichten in diesem Channel angepinnt. "
+                                 ":pushpin:\nEin <@&{0}> könnte in diesem Fall die Pins ein wenig aufräumen. "
+                                 ":broom:".format(constants.ROLE_ID_MODERATOR))
 
 
 def build_serverinfo_strings(guild: discord.Guild) -> List[str]:
