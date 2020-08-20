@@ -3,7 +3,7 @@
 import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Iterable
 
 import discord
 import requests
@@ -127,6 +127,99 @@ class UniversityCog(commands.Cog):
         await message.delete()
 
         return list_selection_emojis.index(reaction[0].emoji)
+
+    @commands.group(name='exchange', hidden=True, invoke_without_command=True)
+    @command_log
+    async def exchange(self,
+                       ctx: commands.Context,
+                       channel: discord.TextChannel,
+                       offered_group: int,
+                       *, requested_groups_str: str):
+        """Command Handler for the exchange command
+
+        Creates a new request for group exchange. Posts an embed in the group exchange channel, adds according entries
+        in the db and notifies the poster and all possible partners for group exchange with a DM.
+
+        Args:
+            ctx (Context): The context in which the command was called.
+            channel (discord:TextChannel): The channel corresponding to the course for group change.
+            offered_group (int): The group that the user offers.
+            requested_groups (List[int]): A list of all groups the user would be willing to take.
+        """
+        requested_groups = list(map(lambda gr: int(gr), requested_groups_str.split(',')))
+        self._db_connector.add_group_offer_and_requests(ctx.author.id,
+                                                        channel.id,
+                                                        offered_group,
+                                                        requested_groups)
+        embed = _build_group_exchange_embed(ctx.author, channel, offered_group, requested_groups)
+        message = await ctx.guild.get_channel(constants.CHANNEL_ID_REPORT).send(embed=embed)
+        self._db_connector.update_group_exchange_message_id(ctx.author.id, channel.id, message.id)
+
+        potential_candidates = self._db_connector.get_candidates_for_group_exchange(ctx.author.id,
+                                                                                    channel.id,
+                                                                                    offered_group,
+                                                                                    requested_groups)
+        #todo: go on here!
+        _notfiy_author_about_candidates(ctx.author, potential_candidates)
+        _notify_candidates_about_new_offer(potential_candidates, ctx.author)
+
+    # todo implement
+    @exchange.command(name="remove", hidden=True)
+    @command_log
+    async def remove_exchange(self, ctx: commands.Context, channel: Optional[discord.TextChannel], *, text: str):
+        """Lets the bot post a simple message to the mentioned channel (or the current channel if none is mentioned).
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            channel (Optional[str]): The channel where the message will be posted in.
+            text (str): The text to be echoed.
+        """
+        await (channel or ctx).send(text)
+
+
+def _build_group_exchange_embed(author: discord.User,
+                                channel: discord.TextChannel,
+                                offered_group: int,
+                                requested_groups: Iterable[int]) -> discord.Embed:
+    """Builds an embed for a group exchange request.
+
+    The embed contains information about who wants to exchange groups, which groups he offers and requests and for what
+    courses.
+
+    Args:
+        author (discord.User): The author of the embed (aka the user who wants to change groups).
+        channel (discord.TextChannel): The channel that refers to the course that should be changed.
+        offered_group (int): The group that the user offers.
+        requested_groups (List[int]): The groups that the user would accept.
+
+    Returns:
+        (discord.Embed): The embed with the group exchange request.
+    """
+    return discord.Embed(title=_parse_course_from_channel_name(channel),
+                         color=constants.EMBED_COLOR_GROUP_EXCHANGE) \
+        .set_thumbnail(url=author.avatar_url) \
+        .add_field(name="Biete:",
+                   value="Gruppe {0}".format(offered_group)) \
+        .add_field(name="Suche:",
+                   value="Gruppen {0}".format(", ".join(map(lambda i: str(i), requested_groups)))) \
+        .add_field(name="Eingereicht von:",
+                   value="{0}\n{0.mention}".format(author),
+                   inline=False)
+
+
+def _parse_course_from_channel_name(channel: discord.TextChannel):
+    """Parses the course name from a discord channel name
+
+    Args:
+        channel (discord.TextChannel): The channel to parse.
+
+    Returns:
+        (str): The course name corresponding to the channel name.
+    """
+    course_name_words = channel.name.split(constants.EMOJI_CHANNEL_NAME_SEPARATOR)[1] \
+        .replace('-', ' ') \
+        .split(' ')
+    return ' '.join(map(str.capitalize, course_name_words))
 
 
 def _create_embed_staff_selection(persons: List[ET.Element]) -> discord.Embed:

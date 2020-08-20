@@ -4,3 +4,20 @@ CREATE TABLE IF NOT EXISTS Modmail(
     StatusID SMALLINT NOT NULL DEFAULT 1,
     Timestamp TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS GroupRequest(
+    ID INTEGER PRIMARY KEY,
+    UserId TEXT NOT NULL,
+    Course TEXT NOT NULL,
+    GroupNr INTEGER NOT NULL,
+    UNIQUE (UserId, Course, GroupNr)
+);
+
+CREATE TABLE IF NOT EXISTS GroupOffer(
+    ID INTEGER PRIMARY KEY,
+    UserId TEXT NOT NULL,
+    Course TEXT NOT NULL,
+    GroupNr INTEGER NOT NULL,
+    MessageId TEXT NOT NULL,
+    UNIQUE (UserId, Course)
+);
