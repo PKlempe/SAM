@@ -135,5 +135,5 @@ dmypy.json
 .logs/
 *.log
 
-#Database files
+# Database files
 *.sqlite*
