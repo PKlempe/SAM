@@ -10,8 +10,8 @@ GET_ALL_MODMAIL_WITH_STATUS = "SELECT ID, Author, Timestamp FROM Modmail WHERE S
 INSERT_GROUP_OFFER = "INSERT INTO GroupOffer (UserId, Course, GroupNr, MessageId) VALUES (?, ?, ?, ?)"
 INSERT_GROUP_REQUEST = "INSERT INTO GroupRequest (UserId, Course, GroupNr) VALUES (?, ?, ?)"
 UPDATE_GROUP_MESSAGE_ID = "UPDATE GroupOffer SET MessageId = ? WHERE UserId = ? AND Course = ?"
-#needs to be formatted to have as many ? as there are group numbers for requested groups
-FIND_GROUP_EXCHANGE_CANDIDATES = "SELECT DISTINCT offer.UserId, offer.MessageId " \
+# needs to be formatted to have as many ? as there are group numbers for requested groups
+FIND_GROUP_EXCHANGE_CANDIDATES = "SELECT DISTINCT offer.UserId, offer.MessageId, offer.GroupNr " \
                                  "FROM GroupOffer offer INNER JOIN GroupRequest request " \
                                  "ON offer.Course = request.Course " \
                                  "AND offer.UserId = request.UserId " \
@@ -19,3 +19,10 @@ FIND_GROUP_EXCHANGE_CANDIDATES = "SELECT DISTINCT offer.UserId, offer.MessageId 
                                  "AND offer.Course = ? " \
                                  "AND request.GroupNr = ? " \
                                  "AND offer.GroupNr IN ({0})"
+GET_GROUP_EXCHANGE_MESSAGE = "SELECT MessageId FROM GroupOffer WHERE UserId = ? AND Course = ?"
+REMOVE_GROUP_EXCHANGE_OFFER = "DELETE FROM GroupOffer WHERE UserId = ? AND Course = ?"
+REMOVE_GROUP_EXCHANGE_REQUESTS = "DELETE FROM GroupRequest WHERE UserId = ? AND Course = ?"
+
+# This query is ridiculously dangerous. Use with caution.
+CLEAR_GROUP_EXCHANGE_OFFERS = "DELETE FROM GroupOffer"
+CLEAR_GROUP_EXCHANGE_REQUESTS = "DELETE FROM GroupRequest"

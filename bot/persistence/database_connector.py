@@ -158,6 +158,36 @@ class DatabaseConnector:
                 return rows
             return None
 
+    def get_group_exchange_message(self, user_id: str, course: str):
+        """Gets message id for a the request of a user for a specific course.
+
+        Args:
+            user_id (str): The id of the author of the request.
+            course (str): The id of the channel referring to the course.
+
+        Returns:
+            (str): The id of the message containing the request.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_GROUP_EXCHANGE_MESSAGE, (user_id, course))
+            rows = result.fetchone()
+
+            if rows:
+                return rows[0]
+            return None
+
+    def remove_group_exchange_offer(self, user_id: str, course: str):
+        """Removes all entries of a group exchange offer and request for a user.
+
+        Args:
+            user_id (str): The user for which the request and offer should be deleted.
+            course (str): The channel_id refering to the course for which the entries should be deleted.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.REMOVE_GROUP_EXCHANGE_OFFER, (user_id, course))
+            db_manager.execute(queries.REMOVE_GROUP_EXCHANGE_REQUESTS, (user_id, course))
+            db_manager.commit()
+
     @staticmethod
     def parse_sql_file(filename: str) -> List[str]:
         """Parses a SQL script to read all queries/commands it contains.
@@ -172,3 +202,5 @@ class DatabaseConnector:
         sql_file = file.read()
         file.close()
         return sql_file.split(';')
+
+

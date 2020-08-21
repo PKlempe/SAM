@@ -23,6 +23,13 @@ INITIAL_EXTNS = {"AdminCog":        'bot.admin.admin',
 # Filepaths
 LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
 
+# Cronjob times
+CRON_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER = "0 16 15 9 *"
+CRON_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER = "0 16 1 11 *"
+CRON_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER = "0 16 15 2 *"
+CRON_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER = "0 16 1 4 *"
+
+
 ## SQLite Database
 DB_FILE_PATH = os.getenv("DB_FILE_PATH")
 DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
