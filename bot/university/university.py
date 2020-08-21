@@ -4,6 +4,7 @@ import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import Dict, List, Optional, Union
+from sqlite3 import IntegrityError
 
 import discord
 import requests
@@ -26,6 +27,119 @@ class UniversityCog(commands.Cog):
         """
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
+
+    @commands.group(name='module', invoke_without_command=True)
+    @command_log
+    async def toggle_module(self, ctx: commands.Context, *, str_modules: str):
+        """Command Handler for the `module` command.
+
+        Allows members to assign/remove so called mod roles to/from themselves. This way users can toggle text channels
+        about specific courses to be visible or not to them. When the operation is finished, SAM will send an overview
+        about the changes he did per direct message to the user who invoked the command.
+        If the command is invoked outside of the configured role channel, the bot will post a short info that this
+        command should only be invoked there and delete this message shortly after.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            str_modules (str): A string containing abbreviations of all the modules a user would like to toggle.
+        """
+        if ctx.channel.id != constants.CHANNEL_ID_ROLES:
+            ctx.channel.send(value=f"Dieser Befehl wird nur in <#{constants.CHANNEL_ID_ROLES}> unterstützt. Bitte "
+                                   f"versuche es dort noch einmal. ", delete_after=8)
+            return
+
+        converter = commands.RoleConverter()
+        modules = list(set(str_modules.split()))  # Removes duplicates
+
+        modules_error = []
+        modules_added = []
+        modules_removed = []
+
+        for module in modules:
+            module_upper = module.upper()
+            try:
+                role = await converter.convert(ctx, module_upper)
+
+                if role in ctx.author.roles:
+                    await ctx.author.remove_roles(role, atomic=True, reason="Selbstständig entfernt via SAM.")
+                    modules_removed.append(module_upper)
+                else:
+                    await ctx.author.add_roles(role, atomic=True, reason="Selbstständig zugewiesen via SAM.")
+                    modules_added.append(module_upper)
+            except commands.BadArgument:
+                modules_error.append(module_upper)
+
+        embed = _create_embed_module_roles(modules_added, modules_removed, modules_error)
+        await ctx.author.send(embed=embed)
+
+    @toggle_module.command(name="add", hidden=True)
+    @commands.is_owner()
+    @command_log
+    async def add_module_role(self, ctx: commands.Context, module_name: str):
+        """Command Handler for the `module` subcommand `add`.
+
+        Allows the bot owner to add a specific role to the module roles.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            module_name (str): The name of the role which should be added.
+        """
+        module_role = await commands.RoleConverter().convert(ctx, module_name.upper())
+
+        try:
+            self._db_connector.add_module_role(module_role.id)
+            await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde erfolgreich zu den verfügbaren Modul-Rollen "
+                           f"hinzugefügt.",
+                           delete_after=8)
+        except IntegrityError:
+            await ctx.send(f"Die Rolle \"**__{module_role}__**\" gehört bereits zu den verfügbaren Modul-Rollen.",
+                           delete_after=8)
+
+    @add_module_role.error
+    async def add_module_role_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Error Handler for the `module` subcommand `add`.
+
+        Handles specific exceptions which occur during the execution of this command. The global error handler will
+        still be called for every error thrown.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            error (commands.CommandError): The error raised during the execution of the command.
+        """
+        if isinstance(error, commands.BadArgument):
+            await _module_role_error(ctx, error)
+
+    @toggle_module.command(name="remove", hidden=True)
+    @commands.is_owner()
+    @command_log
+    async def remove_module_role(self, ctx: commands.Context, module_name: str):
+        """Command Handler for the `module` subcommand `remove`.
+
+        Allows the bot owner to remove a specific role from the module roles.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            module_name (str): The name of the role which should be removed.
+        """
+        module_role = await commands.RoleConverter().convert(ctx, module_name.upper())
+
+        self._db_connector.remove_module_role(module_role.id)
+        await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde aus den verfügbaren Modul-Rollen entfernt.",
+                       delete_after=8)
+
+    @remove_module_role.error
+    async def remove_module_role_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Error Handler for the `module` subcommand `remove`.
+
+        Handles specific exceptions which occur during the execution of this command. The global error handler will
+        still be called for every error thrown.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            error (commands.CommandError): The error raised during the execution of the command.
+        """
+        if isinstance(error, commands.BadArgument):
+            await _module_role_error(ctx, error)
 
     @commands.group(name="ufind", invoke_without_command=True)
     @command_log
@@ -127,6 +241,63 @@ class UniversityCog(commands.Cog):
         await message.delete()
 
         return list_selection_emojis.index(reaction[0].emoji)
+
+
+async def _module_role_error(ctx: commands.Context, error: commands.BadArgument):
+    """Method which posts an error message that the role which should be added/removed from module roles doesn't exist.
+
+    Will always be called by the local error handlers from the subcommands `module add` and `module remove` if the
+    specified role doesn't exist. The error message will be posted in the channel where the command has been invoked
+    and will be deleted shortly after.
+
+    Args:
+        ctx (discord.ext.commands.Context): The context in which the command was called.
+        error (commands.BadArgument): The specific error being raised if the specified role doesn't exist.
+    """
+    role = re.search(r"\"(.*)\"", error.args[0])  # Regex to get the text between two quotes.
+    role = role.group(1) if role is not None else None
+
+    await ctx.send(f"Die von dir angegebene Rolle \"**__{role}__**\" leider nicht.", delete_after=8)
+
+
+def _create_embed_module_roles(modules_added: List[str], modules_removed: List[str], modules_error: List[str]) \
+        -> discord.Embed:
+    """Method which creates the overview embed when updating your module roles.
+
+    Args:
+        modules_added (List[str]): A list containing the names of the module roles which have been added.
+        modules_removed (List[str]): A list containing the names of the module roles which have been removed.
+        modules_error (List[str]): A list containing the names of the module roles which couldn't be found.
+
+    Returns:
+        discord.Embed: Embedded message representing an overview about the changes regarding a users module roles.
+    """
+    icon = ":x: " if modules_error else ":white_check_mark: "
+
+    if not modules_error:
+        description = "Deine Modul-Rollen wurden erfolgreich angepasst."
+    else:
+        description = "Beim Anpassen deiner Modul-Rollen, gab es leider Probleme.\n__Folgende Module existieren " \
+                      "nicht:__ " + ", ".join(modules_error)
+
+    dict_embed = discord.Embed(title=f"{icon} Modul-Rollen Überblick", description=description,
+                               color=constants.EMBED_COLOR_INFO) \
+        .add_field(name=":green_circle: **Hinzugefügte Module:**", value="- Keine", inline=True) \
+        .add_field(name=":red_circle: **Entfernte Module:**", value="- Keine", inline=True)\
+        .to_dict()
+
+    if modules_added:
+        str_module = ""
+        for module in modules_added:
+            str_module += f"- {module}\n"
+        dict_embed["fields"][0]["value"] = str_module
+    if modules_removed:
+        str_module = ""
+        for module in modules_removed:
+            str_module += f"- {module}\n"
+        dict_embed["fields"][1]["value"] = str_module
+
+    return discord.Embed.from_dict(dict_embed)
 
 
 def _create_embed_staff_selection(persons: List[ET.Element]) -> discord.Embed:

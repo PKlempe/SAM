@@ -36,6 +36,26 @@ class DatabaseConnector:
                     except Error as error:
                         print("Command could not be executed, skipping it: {0}".format(error))
 
+    def add_module_role(self, role_id: int):
+        """Adds a role to the table "ModuleRole".
+
+        Args:
+            role_id (int): The role id of the role which should be added.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.INSERT_MODULE_ROLE, (role_id,))
+            db_manager.commit()
+
+    def remove_module_role(self, role_id: int):
+        """Removes a role from the table "ModuleRole".
+
+        Args:
+            role_id (int): The role id of the role which should be removed.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.REMOVE_MODULE_ROLE, (role_id,))
+            db_manager.commit()
+
     def add_modmail(self, msg_id: int, author: str, timestamp: datetime.datetime):
         """Inserts the username of the author and the message id of a submitted modmail into the database and
         sets its status to `Open`.

@@ -5,6 +5,10 @@ CREATE TABLE IF NOT EXISTS Modmail(
     Timestamp TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS ModuleRole(
+    RoleID TEXT PRIMARY KEY
+);
+
 CREATE TABLE IF NOT EXISTS BotOnlyChannels(
     Channel TEXT PRIMARY KEY
 );
