@@ -106,8 +106,6 @@ class DatabaseConnector:
             course (str): The course for which the offer is.
             offered_group (str): The group that the user offers.
             requested_groups (List[str]): List of all groups the user would accept.
-            message_id (str): The id of the message that contains the request.
-
         """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.INSERT_GROUP_OFFER, (user_id, course, offered_group, "undefined"))
@@ -125,7 +123,7 @@ class DatabaseConnector:
 
         Args:
             user_id (str): The user_id of the requesting user.
-            coures (str): The course that should be exchanged.
+            course (str): The course that should be exchanged.
             message_id (str): The id of the message that contains the group exchange embed.
         """
         with DatabaseManager(self._db_file) as db_manager:
@@ -148,7 +146,7 @@ class DatabaseConnector:
             (Tuple[str, str]): UserId and MessageId of potential group exchange candidates.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            parameter_list = [author_id, course, offered_group] + requested_groups
+            parameter_list = [author_id, course, offered_group] + list(requested_groups)
             result = db_manager.execute(
                 queries.FIND_GROUP_EXCHANGE_CANDIDATES.format(', '.join('?' for _ in requested_groups)),
                 tuple(parameter_list)
@@ -202,5 +200,3 @@ class DatabaseConnector:
         sql_file = file.read()
         file.close()
         return sql_file.split(';')
-
-

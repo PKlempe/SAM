@@ -23,12 +23,12 @@ INITIAL_EXTNS = {"AdminCog":        'bot.admin.admin',
 # Filepaths
 LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
 
-# Cronjob times
-CRON_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER = "0 16 15 9 *"
-CRON_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER = "0 16 1 11 *"
-CRON_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER = "0 16 15 2 *"
-CRON_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER = "0 16 1 4 *"
 
+# Job times
+DATE_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER = {"month": "9", "day": "15", "hour": "4", "minute": "0"}
+DATE_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER = {"month": "11", "day": "1", "hour": "4", "minute": "0"}
+DATE_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER = {"month": "2", "day": "15", "hour": "4", "minute": "0"}
+DATE_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER = {"month": "4", "day": "1", "hour": "4", "minute": "0"}
 
 ## SQLite Database
 DB_FILE_PATH = os.getenv("DB_FILE_PATH")

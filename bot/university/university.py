@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Union, Iterable, Tuple
 
 import discord
 import requests
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext import commands
 
 from bot import constants
@@ -27,6 +28,19 @@ class UniversityCog(commands.Cog):
         """
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
+
+        # init scheduler for resetting the group-exchange channel
+        self.scheduler = AsyncIOScheduler()
+        self._add_scheduler_job_yearly(self.activate_group_exchange_channel,
+                                       constants.DATE_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER)
+        self._add_scheduler_job_yearly(self.activate_group_exchange_channel,
+                                       constants.DATE_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER)
+        self._add_scheduler_job_yearly(self.deactivate_group_exchange_channel_and_purge,
+                                       constants.DATE_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER)
+        self._add_scheduler_job_yearly(self.deactivate_group_exchange_channel_and_purge,
+                                       constants.DATE_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER)
+        self.scheduler.start()
+        self.scheduler.print_jobs()
 
     @commands.group(name="ufind", invoke_without_command=True)
     @command_log
@@ -145,7 +159,7 @@ class UniversityCog(commands.Cog):
             ctx (Context): The context in which the command was called.
             channel (discord:TextChannel): The channel corresponding to the course for group change.
             offered_group (int): The group that the user offers.
-            requested_groups (List[int]): A list of all groups the user would be willing to take.
+            requested_groups_str (List[int]): A list of all groups the user would be willing to take.
         """
 
         def group_to_int(group):
@@ -158,8 +172,7 @@ class UniversityCog(commands.Cog):
 
         if offered_group in requested_groups:
             raise ValueError("Offered Group was in a requested Groups. Offered Group {0}, Requested Groups: {1}".format(
-                offered_group, requested_groups)
-            )
+                offered_group, requested_groups))
         self._db_connector.add_group_offer_and_requests(ctx.author.id,
                                                         channel.id,
                                                         offered_group,
@@ -176,14 +189,21 @@ class UniversityCog(commands.Cog):
                                                        potential_candidates,
                                                        ctx.guild.get_channel(constants.CHANNEL_ID_GROUP_EXCHANGE),
                                                        channel)
+            notification_embed = _build_candidate_notification_embed(ctx.author,
+                                                                     message,
+                                                                     channel,
+                                                                     offered_group)
             await self._notify_candidates_about_new_offer(potential_candidates,
-                                                          ctx.author,
-                                                          message,
-                                                          channel,
-                                                          offered_group)
+                                                          notification_embed)
 
     @exchange.error
     async def exchange_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Error Handler for the exchange commands.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            error (commands.CommandError): The error raised during the execution of the command.
+        """
         if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
             await ctx.channel.send(
                 "**__Error:__** Unter deinen Wunschgruppen befindet sich die Gruppe die du anbietest.",
@@ -256,10 +276,7 @@ class UniversityCog(commands.Cog):
         await author.send(embed=embed)
 
     async def _notify_candidates_about_new_offer(self, potential_candidates: List[Tuple[str, str, int]],
-                                                 author: discord.User,
-                                                 message: discord.Message,
-                                                 course_channel: discord.TextChannel,
-                                                 offered_group: int):
+                                                 embed: discord.Embed):
 
         """Notifies all potential candidates that a new relevant group exchange offer has been posted.
 
@@ -269,24 +286,104 @@ class UniversityCog(commands.Cog):
         Args:
             potential_candidates (List[Tuple[str, str]]): The possible candidate ids and the message ids of their
             exchange messages. They are to be informed
-            author (discord.User): The author to be notified.
-            message: (discord.Message): The message containing the new offer.
-            channel (discord.TextChannel): The channel that refers to the course that the exchange is for.
-            offered_group (int): The group that the author offers.
+            embed (discord.Embed): The embed to send the potential candidates.
         """
-        course_name = _parse_course_from_channel_name(course_channel)
-        embed = discord.Embed(title="Wir haben ein neues Tauschangebot für dich gefunden:",
-                              description="Bitte vergiss nicht, deine Anfrage mit dem Befehl 'exchange remove "
-                                          "<channel-mention>' wieder zu löschen, wenn du einen Tauschpartner gefunden "
-                                          "hast",
-                              color=constants.EMBED_COLOR_GROUP_EXCHANGE) \
-            .set_thumbnail(url=author.avatar_url) \
-            .add_field(name="User:", value="[{0}]({1})".format(author, message.jump_url)) \
-            .add_field(name="Kurs:", value=course_name) \
-            .add_field(name="Bietet:", value="Gruppe {0}".format(offered_group))
+
         for candidate in potential_candidates:
-            print("sending")
-            # await self.bot.get_user(int(candidate[0])).send(embed=embed)
+            await self.bot.get_user(int(candidate[0])).send(embed=embed)
+
+    async def activate_group_exchange_channel(self, ctx):
+        """Activates the group exchange channel.
+
+        Makes the channel visible by adding read_messages permission to @everyone and posts an info message, about how
+        to use the channel.
+        """
+        guild = self.bot.get_guild(constants.SERVER_ID)
+        channel = guild.get_channel(constants.CHANNEL_ID_GROUP_EXCHANGE)
+        await channel.set_permissions(guild.default_role, read_messages=True)
+        embed = discord.Embed(title="Wie wirds gemacht?", color=constants.EMBED_COLOR_INFO,
+                              description="Um das Finden eines Tauschpartners für alle möglichst einfach und unkompliziert zu "
+                                          "gestalten, verwende bitte den Befehl: `!exchange [channel-mention] [Biete] [Suche]`"
+                                          "SAM wird daraufhin ein schön formatiertes Tauschangebot für dich in diesem "
+                                          "Channel posten und dich weiters über passende Partner informieren. Wichtig ist, dass"
+                                          "du um den richtigen Kurs zu markieren den zugehörigen Channel mit # mentionst."
+                                          "```"
+                                          "#Beispiel: Tausche MOD-Gruppe 4 gegen 1,2 oder 3\n"
+                                          "!exchange #mod🔹modellierung 4 1,2,3"
+                                          "```"
+                                          "Man beachte dass beim letzten Parameter die Nummer durch einen Beistrich (ohne "
+                                          "Leerzeichen) getrennt sind.\n Um deine Anfrage für einen Kurs zu löschen nutze den "
+                                          "Befehl `!exchange remove [channel-mention]`. "
+                                          "Damit wird dein Eintrag gelöscht. __Bitte mach das auch,wenn du einen Tauschpartner "
+                                          "gefunden hast__") \
+            .add_field(name="Die Suche",
+                       value="__Verwende die Suche__, um in diesem Channel gezielt nach Tauschangeboten für " \
+                             "die gewünschte Lehrveranstaltung zu filtern und dir diese anzeigen zu lassen.",
+                       inline=False) \
+            .add_field(name="Private Nachrichten",
+                       value="Wenn du einen Tauschpartner gefunden hast, __sende ihm eine private Nachricht__. "
+                             "Diskussionen hier zu vermeiden, hilft dabei den Channel für alle übersichtlich zu halten."
+                             " Weiters wird dir SAM eine private Nachricht schicken, wenn ein passender Tauschpartner"
+                             " gefunden wurde.",
+                       inline=False)
+        await channel.send(embed=embed)
+
+    async def deactivate_group_exchange_channel_and_purge(self):
+        """Deactivates the group exchange channel.
+
+        Makes the channel invisible by removing the read_messages permission from @everyone and purges all messages in
+        the channel.
+        """
+        guild = self.bot.get_guild(constants.SERVER_ID)
+        channel = guild.get_channel(constants.CHANNEL_ID_GROUP_EXCHANGE)
+        await channel.set_permissions(guild.default_role, read_messages=False)
+        await channel.purge(limit=100000)
+
+    def _add_scheduler_job_yearly(self, func, date_dict: dict):
+        """Adds a new job to the scheduler that runs a member function of this class
+
+        Convenience method to add a new job to the object's scheduler. The added function must be a member of the self
+        object, and must not have any additonal parameters next to self. The job is scheduled yearly as by the passed
+        'date_dict', which must contain the keys 'month', 'day', 'hour' and 'minute'.
+
+        Args:
+            func (function): The function to be executed on the scheduled time.
+            date_dict (dict): Dictionary specifiying the execution moment for each year. Must at least contain the keys
+            'month', 'day', 'hour' and 'minute'.
+        """
+        self.scheduler.add_job(func,
+                               'cron',
+                               month=date_dict['month'],
+                               day=date_dict['day'],
+                               hour=date_dict['hour'],
+                               minute=date_dict['minute'])
+
+
+def _build_candidate_notification_embed(author: discord.User,
+                                        message: discord.Message,
+                                        course_channel: discord.TextChannel,
+                                        offered_group: int):
+    """Builds an embed with information about new group exchange offers.
+
+    Args:
+        author (discord.User): The author of the new offer.
+        message (discord.Message): The message containing the new offer.
+        course_channel (discord.TextChannel): The channel referring to the course of the offer.
+        offered_group (int): The group that is offered.
+
+    Returns:
+        (discord.Embed): An embed containing all information above for the user.
+    """
+    course_name = _parse_course_from_channel_name(course_channel)
+    return discord.Embed(title="Wir haben ein neues Tauschangebot für dich gefunden:",
+                         description="Bitte vergiss nicht, deine Anfrage mit dem Befehl 'exchange remove "
+                                     "<channel-mention>' wieder zu löschen, wenn du einen Tauschpartner gefunden "
+                                     "hast",
+                         color=constants.EMBED_COLOR_GROUP_EXCHANGE) \
+        .set_thumbnail(url=author.avatar_url) \
+        .add_field(name="User:", value="[{0}]({1})".format(author, message.jump_url)) \
+        .add_field(name="Kurs:", value=course_name) \
+        .add_field(name="Bietet:", value="Gruppe {0}".format(offered_group))
 
 
 def _build_group_exchange_embed(author: discord.User,
@@ -313,7 +410,7 @@ def _build_group_exchange_embed(author: discord.User,
         .add_field(name="Biete:",
                    value="Gruppe {0}".format(offered_group)) \
         .add_field(name="Suche:",
-                   value="Gruppen {0}".format(", ".join(map(lambda i: str(i), requested_groups)))) \
+                   value="Gruppen {0}".format(", ".join(map(str, requested_groups)))) \
         .add_field(name="Eingereicht von:",
                    value="{0}\n{0.mention}".format(author),
                    inline=False)
