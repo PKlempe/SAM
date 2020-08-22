@@ -1,8 +1,9 @@
 """Contains a Cog for all administrative funcionality."""
 
+import asyncio.exceptions
 import json
 from datetime import datetime
-from typing import Optional, Mapping
+from typing import Optional, Mapping, Tuple
 
 import discord
 import requests
@@ -10,8 +11,11 @@ from discord.ext import commands
 
 from bot import constants
 from bot.logger import command_log, log
+from bot.persistence import DatabaseConnector
 
 
+# disables too many public methods for now TODO: fix this (maybe with mixins)
+# pylint: disable=R0904
 class AdminCog(commands.Cog):
     """Cog for administrative Functions."""
 
@@ -22,6 +26,7 @@ class AdminCog(commands.Cog):
             bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
         """
         self.bot = bot
+        self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
     # A special method that registers as a commands.check() for every command and subcommand in this cog.
     async def cog_check(self, ctx):
@@ -348,6 +353,102 @@ class AdminCog(commands.Cog):
         """
         await self.bot.change_presence(activity=None)
 
+    @commands.command(name="botonly")
+    @command_log
+    async def botonly(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
+        """Command handler for the `botonly` command.
+
+        This command marks a channel in the database as bot-only, so every message posted by someone else than the bot
+        will be deleted immediately.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            channel (discord.Textchannel): The channel that is to be made bot-only
+        """
+        target_channel = channel if channel is not None else ctx.channel
+        is_channel_botonly = self._db_connector.is_botonly(target_channel)
+        if is_channel_botonly:
+            log.info("Deactivated bot-only mode for channel {0}".format(target_channel))
+            self._db_connector.deactivate_botonly(target_channel)
+        else:
+            log.info("Activated bot-only mode for channel {0}".format(target_channel))
+            self._db_connector.activate_botonly(target_channel)
+
+        is_enabled_string = 'aktiviert' if not is_channel_botonly else 'deaktiviert'
+        embed = _build_botonly_embed(is_enabled_string)
+        await target_channel.send(embed=embed)
+
+    # todo comment in when issue demands so
+
+    # @commands.command(name="purge")
+    # @command_log
+    # async def purge_channel(self, ctx: commands.Context, channel: discord.TextChannel):
+    #     """Command handler for the `purge` command.
+    #
+    #     Removes all messages in a channel.
+    #
+    #     Args:
+    #         ctx (discord.ext.commands.Context): The context from which this command is invoked.
+    #         channel (discord.Textchannel): The channel that is to purge
+    #     """
+    #     embed = _build_purge_confirmation_embed(channel)
+    #     timeout = 15.0
+    #     reaction = await self._send_confirmation_dialog(ctx, embed, timeout)
+    #     if reaction is None:
+    #         return
+    #     if str(reaction[0].emoji) == constants.EMOJI_CONFIRM:
+    #         await _purge_channel(channel)
+
+    @commands.Cog.listener(name='on_message')
+    async def on_message(self, ctx: discord.Message):
+        """Event Handler for new messages.
+
+        Deletes a message if the channel it was posted in is in bot-only mode and the author isn't SAM.
+
+        Args:
+            ctx (discord.Message): The context this method was called in. Must always be a message.
+        """
+        if ctx.author == self.bot.user:
+            return
+        if self._db_connector.is_botonly(ctx.channel):
+            await ctx.delete()
+
+    async def _send_confirmation_dialog(self, ctx: commands.Context, embed: discord.Embed, timeout: float) -> \
+            Optional[Tuple[discord.Reaction, discord.User]]:
+        """Handles a confirmation dialog and returns the user reaction.
+
+        Posts an embed and adds reactions for confirmation and cancellation. The reaction that is clicked will be
+        returned. If no reaction is clicked before a timeout has been reached, `None` is returned instead.
+        Regardless of the return value the embed will be deleted shortly after.
+
+        Args:
+            ctx (commands.Context): The context of invokation. Used to send the message.
+            embed (discord.Embed): The embed that will be posted. It should contain some explanation about what will be
+            confirmed.
+            timeout (float): The timeout until the dialog will be canceled
+
+        Returns:
+            (Optional[Tuple[discord.Reaction, discord.User]]):A tuple consisting of a reaction and the user who has
+            reacted. If the dialog runs in the timeout, None is returned.
+        """
+        embed_msg = await ctx.send(embed=embed, delete_after=timeout)
+        await embed_msg.add_reaction(constants.EMOJI_CONFIRM)
+        await embed_msg.add_reaction(constants.EMOJI_CANCEL)
+
+        def check_reaction(_reaction, user):
+            return user == ctx.author and \
+                   str(_reaction.emoji) in [constants.EMOJI_CANCEL, constants.EMOJI_CONFIRM]
+
+        try:
+            reaction = await self.bot.wait_for('reaction_add', timeout=timeout, check=check_reaction)
+        except asyncio.exceptions.TimeoutError:
+            await ctx.send(
+                "Du konntest dich wohl nicht entscheiden. Kein Problem, du kannst es einfach später nochmal "
+                "versuchen. :smile:")
+            return None
+        await embed_msg.delete()
+        return reaction
+
 
 def is_pastebin_link(json_string: str) -> bool:
     """Verifies if the string is a link to pastebin.com by checking if it contains 'pastebin.com' and does not contain
@@ -425,6 +526,50 @@ def _create_cogs_embed_string(loaded_cogs: Mapping[str, commands.Cog]) -> str:
         string += " --> {0}\n".format(cog[:-3])
 
     return string
+
+
+def _build_botonly_embed(is_enabled_string: str):
+    """Creates an embed for the botonly command.
+
+    Args:
+        is_enabled_string (str): A string which will be interpolated into the title. Should contain the word 'aktiviert'
+        or 'deaktiviert'.
+
+    Returns:
+        (discord.Embed): An embed containing information, if the bot-only mode was en- or disabled for a channel.
+    """
+    title = 'Der Bot-only Mode wurde für diesen Channel {0}'.format(is_enabled_string)
+    description = 'Der Bot-only Mode sorgt dafür, dass nur noch SAM Nachrichten in einem Channel posten darf. Jede ' \
+                  'Nachricht von anderen Usern wird sofort gelöscht.'
+    return discord.Embed(title=title, description=description, color=constants.EMBED_COLOR_BOTONLY)
+
+
+def _build_purge_confirmation_embed(channel: discord.TextChannel) -> discord.Embed:
+    """Creates an embed for confirmation of the purge command.
+
+    Args:
+        channel (discord.TextChannel): The channel that will be mentioned in the embed message.
+
+    Returns:
+        (discord.Embed): The embed with the confirmation dialog
+    """
+    title = 'Bist du sicher dass du den Channel {0} purgen möchtest?'.format(channel.name)
+    description = 'Wenn du den Purge Befehl ausführst, werden sämtliche Nachrichten in dem Channel gelöscht. ' + \
+                  'Diese Operation kann man nicht rückgängig machen. Bitte beachte dass das löschen aller Nachrichten ' + \
+                  'ein wenig dauern kann.'
+    return discord.Embed(title=title, description=description, color=constants.EMBED_COLOR_WARNING)
+
+
+async def _purge_channel(channel: discord.TextChannel):
+    """Removes every message from a channel.
+
+    Args:
+        channel (discord.TextChannel): The channel to be purged
+    """
+    hist = await channel.history(limit=100).flatten()
+    while len(hist) > 0:
+        await channel.purge(limit=10000)
+        hist = await channel.history(limit=100).flatten()
 
 
 def setup(bot):

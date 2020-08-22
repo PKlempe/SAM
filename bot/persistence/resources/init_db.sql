@@ -21,3 +21,7 @@ CREATE TABLE IF NOT EXISTS GroupOffer(
     MessageId TEXT NOT NULL,
     UNIQUE (UserId, Course)
 );
+
+CREATE TABLE IF NOT EXISTS BotOnlyChannels(
+    Channel TEXT PRIMARY KEY
+);

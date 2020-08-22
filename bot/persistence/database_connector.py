@@ -4,6 +4,7 @@ import datetime
 from sqlite3 import Error
 from typing import List, Optional, Iterator, Iterable
 
+
 from bot.moderation import ModmailStatus
 from bot.persistence import queries
 from .database_manager import DatabaseManager
@@ -184,6 +185,43 @@ class DatabaseConnector:
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.REMOVE_GROUP_EXCHANGE_OFFER, (user_id, course))
             db_manager.execute(queries.REMOVE_GROUP_EXCHANGE_REQUESTS, (user_id, course))
+            db_manager.commit()
+
+    def is_botonly(self, channel):
+        """Runs a query checking if a channel is marked as botonly in the db.
+
+        Args:
+            channel (discord.TextChannel): The channel to be queried.
+
+        Returns:
+            bool: true if the channel is botonly, false if not or no entry is found
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.IS_CHANNEL_BOTONLY, (channel.name,))
+            rows = result.fetchone()
+            if rows:
+                return rows[0]
+            return 0
+
+
+    def activate_botonly(self, channel):
+        """Executes a query that enables bot-only mode for a channel.
+
+        Args:
+            channel (discord.TextChannel): The channel to be made bot-only.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.ACTIVATE_BOTONLY_FOR_CHANNEL, (channel.name,))
+            db_manager.commit()
+
+    def deactivate_botonly(self, channel):
+        """Executes a query that disables bot-only for a channel.
+
+        Args:
+            channel (discord.TextChannel): The channel to be made not bot-only.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.DEACTIVATE_BOTONLY_FOR_CHANNEL, (channel.name,))
             db_manager.commit()
 
     @staticmethod
