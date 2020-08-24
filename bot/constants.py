@@ -23,6 +23,13 @@ INITIAL_EXTNS = {"AdminCog":        'bot.admin.admin',
 # Filepaths
 LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
 
+
+# Job times
+DATE_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER = {"month": "9", "day": "15", "hour": "4", "minute": "0"}
+DATE_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER = {"month": "11", "day": "1", "hour": "4", "minute": "0"}
+DATE_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER = {"month": "2", "day": "15", "hour": "4", "minute": "0"}
+DATE_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER = {"month": "4", "day": "1", "hour": "4", "minute": "0"}
+
 ## SQLite Database
 DB_FILE_PATH = os.getenv("DB_FILE_PATH")
 DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
@@ -44,6 +51,7 @@ LIMIT_PINS = 1
 CHANNEL_ID_BOT = 729066220627951757
 CHANNEL_ID_REPORT = 729066220627951757
 CHANNEL_ID_MODMAIL = 729066220627951757
+CHANNEL_ID_GROUP_EXCHANGE = 729066220627951757
 
 
 # Special Role IDs
@@ -65,6 +73,8 @@ EMBED_COLOR_MODMAIL_OPEN = 0xE60000
 EMBED_COLOR_MODMAIL_ASSIGNED = 0xFF7800
 EMBED_COLOR_MODMAIL_CLOSED = 0x4CBB17
 
+
+EMBED_COLOR_GROUP_EXCHANGE = 0xECFF00
 EMBED_COLOR_BOTONLY = 0xFF7900
 EMBED_COLOR_WARNING = 0xFF0000
 
@@ -87,3 +97,4 @@ EMOJI_CONFIRM = "\U00002705"
 EMOJI_CANCEL = "\U0000274C"
 
 ZERO_WIDTH_SPACE = "\U0000200B"
+EMOJI_CHANNEL_NAME_SEPARATOR = "\U0001F539"

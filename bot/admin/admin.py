@@ -368,10 +368,10 @@ class AdminCog(commands.Cog):
         target_channel = channel if channel is not None else ctx.channel
         is_channel_botonly = self._db_connector.is_botonly(target_channel)
         if is_channel_botonly:
-            log.info("Deactivated bot-only mode for channel {0}".format(target_channel))
+            log.info("Deactivated bot-only mode for channel %s", target_channel)
             self._db_connector.deactivate_botonly(target_channel)
         else:
-            log.info("Activated bot-only mode for channel {0}".format(target_channel))
+            log.info("Activated bot-only mode for channel %s", target_channel)
             self._db_connector.activate_botonly(target_channel)
 
         is_enabled_string = 'aktiviert' if not is_channel_botonly else 'deaktiviert'
