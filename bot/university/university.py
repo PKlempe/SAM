@@ -95,20 +95,6 @@ class UniversityCog(commands.Cog):
             await ctx.send(f"Die Rolle \"**__{module_role}__**\" gehört bereits zu den verfügbaren Modul-Rollen.",
                            delete_after=8)
 
-    @add_module_role.error
-    async def add_module_role_error(self, ctx: commands.Context, error: commands.CommandError):
-        """Error Handler for the `module` subcommand `add`.
-
-        Handles specific exceptions which occur during the execution of this command. The global error handler will
-        still be called for every error thrown.
-
-        Args:
-            ctx (discord.ext.commands.Context): The context in which the command was called.
-            error (commands.CommandError): The error raised during the execution of the command.
-        """
-        if isinstance(error, commands.BadArgument):
-            await _module_role_error(ctx, error)
-
     @toggle_module.command(name="remove", hidden=True)
     @commands.is_owner()
     @command_log
@@ -127,8 +113,9 @@ class UniversityCog(commands.Cog):
         await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde aus den verfügbaren Modul-Rollen entfernt.",
                        delete_after=8)
 
+    @add_module_role.error
     @remove_module_role.error
-    async def remove_module_role_error(self, ctx: commands.Context, error: commands.CommandError):
+    async def module_role_error(self, ctx: commands.Context, error: commands.CommandError):
         """Error Handler for the `module` subcommand `remove`.
 
         Handles specific exceptions which occur during the execution of this command. The global error handler will
@@ -139,7 +126,10 @@ class UniversityCog(commands.Cog):
             error (commands.CommandError): The error raised during the execution of the command.
         """
         if isinstance(error, commands.BadArgument):
-            await _module_role_error(ctx, error)
+            role = re.search(r"\"(.*)\"", error.args[0])  # Regex to get the text between two quotes.
+            role = role.group(1) if role is not None else None
+
+            await ctx.author.send(f"Die von dir angegebene Rolle \"**__{role}__**\" existiert leider nicht.")
 
     @commands.group(name="ufind", invoke_without_command=True)
     @command_log
@@ -241,23 +231,6 @@ class UniversityCog(commands.Cog):
         await message.delete()
 
         return list_selection_emojis.index(reaction[0].emoji)
-
-
-async def _module_role_error(ctx: commands.Context, error: commands.BadArgument):
-    """Method which posts an error message that the role which should be added/removed from module roles doesn't exist.
-
-    Will always be called by the local error handlers from the subcommands `module add` and `module remove` if the
-    specified role doesn't exist. The error message will be posted in the channel where the command has been invoked
-    and will be deleted shortly after.
-
-    Args:
-        ctx (discord.ext.commands.Context): The context in which the command was called.
-        error (commands.BadArgument): The specific error being raised if the specified role doesn't exist.
-    """
-    role = re.search(r"\"(.*)\"", error.args[0])  # Regex to get the text between two quotes.
-    role = role.group(1) if role is not None else None
-
-    await ctx.send(f"Die von dir angegebene Rolle \"**__{role}__**\" leider nicht.", delete_after=8)
 
 
 def _create_embed_module_roles(modules_added: List[str], modules_removed: List[str], modules_error: List[str]) \
