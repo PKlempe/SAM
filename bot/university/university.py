@@ -203,18 +203,16 @@ class UniversityCog(commands.Cog):
             error (commands.CommandError): The error raised during the execution of the command.
         """
         if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
-            await ctx.channel.send(
-                "**__Error:__** Unter deinen Wunschgruppen befindet sich die Gruppe die du anbietest.",
-                delete_after=15.0)
+            await ctx.author.send(
+                "**__Error:__** Unter deinen Wunschgruppen befindet sich die Gruppe die du anbietest.")
         if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, IntegrityError):
-            await ctx.channel.send(
+            await ctx.author.send(
                 "**__Error:__** Du hast für diesen Kurs bereits eine Tauschanfrage aktiv. Du kannst sie mit `"
-                "exchange remove <channel-mention>` löschen.", delete_after=15.0)
+                "{0}exchange remove <channel-mention>` löschen.".format(constants.BOT_PREFIX))
         if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, SyntaxError):
-            await ctx.channel.send(
+            await ctx.author.send(
                 "**__Error:__** Du hast einen Fehler beim Eingeben deiner Wunschgruppen gemacht. Bitte gib die "
-                "Gruppennummer mit Beistrichen getrennt und ohne Leerzeichen ein. Beispiel: 2,3,4",
-                delete_after=15.0)
+                "Gruppennummer mit Beistrichen getrennt und ohne Leerzeichen ein. Beispiel: 2,3,4")
 
     @exchange.command(name="remove", hidden=True)
     @command_log
@@ -395,8 +393,8 @@ class UniversityCog(commands.Cog):
             (discord.Embed): The created embed.
         """
         embed = discord.Embed(title="Deine Gruppentausch-Anfragen:", color=constants.EMBED_COLOR_GROUP_EXCHANGE)
+        guild = self.bot.get_guild(constants.SERVER_ID)
         for request_of_user in requests_of_user:
-            guild = self.bot.get_guild(constants.SERVER_ID)
             course_channel = guild.get_channel(int(request_of_user[0]))
             msg = await guild.get_channel(constants.CHANNEL_ID_GROUP_EXCHANGE).fetch_message(int(request_of_user[1]))
             course = _parse_course_from_channel_name(course_channel)
