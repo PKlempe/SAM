@@ -4,7 +4,6 @@ import datetime
 from sqlite3 import Error
 from typing import List, Optional, Iterator, Iterable
 
-
 from bot.moderation import ModmailStatus
 from bot.persistence import queries
 from .database_manager import DatabaseManager
@@ -109,7 +108,7 @@ class DatabaseConnector:
             requested_groups (List[str]): List of all groups the user would accept.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.INSERT_GROUP_OFFER, (user_id, course, offered_group, "undefined"))
+            db_manager.execute(queries.INSERT_GROUP_OFFER, (user_id, course, offered_group))
             for group_nr in requested_groups:
                 db_manager.execute(queries.INSERT_GROUP_REQUEST, (user_id, course, group_nr))
             db_manager.commit()
@@ -223,6 +222,20 @@ class DatabaseConnector:
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.DEACTIVATE_BOTONLY_FOR_CHANNEL, (channel.name,))
             db_manager.commit()
+
+    def get_group_exchange_for_user(self, user_id: int):
+        """Executes a query to get all group exchange requests for a user.
+
+        Args:
+            user_id (int): The user id of the user.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_GROUP_EXCHANGE_FOR_USER, (user_id,))
+            rows = result.fetchall()
+            if rows:
+                return rows
+            return None
+
 
     @staticmethod
     def parse_sql_file(filename: str) -> List[str]:

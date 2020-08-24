@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS GroupOffer(
     UserId TEXT NOT NULL,
     Course TEXT NOT NULL,
     GroupNr INTEGER NOT NULL,
-    MessageId TEXT NOT NULL,
+    MessageId TEXT,
     UNIQUE (UserId, Course)
 );
 
