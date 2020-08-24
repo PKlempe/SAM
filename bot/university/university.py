@@ -204,7 +204,7 @@ class UniversityCog(commands.Cog):
         """
         if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
             await ctx.author.send(
-                "**__Error:__** Unter deinen Wunschgruppen befindet sich die Gruppe die du anbietest.")
+                "**__Error:__** Unter deinen Wunschgruppen befindet sich die Gruppe, die du anbietest.")
         if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, IntegrityError):
             await ctx.author.send(
                 "**__Error:__** Du hast für diesen Kurs bereits eine Tauschanfrage aktiv. Du kannst sie mit `"
@@ -212,7 +212,7 @@ class UniversityCog(commands.Cog):
         if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, SyntaxError):
             await ctx.author.send(
                 "**__Error:__** Du hast einen Fehler beim Eingeben deiner Wunschgruppen gemacht. Bitte gib die "
-                "Gruppennummer mit Beistrichen getrennt und ohne Leerzeichen ein. Beispiel: 2,3,4")
+                "Gruppennummer mit Beistrichen getrennt und ohne Leerzeichen ein. Beispiel: `2,3,4`")
 
     @exchange.command(name="remove", hidden=True)
     @command_log
