@@ -7,6 +7,22 @@ CREATE TABLE IF NOT EXISTS Modmail(
 
 CREATE TABLE IF NOT EXISTS ModuleRole(
     RoleID TEXT PRIMARY KEY
+
+CREATE TABLE IF NOT EXISTS GroupRequest(
+    ID INTEGER PRIMARY KEY,
+    UserId TEXT NOT NULL,
+    Course TEXT NOT NULL,
+    GroupNr INTEGER NOT NULL,
+    UNIQUE (UserId, Course, GroupNr)
+);
+
+CREATE TABLE IF NOT EXISTS GroupOffer(
+    ID INTEGER PRIMARY KEY,
+    UserId TEXT NOT NULL,
+    Course TEXT NOT NULL,
+    GroupNr INTEGER NOT NULL,
+    MessageId TEXT,
+    UNIQUE (UserId, Course)
 );
 
 CREATE TABLE IF NOT EXISTS BotOnlyChannels(
