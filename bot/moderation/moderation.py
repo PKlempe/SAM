@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 
 from bot import constants
-from bot.logger import command_log
+from bot.logger import command_log, log
 from bot.moderation import ModmailStatus
 from bot.persistence import DatabaseConnector
 
@@ -64,7 +64,7 @@ class ModerationCog(commands.Cog):
             await ctx.author.send(f"Ich konnte leider keinen Nutzer namens **{user}** finden. :confused:\nHast du dich "
                                   f"möglicherweise vertippt?")
 
-    @commands.group(name='purge')
+    @commands.group(name='purge', hidden=True)
     @commands.has_role(constants.ROLE_ID_MODERATOR)
     @command_log
     async def purge_messages(self, ctx: commands.Context, channel: Optional[discord.TextChannel], amount: int):
@@ -93,6 +93,7 @@ class ModerationCog(commands.Cog):
             deleted_messages = await purge_channel.purge(limit=amount)
             await purge_channel.send('**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'
                                      .format(len(deleted_messages)), delete_after=constants.TIMEOUT_INFORMATION)
+            log.info("SAM deleted %s messages in [#%s]", len(deleted_messages), purge_channel)
 
     @purge_messages.error
     async def purge_messages_error(self, ctx: commands.Context, error: commands.CommandError):
