@@ -5,6 +5,7 @@ from sqlite3 import Error
 from typing import List, Optional, Iterator, Iterable
 
 from bot.moderation import ModmailStatus
+from bot.feedback import SuggestionStatus
 from bot.persistence import queries
 from .database_manager import DatabaseManager
 
@@ -29,7 +30,7 @@ class DatabaseConnector:
 
         self._db_file = db_file
         with DatabaseManager(self._db_file) as db_manager:
-            if init_script is not None:
+            if init_script:
                 queries_ = self.parse_sql_file(init_script)
                 for query in queries_:
                     try:
@@ -57,6 +58,100 @@ class DatabaseConnector:
             db_manager.execute(queries.REMOVE_MODULE_ROLE, (role_id,))
             db_manager.commit()
 
+    def add_suggestion(self, author_id: int, timestamp: datetime.datetime) -> int:
+        """Adds a suggestion to the table "Suggestion".
+
+        Args:
+            author_id (int): The id of the user who submitted the suggestion.
+            timestamp (datetime.datetime): A timestamp when this suggestion has been submitted.
+
+        Returns:
+            int: The row id of the new entry.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            row_id = db_manager.execute(queries.INSERT_SUGGESTION, (author_id, timestamp)).lastrowid
+            db_manager.commit()
+
+            return row_id
+
+    def set_suggestion_message_id(self, suggestion_id: int, message_id: int):
+        """Sets the message id of a specific suggestion.
+
+        Args:
+            suggestion_id (int): The id of the suggestion.
+            message_id (int): The message id of the embed posted in the suggestion channel.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.SET_SUGGESTION_MESSAGE_ID, (message_id, suggestion_id))
+            db_manager.commit()
+
+    def get_suggestion(self, suggestion_id: int) -> Optional[tuple]:
+        """Gets data regarding a suggestion with the specified id.
+
+        Args:
+            suggestion_id (int): The id of the suggestion.
+
+        Returns:
+            tuple: A tuple containing MessageID, StatusID and AuthorID of a suggestion in the table "Suggestion".
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_SUGGESTION_BY_ID, (suggestion_id,))
+
+            row = result.fetchone()
+            if row:
+                return row
+            return None
+
+    def get_suggestion_status(self, message_id: int) -> SuggestionStatus:
+        """Gets the status of a suggestion with the specified message id.
+
+        Args:
+            message_id (int): The id of the message containing the suggestion embed.
+
+        Returns:
+            SuggestionStatus: The status of the suggestion.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_SUGGESTION_STATUS, (message_id,))
+
+            row = result.fetchone()
+            if row:
+                return SuggestionStatus(row[0])
+            return None
+
+    def set_suggestion_status(self, suggestion_id: int, status: SuggestionStatus) -> bool:
+        """Sets the status of a suggestion with the specified id.
+
+        Args:
+            suggestion_id (int): The id of the suggestion.
+            status (SuggestionStatus): The new status of the suggestion.
+
+        Returns:
+            bool: A boolean representing if a row has been changed.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            affected_rows = db_manager.execute(queries.SET_SUGGESTION_STATUS, (status.value, suggestion_id)) \
+                .rowcount
+            db_manager.commit()
+            return affected_rows != 0
+
+    def get_all_suggestions_with_status(self, status: SuggestionStatus) -> Optional[List[tuple]]:
+        """Gets data about all suggestions with the specified status.
+
+        Args:
+            status (SuggestionStatus): The status which the suggestions should have.
+
+        Returns:
+            Optional[List[tuple]]: A list containing data of all suggestions with the specified status.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_ALL_SUGGESTIONS_WITH_STATUS, (status.value,))
+
+            rows = result.fetchall()
+            if rows:
+                return rows
+            return None
+
     def add_modmail(self, msg_id: int, author: str, timestamp: datetime.datetime):
         """Inserts the username of the author and the message id of a submitted modmail into the database and
         sets its status to `Open`.
@@ -83,7 +178,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_MODMAIL_STATUS, (msg_id,))
 
             row = result.fetchone()
-            if row is not None:
+            if row:
                 return ModmailStatus(row[0])
             return None
 
@@ -188,8 +283,8 @@ class DatabaseConnector:
         """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(queries.GET_GROUP_EXCHANGE_MESSAGE, (user_id, course))
-            rows = result.fetchone()
 
+            rows = result.fetchone()
             if rows:
                 return rows[0]
             return None
@@ -217,11 +312,11 @@ class DatabaseConnector:
         """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(queries.IS_CHANNEL_BOTONLY, (channel.name,))
+
             rows = result.fetchone()
             if rows:
                 return rows[0]
             return 0
-
 
     def activate_botonly(self, channel):
         """Executes a query that enables bot-only mode for a channel.
@@ -251,11 +346,11 @@ class DatabaseConnector:
         """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(queries.GET_GROUP_EXCHANGE_FOR_USER, (user_id,))
+
             rows = result.fetchall()
             if rows:
                 return rows
             return None
-
 
     @staticmethod
     def parse_sql_file(filename: str) -> List[str]:

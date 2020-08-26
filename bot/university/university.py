@@ -30,7 +30,7 @@ class UniversityCog(commands.Cog):
         """
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
-        
+
         # init scheduler for resetting the group-exchange channel
         self.scheduler = AsyncIOScheduler()
         self._add_scheduler_job_yearly(self.open_group_exchange_channel,
@@ -250,10 +250,7 @@ class UniversityCog(commands.Cog):
 
     @commands.group(name='exchange', hidden=True, invoke_without_command=True)
     @command_log
-    async def exchange(self,
-                       ctx: commands.Context,
-                       channel: discord.TextChannel,
-                       offered_group: int,
+    async def exchange(self, ctx: commands.Context, channel: discord.TextChannel, offered_group: int,
                        *, requested_groups_str: str):
         """Command Handler for the exchange command
 

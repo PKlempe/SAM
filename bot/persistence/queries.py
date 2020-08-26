@@ -1,10 +1,19 @@
 """This module contains template string constants which will be used for database queries and commands."""
 
 # Modmail
-INSERT_MODMAIL = "INSERT INTO MODMAIL (ID, Author, Timestamp) VALUES (?, ?, ?)"
+INSERT_MODMAIL = "INSERT INTO Modmail (ID, Author, Timestamp) VALUES (?, ?, ?)"
 CHANGE_MODMAIL_STATUS = "UPDATE Modmail SET StatusID = ? WHERE ID = ?"
 GET_MODMAIL_STATUS = "SELECT StatusID FROM Modmail WHERE ID = ?"
 GET_ALL_MODMAIL_WITH_STATUS = "SELECT ID, Author, Timestamp FROM Modmail WHERE StatusID = ?"
+
+
+# Suggestions
+INSERT_SUGGESTION = "INSERT INTO Suggestion (AuthorID, Timestamp) VALUES (?, ?)"
+SET_SUGGESTION_MESSAGE_ID = "UPDATE Suggestion SET MessageID = ? WHERE ID = ?"
+SET_SUGGESTION_STATUS = "UPDATE Suggestion SET StatusID = ? WHERE ID = ?"
+GET_SUGGESTION_STATUS = "SELECT StatusID FROM Suggestion WHERE MessageID = ?"
+GET_ALL_SUGGESTIONS_WITH_STATUS = "SELECT ID, MessageID, AuthorID, Timestamp FROM Suggestion WHERE StatusID = ?"
+GET_SUGGESTION_BY_ID = "SELECT MessageID, StatusID, AuthorID FROM Suggestion WHERE ID = ?"
 
 
 # Module Roles
