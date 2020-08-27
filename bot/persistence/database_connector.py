@@ -102,7 +102,7 @@ class DatabaseConnector:
                 return row
             return None
 
-    def get_suggestion_status(self, message_id: int) -> SuggestionStatus:
+    def get_suggestion_status(self, message_id: int) -> Optional[SuggestionStatus]:
         """Gets the status of a suggestion with the specified message id.
 
         Args:
