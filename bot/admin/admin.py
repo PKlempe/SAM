@@ -1,9 +1,8 @@
 """Contains a Cog for all administrative funcionality."""
 
-import asyncio.exceptions
 import json
 from datetime import datetime
-from typing import Optional, Mapping, Tuple
+from typing import Optional, Mapping
 
 import discord
 import requests
@@ -368,36 +367,15 @@ class AdminCog(commands.Cog):
         target_channel = channel if channel is not None else ctx.channel
         is_channel_botonly = self._db_connector.is_botonly(target_channel)
         if is_channel_botonly:
-            log.info("Deactivated bot-only mode for channel %s", target_channel)
+            log.info("Deactivated bot-only mode for channel [#%s]", target_channel)
             self._db_connector.deactivate_botonly(target_channel)
         else:
-            log.info("Activated bot-only mode for channel %s", target_channel)
+            log.info("Activated bot-only mode for channel [#%s]", target_channel)
             self._db_connector.activate_botonly(target_channel)
 
         is_enabled_string = 'aktiviert' if not is_channel_botonly else 'deaktiviert'
         embed = _build_botonly_embed(is_enabled_string)
         await target_channel.send(embed=embed)
-
-    # todo comment in when issue demands so
-
-    # @commands.command(name="purge")
-    # @command_log
-    # async def purge_channel(self, ctx: commands.Context, channel: discord.TextChannel):
-    #     """Command handler for the `purge` command.
-    #
-    #     Removes all messages in a channel.
-    #
-    #     Args:
-    #         ctx (discord.ext.commands.Context): The context from which this command is invoked.
-    #         channel (discord.Textchannel): The channel that is to purge
-    #     """
-    #     embed = _build_purge_confirmation_embed(channel)
-    #     timeout = 15.0
-    #     reaction = await self._send_confirmation_dialog(ctx, embed, timeout)
-    #     if reaction is None:
-    #         return
-    #     if str(reaction[0].emoji) == constants.EMOJI_CONFIRM:
-    #         await _purge_channel(channel)
 
     @commands.Cog.listener(name='on_message')
     async def on_message(self, ctx: discord.Message):
@@ -412,42 +390,6 @@ class AdminCog(commands.Cog):
             return
         if self._db_connector.is_botonly(ctx.channel):
             await ctx.delete()
-
-    async def _send_confirmation_dialog(self, ctx: commands.Context, embed: discord.Embed, timeout: float) -> \
-            Optional[Tuple[discord.Reaction, discord.User]]:
-        """Handles a confirmation dialog and returns the user reaction.
-
-        Posts an embed and adds reactions for confirmation and cancellation. The reaction that is clicked will be
-        returned. If no reaction is clicked before a timeout has been reached, `None` is returned instead.
-        Regardless of the return value the embed will be deleted shortly after.
-
-        Args:
-            ctx (commands.Context): The context of invokation. Used to send the message.
-            embed (discord.Embed): The embed that will be posted. It should contain some explanation about what will be
-            confirmed.
-            timeout (float): The timeout until the dialog will be canceled
-
-        Returns:
-            (Optional[Tuple[discord.Reaction, discord.User]]):A tuple consisting of a reaction and the user who has
-            reacted. If the dialog runs in the timeout, None is returned.
-        """
-        embed_msg = await ctx.send(embed=embed, delete_after=timeout)
-        await embed_msg.add_reaction(constants.EMOJI_CONFIRM)
-        await embed_msg.add_reaction(constants.EMOJI_CANCEL)
-
-        def check_reaction(_reaction, user):
-            return user == ctx.author and \
-                   str(_reaction.emoji) in [constants.EMOJI_CANCEL, constants.EMOJI_CONFIRM]
-
-        try:
-            reaction = await self.bot.wait_for('reaction_add', timeout=timeout, check=check_reaction)
-        except asyncio.exceptions.TimeoutError:
-            await ctx.send(
-                "Du konntest dich wohl nicht entscheiden. Kein Problem, du kannst es einfach später nochmal "
-                "versuchen. :smile:")
-            return None
-        await embed_msg.delete()
-        return reaction
 
 
 def is_pastebin_link(json_string: str) -> bool:
@@ -542,34 +484,6 @@ def _build_botonly_embed(is_enabled_string: str):
     description = 'Der Bot-only Mode sorgt dafür, dass nur noch SAM Nachrichten in einem Channel posten darf. Jede ' \
                   'Nachricht von anderen Usern wird sofort gelöscht.'
     return discord.Embed(title=title, description=description, color=constants.EMBED_COLOR_BOTONLY)
-
-
-def _build_purge_confirmation_embed(channel: discord.TextChannel) -> discord.Embed:
-    """Creates an embed for confirmation of the purge command.
-
-    Args:
-        channel (discord.TextChannel): The channel that will be mentioned in the embed message.
-
-    Returns:
-        (discord.Embed): The embed with the confirmation dialog
-    """
-    title = 'Bist du sicher dass du den Channel {0} purgen möchtest?'.format(channel.name)
-    description = 'Wenn du den Purge Befehl ausführst, werden sämtliche Nachrichten in dem Channel gelöscht. ' + \
-                  'Diese Operation kann man nicht rückgängig machen. Bitte beachte dass das löschen aller Nachrichten ' + \
-                  'ein wenig dauern kann.'
-    return discord.Embed(title=title, description=description, color=constants.EMBED_COLOR_WARNING)
-
-
-async def _purge_channel(channel: discord.TextChannel):
-    """Removes every message from a channel.
-
-    Args:
-        channel (discord.TextChannel): The channel to be purged
-    """
-    hist = await channel.history(limit=100).flatten()
-    while len(hist) > 0:
-        await channel.purge(limit=10000)
-        hist = await channel.history(limit=100).flatten()
 
 
 def setup(bot):

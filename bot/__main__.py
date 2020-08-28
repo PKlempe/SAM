@@ -45,7 +45,7 @@ async def on_command_error(ctx, exception):
 
     if isinstance(exception, commands.CommandInvokeError) and isinstance(exception.original, asyncio.TimeoutError):
         await ctx.send("Du konntest dich wohl nicht entscheiden. Kein Problem, du kannst es einfach später nochmal "
-                       "versuchen. :smile:")
+                       "versuchen. :smile:", delete_after=constants.TIMEOUT_INFORMATION)
     elif isinstance(exception, commands.CommandInvokeError) and isinstance(exception.original, requests.HTTPError):
         status_code = exception.original.response.status_code
         reason = exception.original.response.reason
