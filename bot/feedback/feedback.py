@@ -12,7 +12,7 @@ from bot.feedback import SuggestionStatus
 
 
 class FeedbackCog(commands.Cog):
-    """Cog for Moderation Functions."""
+    """Cog for Feedback Functions."""
 
     def __init__(self, bot):
         """Initializes the Cog.
@@ -213,7 +213,7 @@ async def _notify_user_suggestion_change(guild: discord.Guild, user_id: int):
     """
     member = guild.get_member(user_id)
     name = member.nick if member.nick else member.name
-    text = "Hey, {0}! Es gibt Neuigkeiten bezüglich deines Vorschlags.\nSieh am besten gleich in <#{1}> nach, wie " \
+    text = "Hey, {0}!\nEs gibt Neuigkeiten bezüglich deines Vorschlags.Sieh am besten gleich in <#{1}> nach, wie " \
            "das Urteil ausgefallen ist. :fingers_crossed:".format(name, constants.CHANNEL_ID_SUGGESTIONS)
 
     await member.send(text)
