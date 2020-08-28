@@ -1,0 +1,10 @@
+.gitignore
+.git-ftp-ignore
+.git-ftp-include
+
+.github
+.env.example
+.mypy.ini
+.pylintrc
+Makefile
+.github
