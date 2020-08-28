@@ -1,14 +1,14 @@
 """Contains a Cog for all functionality regarding Moderation."""
 
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 import re
 
 import discord
 from discord.ext import commands
 
 from bot import constants
-from bot.logger import command_log
+from bot.logger import command_log, log
 from bot.moderation import ModmailStatus
 from bot.persistence import DatabaseConnector
 
@@ -63,6 +63,55 @@ class ModerationCog(commands.Cog):
 
             await ctx.author.send(f"Ich konnte leider keinen Nutzer namens **{user}** finden. :confused:\nHast du dich "
                                   f"möglicherweise vertippt?")
+
+    @commands.group(name='purge', hidden=True)
+    @commands.has_role(constants.ROLE_ID_MODERATOR)
+    @command_log
+    async def purge_messages(self, ctx: commands.Context, channel: Optional[discord.TextChannel], amount: int):
+        """Command Handler for the `purge` command.
+
+        Allows moderators to delete the specified amount of messages in a channel. After invocation, a confirmation
+        message with all relevant information will be posted by SAM which the author needs to confirm in order to
+        proceed with the operation. If the moderator chooses an invalid amount of messages (negative or higher than the
+        configured limit), a temporary error message will be posted by the bot to inform the user.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            channel (Optional[discord.TextChannel]): The channel in which the messages should be deleted.
+            amount (int): The amount of messages which need to be purged.
+        """
+        await ctx.message.delete()
+        purge_channel = channel if channel else ctx.channel
+
+        if amount <= 0 or amount > constants.LIMIT_PURGE_MESSAGES:
+            raise commands.BadArgument("Invalid amount of messages to be purged was passed. "
+                                       "Maximum: {0}, Passed limit: {1}".format(constants.LIMIT_PURGE_MESSAGES, amount))
+
+        confirmation_embed = _build_purge_confirmation_embed(purge_channel, amount)
+        is_confirmed = await self._send_confirmation_dialog(ctx, confirmation_embed)
+
+        if is_confirmed:
+            deleted_messages = await purge_channel.purge(limit=amount)
+            await purge_channel.send('**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'
+                                     .format(len(deleted_messages)), delete_after=constants.TIMEOUT_INFORMATION)
+            log.info("SAM deleted %s messages in [#%s]", len(deleted_messages), purge_channel)
+
+    @purge_messages.error
+    async def purge_messages_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Error Handler for the `purge` command.
+
+        Handles specific exceptions which occur during the execution of this command. The global error handler will
+        still be called for every error thrown.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            error (commands.CommandError): The error raised during the execution of the command.
+        """
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(content="**__Error:__** Die Anzahl der Nachrichten welche gelöscht werden sollen, muss im "
+                                   "__positiven Bereich__ liegen und darf __{0} nicht überschreiten__!"
+                           .format(constants.LIMIT_PURGE_MESSAGES),
+                           delete_after=constants.TIMEOUT_INFORMATION)
 
     @commands.group(name='modmail', invoke_without_command=True)
     @command_log
@@ -140,11 +189,11 @@ class ModerationCog(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
+        # TODO: Check if user has Moderator role.
         if not payload.member.bot and payload.channel_id == constants.CHANNEL_ID_MODMAIL:
             modmail = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
 
-            if payload.emoji.name == constants.EMOJI_MODMAIL_DONE or \
-                    payload.emoji.name == constants.EMOJI_MODMAIL_ASSIGN:
+            if payload.emoji.name in (constants.EMOJI_MODMAIL_DONE, constants.EMOJI_MODMAIL_ASSIGN):
                 new_embed = await self.change_modmail_status(modmail, payload.emoji.name, True)
                 await modmail.edit(embed=new_embed)
 
@@ -207,6 +256,52 @@ class ModerationCog(commands.Cog):
                 self._db_connector.change_modmail_status(modmail.id, ModmailStatus.OPEN)
 
         return discord.Embed.from_dict(dict_embed)
+
+    async def _send_confirmation_dialog(self, ctx: commands.Context, embed: discord.Embed) -> bool:
+        """Posts a confirmation dialog and returns the users answer.
+
+        Posts an embed and adds reactions for confirmation and cancellation to it. A bool indicating if the user has
+        confirmed or aborted the operation will be returned. Regardless of the return value the embed will be deleted
+        shortly after.
+
+        Args:
+            ctx (commands.Context): The context of invocation. Used to send the message.
+            embed (discord.Embed): The embed that will be posted. It should contain some explanation about what should
+            be confirmed.
+
+        Returns:
+            (bool):A bool representing the users decision.
+        """
+        message = await ctx.send(embed=embed, delete_after=constants.TIMEOUT_USER_SELECTION)
+        await message.add_reaction(constants.EMOJI_CONFIRM)
+        await message.add_reaction(constants.EMOJI_CANCEL)
+
+        def check_reaction(_reaction, user):
+            return user == ctx.author and \
+                   str(_reaction.emoji) in [constants.EMOJI_CANCEL, constants.EMOJI_CONFIRM]
+
+        reaction = await self.bot.wait_for('reaction_add', timeout=constants.TIMEOUT_USER_SELECTION, check=check_reaction)
+        await message.delete()
+
+        return str(reaction[0].emoji) == constants.EMOJI_CONFIRM
+
+
+def _build_purge_confirmation_embed(channel: discord.TextChannel, amount: int) -> discord.Embed:
+    """Creates an embed for confirmation of the `purge` command.
+
+    Args:
+        channel (discord.TextChannel): The channel in which the messages should be deleted.
+        amount (int): The amount of messages the user wants to remove.
+
+    Returns:
+        (discord.Embed): The embed with the confirmation dialog
+    """
+    description = "**Bist du sicher dass du im Channel {0} __{1} Nachrichten__ löschen möchtest?**\nDiese Operation " \
+                  "kann nicht rückgängig gemacht werden! Überlege dir daher gut, ob du das auch wirklich tun möchtest."\
+        .format(channel.mention, amount)
+
+    return discord.Embed(title=":warning: Purge-Bestätigung :warning:", description=description,
+                         color=constants.EMBED_COLOR_WARNING)
 
 
 def _create_report_embed(offender: discord.Member, reporter: discord.Member, channel: discord.TextChannel,

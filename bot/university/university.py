@@ -30,8 +30,9 @@ class UniversityCog(commands.Cog):
         """
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
-        
-        # init scheduler for resetting the group-exchange channel
+
+        # Init scheduler for resetting the group-exchange channel
+        print("- Initializing AsyncIO Scheduler")
         self.scheduler = AsyncIOScheduler()
         self._add_scheduler_job_yearly(self.open_group_exchange_channel,
                                        constants.DATE_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER)
@@ -41,6 +42,7 @@ class UniversityCog(commands.Cog):
                                        constants.DATE_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER)
         self._add_scheduler_job_yearly(self.close_group_exchange_channel_and_purge,
                                        constants.DATE_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER)
+        print("- Starting AsyncIO Scheduler")
         self.scheduler.start()
         self.scheduler.print_jobs()
 
@@ -61,7 +63,7 @@ class UniversityCog(commands.Cog):
         """
         if ctx.channel.id != constants.CHANNEL_ID_ROLES:
             ctx.channel.send(value=f"Dieser Befehl wird nur in <#{constants.CHANNEL_ID_ROLES}> unterstützt. Bitte "
-                                   f"versuche es dort noch einmal. ", delete_after=8)
+                                   f"versuche es dort noch einmal. ", delete_after=constants.TIMEOUT_INFORMATION)
             return
 
         converter = commands.RoleConverter()
@@ -106,10 +108,10 @@ class UniversityCog(commands.Cog):
             self._db_connector.add_module_role(module_role.id)
             await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde erfolgreich zu den verfügbaren Modul-Rollen "
                            f"hinzugefügt.",
-                           delete_after=8)
+                           delete_after=constants.TIMEOUT_INFORMATION)
         except IntegrityError:
             await ctx.send(f"Die Rolle \"**__{module_role}__**\" gehört bereits zu den verfügbaren Modul-Rollen.",
-                           delete_after=8)
+                           delete_after=constants.TIMEOUT_INFORMATION)
 
     @toggle_module.command(name="remove", hidden=True)
     @commands.is_owner()
@@ -127,7 +129,7 @@ class UniversityCog(commands.Cog):
 
         self._db_connector.remove_module_role(module_role.id)
         await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde aus den verfügbaren Modul-Rollen entfernt.",
-                       delete_after=8)
+                       delete_after=constants.TIMEOUT_INFORMATION)
 
     @add_module_role.error
     @remove_module_role.error
@@ -230,11 +232,10 @@ class UniversityCog(commands.Cog):
         Returns:
             int: The index of the selected person.
         """
-        timeout = 15.0
         list_selection_emojis = SelectionEmoji.to_list()
 
         embed = _create_embed_staff_selection(persons)
-        message = await channel.send(embed=embed)
+        message = await channel.send(embed=embed, delete_after=constants.TIMEOUT_USER_SELECTION)
 
         for i in range(len(embed.fields)):
             await message.add_reaction(list_selection_emojis[i])
@@ -242,8 +243,8 @@ class UniversityCog(commands.Cog):
         def check_reaction(_reaction, user):
             return user == author and SelectionEmoji(_reaction.emoji) is not None
 
-        await message.delete(delay=timeout)
-        reaction = await self.bot.wait_for('reaction_add', timeout=timeout + 0.1, check=check_reaction)
+        reaction = await self.bot.wait_for('reaction_add', timeout=constants.TIMEOUT_USER_SELECTION,
+                                           check=check_reaction)
         await message.delete()
 
         return list_selection_emojis.index(reaction[0].emoji)
@@ -428,22 +429,20 @@ class UniversityCog(commands.Cog):
         channel = guild.get_channel(constants.CHANNEL_ID_GROUP_EXCHANGE)
         await channel.set_permissions(guild.default_role, read_messages=True)
         embed = discord.Embed(title="Wie wirds gemacht?", color=constants.EMBED_COLOR_INFO,
-                              description="Um das Finden eines Tauschpartners für alle möglichst einfach und unkompliziert zu "
-                                          "gestalten, verwende bitte den Befehl: `!exchange [channel-mention] [Biete] [Suche]`"
-                                          "SAM wird daraufhin ein schön formatiertes Tauschangebot für dich in diesem "
-                                          "Channel posten und dich ab diesem Zeitpunkt regelmäßig über passende "
-                                          "Tauschpartner informieren. Um das Angebot für die richtige LV einzureichen, "
-                                          "achte immer darauf den dementsprechenden Kanal zu markieren.\n"
-                                          "**Beispiel:** Tausche MOD-Gruppe 4 gegen 1,2 oder 3\n"
-                                          "```"
-                                          "!exchange #mod🔹modellierung 4 1,2,3"
-                                          "```"
-                                          "Man beachte dass beim letzten Parameter die Nummer durch einen Beistrich (ohne "
-                                          "Leerzeichen) getrennt sind.\n Um dein Angebot und somit auch die jeweiligen "
-                                          "Anfragen für einen Kurs zu löschen, nutze den Befehl !exchange remove "
-                                          "[channel-mention]. Bitte verwende diesen auch, sobald du einen Tauschpartner "
-                                          "gefunden hast, um zukünftig keine Benachrichtigungen oder Anfragen andere "
-                                          "Nutzer mehr zu erhalten.") \
+                              description="Um das Finden eines Tauschpartners für alle möglichst einfach und "
+                                          "unkompliziert zu gestalten, verwende bitte den Befehl:\n`!exchange "
+                                          "[channel-mention] [Biete] [Suche]`\nSAM wird daraufhin ein schön "
+                                          "formatiertes Tauschangebot für dich in diesem Channel posten und dich ab "
+                                          "diesem Zeitpunkt regelmäßig über passende Tauschpartner informieren. Um das "
+                                          "Angebot für die richtige LV einzureichen, achte immer darauf den "
+                                          "entsprechenden Kanal zu markieren.\n**Beispiel:** Tausche MOD-Gruppe 4 "
+                                          "gegen 1,2 oder 3\n```\n!exchange #mod🔹modellierung 4 1,2,3\n```\nMan "
+                                          "beachte dass beim letzten Parameter die Nummer durch einen Beistrich (ohne "
+                                          "Leerzeichen) getrennt sind.\nUm dein Angebot und somit auch die jeweiligen "
+                                          "Anfragen für einen Kurs zu löschen, nutze den Befehl:\n```\n!exchange remove "
+                                          "[channel-mention]\n```\nBitte verwende diesen auch, sobald du einen "
+                                          "Tauschpartner gefunden hast, um zukünftig keine Benachrichtigungen oder "
+                                          "Anfragen andere Nutzer mehr zu erhalten.") \
             .add_field(name="Angebote anzeigen",
                        value="Um deine aktiven Anfragen zu sehen, nutze den Befehl `!exchange list`. Du erhälst eine "
                              "private Nachricht in der alle deine aktiven Angebote aufgelistet sind.",
@@ -465,7 +464,7 @@ class UniversityCog(commands.Cog):
         guild = self.bot.get_guild(constants.SERVER_ID)
         channel = guild.get_channel(constants.CHANNEL_ID_GROUP_EXCHANGE)
         await channel.set_permissions(guild.default_role, read_messages=False)
-        await channel.purge(limit=100000)
+        await channel.purge(limit=100000)  # Limit is set to a high number because we can't simply remove "all".
 
     def _add_scheduler_job_yearly(self, func, date_dict: dict):
         """Adds a new job to the scheduler that runs a member function of this class
@@ -505,6 +504,7 @@ class UniversityCog(commands.Cog):
             offered_group = request_of_user[2]
             requested_groups = request_of_user[3]
             embed.add_field(name=course,
+                            inline=False,
                             value="__Biete:__ Gruppe {0}\n__Suche:__ Gruppen {1}\n[[Zur Nachricht]]({2})".format(
                                 offered_group, requested_groups, msg.jump_url))
         return embed
@@ -526,7 +526,7 @@ def _build_candidate_notification_embed(author: discord.User,
         (discord.Embed): An embed containing all information above for the user.
     """
     course_name = _parse_course_from_channel_name(course_channel)
-    return discord.Embed(title="Neuer Tauschpartner - {0}".format(course_name),
+    return discord.Embed(title="Neuer potentieller Tauschpartner",
                          description="Bitte vergiss nicht, deine Anfrage mit dem Befehl `{0}exchange remove "
                                      "<channel-mention>` wieder zu löschen, sobald du einen Tauschpartner gefunden "
                                      "hast.".format(constants.BOT_PREFIX),
