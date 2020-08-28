@@ -72,8 +72,8 @@ class ModerationCog(commands.Cog):
 
         Allows moderators to delete the specified amount of messages in a channel. After invocation, a confirmation
         message with all relevant information will be posted by SAM which the author needs to confirm in order to
-        proceed with the operation. If the moderator chooses an invalid amount of messages (negative or to high), a
-        temporary error message will be posted by the bot to inform the user.
+        proceed with the operation. If the moderator chooses an invalid amount of messages (negative or higher than the
+        configured limit), a temporary error message will be posted by the bot to inform the user.
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
@@ -84,7 +84,8 @@ class ModerationCog(commands.Cog):
         purge_channel = channel if channel else ctx.channel
 
         if amount <= 0 or amount > constants.LIMIT_PURGE_MESSAGES:
-            raise commands.BadArgument()
+            raise commands.BadArgument("Invalid amount of messages to be purged was passed. "
+                                       "Maximum: {0}, Passed limit: {1}".format(constants.LIMIT_PURGE_MESSAGES, amount))
 
         confirmation_embed = _build_purge_confirmation_embed(purge_channel, amount)
         is_confirmed = await self._send_confirmation_dialog(ctx, confirmation_embed)

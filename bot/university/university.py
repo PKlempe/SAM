@@ -32,7 +32,7 @@ class UniversityCog(commands.Cog):
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
         # Init scheduler for resetting the group-exchange channel
-        print("- Initializing IO Scheduler")
+        print("- Initializing AsyncIO Scheduler")
         self.scheduler = AsyncIOScheduler()
         self._add_scheduler_job_yearly(self.open_group_exchange_channel,
                                        constants.DATE_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER)
@@ -42,7 +42,7 @@ class UniversityCog(commands.Cog):
                                        constants.DATE_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER)
         self._add_scheduler_job_yearly(self.close_group_exchange_channel_and_purge,
                                        constants.DATE_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER)
-        print("- Starting IO Scheduler")
+        print("- Starting AsyncIO Scheduler")
         self.scheduler.start()
         self.scheduler.print_jobs()
 
