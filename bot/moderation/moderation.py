@@ -25,6 +25,15 @@ class ModerationCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
+        self.guild = bot.get_guild(int(constants.SERVER_ID))
+
+        # Channel instances
+        self.ch_report = bot.get_channel(int(constants.CHANNEL_ID_REPORT))
+        self.ch_modmail = bot.get_channel(int(constants.CHANNEL_ID_MODMAIL))
+
+        # Role instances
+        self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))
+
     @commands.command(name='report')
     @command_log
     async def report_user(self, ctx: commands.Context, offender: discord.Member, *, description: str):
@@ -44,7 +53,7 @@ class ModerationCog(commands.Cog):
         await ctx.message.delete()
 
         embed = _create_report_embed(offender, ctx.author, ctx.channel, ctx.message, description)
-        await ctx.guild.get_channel(constants.CHANNEL_ID_REPORT).send(embed=embed)
+        await self.ch_report.send(embed=embed)
 
     @report_user.error
     async def report_error(self, ctx: commands.Context, error: commands.CommandError):
@@ -61,7 +70,7 @@ class ModerationCog(commands.Cog):
             regex = re.search(r"\"(.*)\"", error.args[0])  # Regex to get the text between two quotes.
             user = regex.group(1) if regex is not None else None
 
-            await ctx.author.send(f"Ich konnte leider keinen Nutzer namens **{user}** finden. :confused:\nHast du dich "
+            await ctx.author.send(f"Ich konnte leider keinen Nutzer namens **{user}** finden. :confused: Hast du dich "
                                   f"möglicherweise vertippt?")
 
     @commands.group(name='purge', hidden=True)
@@ -125,21 +134,19 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
-        msg_content = ctx.message.content
+        await ctx.message.delete()
+
+        msg_content = ctx.message.content[len(ctx.prefix + ctx.command.name):]
         msg_attachments = ctx.message.attachments
         msg_author_name = str(ctx.message.author)
         msg_timestamp = ctx.message.created_at
-        await ctx.message.delete()
-
-        ch_modmail = ctx.guild.get_channel(constants.CHANNEL_ID_MODMAIL)
-        msg_content = msg_content[len(ctx.prefix + ctx.command.name):]
 
         embed = discord.Embed(title="Status: Offen", color=constants.EMBED_COLOR_MODMAIL_OPEN,
                               timestamp=datetime.utcnow(), description=msg_content)
         embed.set_author(name=ctx.author.name + "#" + ctx.author.discriminator, icon_url=ctx.author.avatar_url)
         embed.set_footer(text="Erhalten am")
 
-        msg_modmail = await ch_modmail.send(embed=embed, files=msg_attachments)
+        msg_modmail = await self.ch_modmail.send(embed=embed, files=msg_attachments)
         self._db_connector.add_modmail(msg_modmail.id, msg_author_name, msg_timestamp)
         await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_DONE)
         await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_ASSIGN)
@@ -157,23 +164,21 @@ class ModerationCog(commands.Cog):
     async def get_modmail_with_status(self, ctx: commands.Context, *, status: str):
         """Command Handler for the modmail subcommand `get`.
 
-        Allows moderators to generate an embeded message (Embed) in the modmail channel which contains a list of all
-        modmails with the specified status. Each list element is a hyperlink which, if clicked, brings you to the
+        Allows moderators to generate an embedded message (Embed) in the modmail channel which contains a list of all
+        modmail with the specified status. Each list element is a hyperlink which, if clicked, brings you to the
         corresponding modmail message.
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             status (str): The status specified by the moderator.
         """
-        if ctx.channel.id == constants.CHANNEL_ID_MODMAIL:
+        if ctx.channel.id == self.ch_modmail.id:
             try:
                 enum_status = ModmailStatus[status.upper()]
-
-                ch_modmail = ctx.guild.get_channel(constants.CHANNEL_ID_MODMAIL)
                 modmail = self._db_connector.get_all_modmail_with_status(enum_status)
 
                 embed = _modmail_create_list_embed(enum_status, modmail)
-                await ch_modmail.send(embed=embed)
+                await self.ch_modmail.send(embed=embed)
             except (KeyError, ValueError):
                 await ctx.channel.send("**__Error:__** Ungültiger oder nicht unterstützter Status `{0}`."
                                        .format(status.title()))
@@ -182,16 +187,16 @@ class ModerationCog(commands.Cog):
     async def modmail_reaction_add(self, payload: discord.RawReactionActionEvent):
         """Event listener which triggers if a reaction has been added by a user.
 
-        If the affected message is in the configured Modmail channel and the added reaction is one of the two emojis
+        If the affected message is in the configured modmail channel and the added reaction is one of the two emojis
         specified in constants.py, changes will be made to the current status of the modmail and visualized accordingly
         by the corresponding embed.
 
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
-        # TODO: Check if user has Moderator role.
-        if not payload.member.bot and payload.channel_id == constants.CHANNEL_ID_MODMAIL:
-            modmail = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        if not payload.member.bot and payload.channel_id == self.ch_modmail.id and \
+                self.role_moderator in payload.member.roles:
+            modmail = await self.ch_modmail.fetch_message(payload.message_id)
 
             if payload.emoji.name in (constants.EMOJI_MODMAIL_DONE, constants.EMOJI_MODMAIL_ASSIGN):
                 new_embed = await self.change_modmail_status(modmail, payload.emoji.name, True)
@@ -201,15 +206,15 @@ class ModerationCog(commands.Cog):
     async def modmail_reaction_remove(self, payload: discord.RawReactionActionEvent):
         """Event listener which triggers if a reaction has been removed.
 
-        If the affected message is in the configured Modmail channel and the removed reaction is one of the two emojis
+        If the affected message is in the configured modmail channel and the removed reaction is one of the two emojis
         specified in constants.py, changes will be made to the current status of the modmail and visualized accordingly
         by the corresponding embed.
 
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
-        if payload.channel_id == constants.CHANNEL_ID_MODMAIL:
-            modmail = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        if payload.channel_id == self.ch_modmail.id:
+            modmail = await self.ch_modmail.fetch_message(payload.message_id)
 
             if payload.emoji.name == constants.EMOJI_MODMAIL_DONE or \
                     payload.emoji.name == constants.EMOJI_MODMAIL_ASSIGN:
@@ -223,7 +228,7 @@ class ModerationCog(commands.Cog):
         color of the Embed posted on Discord.
 
         Args:
-            modmail (discord.Message): The Discord message in the specified Modmail channel.
+            modmail (discord.Message): The Discord message in the specified modmail channel.
             emoji (str): A String containing the Unicode for a specific emoji.
             reaction_added (Boolean): A boolean indicating if a reaction has been added or removed.
 
@@ -277,10 +282,11 @@ class ModerationCog(commands.Cog):
         await message.add_reaction(constants.EMOJI_CANCEL)
 
         def check_reaction(_reaction, user):
-            return user == ctx.author and \
+            return _reaction.message.id == ctx.message.id and user == ctx.author and \
                    str(_reaction.emoji) in [constants.EMOJI_CANCEL, constants.EMOJI_CONFIRM]
 
-        reaction = await self.bot.wait_for('reaction_add', timeout=constants.TIMEOUT_USER_SELECTION, check=check_reaction)
+        reaction = await self.bot.wait_for('reaction_add', timeout=constants.TIMEOUT_USER_SELECTION,
+                                           check=check_reaction)
         await message.delete()
 
         return str(reaction[0].emoji) == constants.EMOJI_CONFIRM
@@ -388,7 +394,7 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
     elif status == ModmailStatus.OPEN:
         dict_embed["title"] = "Keine offenen Tickets! :tada:"
         dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_CLOSED
-        dict_embed["description"] = "Lehn dich zurück und entspanne ein wenig. Momentan gibt es für dich keine " \
+        dict_embed["description"] = "Lehne dich zurück und entspanne ein wenig. Momentan gibt es für dich keine " \
                                     "Tickets, welche du abarbeiten könntest. :beers:"
     elif status == ModmailStatus.ASSIGNED:
         dict_embed["title"] = "Keine Tickets in Bearbeitung! :eyes:"

@@ -16,7 +16,13 @@ bot = commands.Bot(command_prefix=constants.BOT_PREFIX)
 @bot.event
 async def on_ready():
     """Event handler for the Bot entering the ready state."""
-    print('- {0.user} successfully logged in to Discord!\n'.format(bot))
+    print('- Logged in as: {0.user}'.format(bot))
+
+    print('- Initialising extensions...')
+    for extension in constants.INITIAL_EXTNS.values():
+        bot.load_extension(extension)
+
+    print("\n\n======== BOT IS UP & RUNNING ========\n\n")
 
 
 @bot.event
@@ -58,8 +64,5 @@ async def on_command_error(ctx, exception):
 
 
 if __name__ == '__main__':
-    for extension in constants.INITIAL_EXTNS.values():
-        bot.load_extension(extension)
-
     print("- Contacting Discord servers...")
     bot.run(constants.DISCORD_BOT_TOKEN)
