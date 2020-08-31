@@ -1,8 +1,3 @@
-# This is a basic workflow to help you get started with Actions
-#python -m pip install --upgrade pip
-#pip install setuptools wheel twine
-
-
 name: deployment
 
 #Runs on every push (PR) to master
@@ -10,7 +5,6 @@ on:
   push:
     branches:
       - master
-      - deploytest
 
 jobs:
   deployment:
@@ -38,6 +32,10 @@ jobs:
             supervisorctl stop sam-bot
             cd /srv/sam-bot
             mv .git-ftp.log logs/
+            python3 -m pip install --upgrade pip
             python3 -m venv virtual-env
+            source virtual-env/bin/activate
+            python3 -m pip install -r requirements.txt
+            deactivate
             supervisorctl start sam-bot
 
