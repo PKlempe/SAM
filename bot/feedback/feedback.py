@@ -28,7 +28,7 @@ class FeedbackCog(commands.Cog):
     async def manage_suggestions(self, ctx: commands.Context, *, suggestion: str):
         """Command Handler for the `suggestion` command.
 
-        Allows users to submit suggestions for improving our server. After submitting, an embed containing the provided
+        Allows users to submit suggestions for improving the server. After submitting, an embed containing the provided
         information will be posted in the configured suggestion channel by SAM.
         A suggestion can be marked as "approved", "denied", "considered" or "implemented". For each of these statuses
         exists a corresponding subcommand.
@@ -64,7 +64,7 @@ class FeedbackCog(commands.Cog):
             reason (Optional[str]): The reason for this decision.
         """
         await ctx.message.delete()
-        await self._change_suggestion_status(SuggestionStatus.APPROVED, ctx.author, ctx.guild, suggestion_id, reason)
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.APPROVED, ctx.guild, ctx.author, reason)
 
         log.info("Suggestion #%s has been approved by %s.", suggestion_id, ctx.author)
 
@@ -84,7 +84,7 @@ class FeedbackCog(commands.Cog):
             reason (Optional[str]): The reason for the decision.
         """
         await ctx.message.delete()
-        await self._change_suggestion_status(SuggestionStatus.DENIED, ctx.author, ctx.guild, suggestion_id, reason)
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.DENIED, ctx.guild, ctx.author, reason)
 
         log.info("Suggestion #%s has been denied by %s.", suggestion_id, ctx.author)
 
@@ -104,7 +104,7 @@ class FeedbackCog(commands.Cog):
             reason (Optional[str]): The reason for the decision.
         """
         await ctx.message.delete()
-        await self._change_suggestion_status(SuggestionStatus.CONSIDERED, ctx.author, ctx.guild, suggestion_id, reason)
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.CONSIDERED, ctx.guild, ctx.author, reason)
 
         log.info("Suggestion #%s is being considered by %s.", suggestion_id, ctx.author)
 
@@ -124,7 +124,7 @@ class FeedbackCog(commands.Cog):
             reason (Optional[str]): The reason for the decision.
         """
         await ctx.message.delete()
-        await self._change_suggestion_status(SuggestionStatus.IMPLEMENTED, ctx.author, ctx.guild, suggestion_id, reason)
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.IMPLEMENTED, ctx.guild, ctx.author, reason)
 
         log.info("Suggestion #%s marked as implemented by %s.", suggestion_id, ctx.author)
 
@@ -146,11 +146,11 @@ class FeedbackCog(commands.Cog):
             await ctx.send("Ich konnte leider keinen Vorschlag mit der von dir angegebenen Nummer finden. :frowning2:",
                            delete_after=constants.TIMEOUT_INFORMATION)
 
-    async def _change_suggestion_status(self, status: SuggestionStatus, author: discord.Member, guild: discord.Guild,
-                                        suggestion_id: int, reason: Optional[str]):
+    async def _change_suggestion_status(self, suggestion_id: int, status: SuggestionStatus, guild: discord.Guild,
+                                        author: discord.Member, reason: Optional[str]):
         """Method which changes the status of a suggestion.
 
-        Changes the status of the suggestion in our db, adapts the corresponding embed in the suggestion channel to
+        Changes the status of the suggestion in the db, adapts the corresponding embed in the suggestion channel to
         represent the newly made changes and finally notifies the user who submitted it via DM.
 
         Args:
@@ -162,7 +162,7 @@ class FeedbackCog(commands.Cog):
         """
         id_exists = self._db_connector.set_suggestion_status(suggestion_id, status)
         if not id_exists:
-            raise commands.BadArgument
+            raise commands.BadArgument("The suggestion with the specified ID doesn't exist.")
 
         suggestion_data = self._db_connector.get_suggestion(suggestion_id)
         message = await guild.get_channel(constants.CHANNEL_ID_SUGGESTIONS).fetch_message(suggestion_data[0])
@@ -187,16 +187,16 @@ class FeedbackCog(commands.Cog):
             reactions = message.reactions
 
             if payload.emoji.name in (constants.EMOJI_UPVOTE, constants.EMOJI_DOWNVOTE):
-                total_votes = reactions[0].count + reactions[1].count
-                difference = abs(reactions[0].count - reactions[1].count)
+                required_difference = (reactions[0].count + reactions[1].count) / 2
+                actual_difference = abs(reactions[0].count - reactions[1].count)
 
                 # Changes the color of the embed depending if one side received at least 10 votes and the difference
                 # between them is bigger than 50% of total votes.
                 if constants.LIMIT_SUGGESTION_VOTES < reactions[0].count > reactions[1].count and \
-                        difference > (total_votes / 2):
+                        actual_difference > required_difference:
                     new_embed = _recolor_embed(message.embeds[0], constants.EMBED_COLOR_SUGGESTION_MEMBERS_LIKE)
                     await message.edit(embed=new_embed)
-                elif constants.LIMIT_SUGGESTION_VOTES < reactions[1].count and difference > (total_votes / 2):
+                elif constants.LIMIT_SUGGESTION_VOTES < reactions[1].count and actual_difference > required_difference:
                     new_embed = _recolor_embed(message.embeds[0], constants.EMBED_COLOR_SUGGESTION_MEMBERS_DISLIKE)
                     await message.edit(embed=new_embed)
 
@@ -233,15 +233,7 @@ async def _refresh_suggestion_embed(message: discord.Message, author: discord.Me
     """
     dict_embed = message.embeds[0].to_dict()
 
-    if "fields" in dict_embed:
-        dict_embed["fields"].clear()
-    else:
-        dict_embed["fields"] = list()
-
-    if reason:
-        dict_embed["fields"].append({"name": f"Begründung von {author}:", "value": reason, 'inline': False})
-    else:
-        dict_embed = message.embeds[0].to_dict()
+    dict_embed["fields"] = [{"name": f"Begründung von {author}:", "value": reason}] if reason else list()
 
     dict_embed["title"] = dict_embed["title"].split(" -")[0]
     if status == SuggestionStatus.APPROVED:
@@ -266,7 +258,7 @@ def _build_suggestion_embed(author: discord.Member, suggestion: str, suggestion_
     Args:
         author (discord.Member): The user who invoked the command to change it.
         suggestion (str): The suggestion provided by the user.
-        suggestion_id (int): The id of the suggestion provided by our db.
+        suggestion_id (int): The id of the suggestion provided by the db.
 
     Returns:
         discord.Embed: The embed representing a user suggestion.

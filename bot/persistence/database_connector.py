@@ -17,7 +17,7 @@ class DatabaseConnector:
     properties to the database.
     """
 
-    def __init__(self, db_file: str, init_script=None):
+    def __init__(self, db_file: str, init_script: Optional[str]):
         """Create a database connection to a SQLite database and create the default tables form the SQL script in
         init_db.sql.
 
@@ -127,7 +127,7 @@ class DatabaseConnector:
             status (SuggestionStatus): The new status of the suggestion.
 
         Returns:
-            bool: A boolean representing if a row has been changed.
+            bool: A boolean representing if any rows have been changed
         """
         with DatabaseManager(self._db_file) as db_manager:
             affected_rows = db_manager.execute(queries.SET_SUGGESTION_STATUS, (status.value, suggestion_id)) \
