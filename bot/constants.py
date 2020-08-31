@@ -14,11 +14,12 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 # Bot Settings
 BOT_PREFIX = '!'
-INITIAL_EXTNS = {"AdminCog":        'bot.admin.admin',
-                 "ModerationCog":   'bot.moderation.moderation',
-                 "UniversityCog":   'bot.university.university',
-                 "UtilitiesCog":    'bot.util.utilities',
-                 "FeedbackCog":     'bot.feedback.feedback'}
+INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
+                 "RoleManagementCog":   'bot.role_management.role_management',
+                 "ModerationCog":       'bot.moderation.moderation',
+                 "UniversityCog":       'bot.university.university',
+                 "UtilitiesCog":        'bot.util.utilities',
+                 "FeedbackCog":         'bot.feedback.feedback'}
 
 
 # Filepaths
