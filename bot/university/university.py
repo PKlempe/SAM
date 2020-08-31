@@ -33,6 +33,7 @@ class UniversityCog(commands.Cog):
 
         # Init scheduler for resetting the group-exchange channel
         print("- Initializing AsyncIO Scheduler")
+        
         self.scheduler = AsyncIOScheduler()
         self._add_scheduler_job_yearly(self.open_group_exchange_channel,
                                        constants.DATE_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER)
@@ -251,10 +252,7 @@ class UniversityCog(commands.Cog):
 
     @commands.group(name='exchange', hidden=True, invoke_without_command=True)
     @command_log
-    async def exchange(self,
-                       ctx: commands.Context,
-                       channel: discord.TextChannel,
-                       offered_group: int,
+    async def exchange(self, ctx: commands.Context, channel: discord.TextChannel, offered_group: int,
                        *, requested_groups_str: str):
         """Command Handler for the exchange command
 
