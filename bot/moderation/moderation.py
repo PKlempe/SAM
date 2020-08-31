@@ -28,8 +28,8 @@ class ModerationCog(commands.Cog):
         self.guild = bot.get_guild(int(constants.SERVER_ID))
 
         # Channel instances
-        self.ch_report = bot.get_channel(int(constants.CHANNEL_ID_REPORT))
-        self.ch_modmail = bot.get_channel(int(constants.CHANNEL_ID_MODMAIL))
+        self.ch_report = self.guild.get_channel(int(constants.CHANNEL_ID_REPORT))
+        self.ch_modmail = self.guild.get_channel(int(constants.CHANNEL_ID_MODMAIL))
 
         # Role instances
         self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))

@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from sqlite3 import IntegrityError
-from typing import Dict, List, Optional, Union, Iterable, Tuple
+from typing import Dict, List, Optional, Union, Iterable, Tuple, Callable, Awaitable
 
 import discord
 import requests
@@ -34,9 +34,9 @@ class UniversityCog(commands.Cog):
         self.guild = bot.get_guild(int(constants.SERVER_ID))
 
         # Channel instances
-        self.ch_group_exchange = bot.get_channel(int(constants.CHANNEL_ID_GROUP_EXCHANGE))
+        self.ch_group_exchange = self.guild.get_channel(int(constants.CHANNEL_ID_GROUP_EXCHANGE))
 
-        # Init scheduler for resetting the group-exchange channel
+        # Init scheduler for resetting the group exchange channel
         self.scheduler = AsyncIOScheduler()
         self._add_scheduler_job_yearly(self.open_group_exchange_channel,
                                        constants.DATE_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER)
@@ -348,7 +348,7 @@ class UniversityCog(commands.Cog):
         # Limit is set to a high number because we can't simply remove "all".
         await self.ch_group_exchange.purge(limit=100000)
 
-    def _add_scheduler_job_yearly(self, func, date_dict: dict):
+    def _add_scheduler_job_yearly(self, func: Callable[[int], Awaitable[None]], date_dict: dict):
         """Adds a new job to the scheduler that runs a member function of this class.
 
         Convenience method to add a new job to the object's scheduler. The added function must be a member of the self
