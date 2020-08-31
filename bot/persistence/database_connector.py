@@ -311,7 +311,7 @@ class DatabaseConnector:
             bool: true if the channel is botonly, false if not or no entry is found
         """
         with DatabaseManager(self._db_file) as db_manager:
-            result = db_manager.execute(queries.IS_CHANNEL_BOTONLY, (channel.name,))
+            result = db_manager.execute(queries.IS_CHANNEL_BOTONLY, (channel.id,))
 
             rows = result.fetchone()
             if rows:
@@ -325,7 +325,7 @@ class DatabaseConnector:
             channel (discord.TextChannel): The channel to be made bot-only.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.ACTIVATE_BOTONLY_FOR_CHANNEL, (channel.name,))
+            db_manager.execute(queries.ACTIVATE_BOTONLY_FOR_CHANNEL, (channel.id,))
             db_manager.commit()
 
     def deactivate_botonly(self, channel):
@@ -335,7 +335,7 @@ class DatabaseConnector:
             channel (discord.TextChannel): The channel to be made not bot-only.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.DEACTIVATE_BOTONLY_FOR_CHANNEL, (channel.name,))
+            db_manager.execute(queries.DEACTIVATE_BOTONLY_FOR_CHANNEL, (channel.id,))
             db_manager.commit()
 
     def get_group_exchange_for_user(self, user_id: int):

@@ -35,5 +35,5 @@ CREATE TABLE IF NOT EXISTS GroupOffer(
 );
 
 CREATE TABLE IF NOT EXISTS BotOnlyChannels(
-    Channel TEXT PRIMARY KEY
+    ChannelID TEXT PRIMARY KEY
 );
