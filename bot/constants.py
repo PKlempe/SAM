@@ -12,7 +12,7 @@ INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
                  "RoleManagementCog":   'bot.role_management.role_management',
                  "ModerationCog":       'bot.moderation.moderation',
                  "UniversityCog":       'bot.university.university',
-                 "UtilitiesCog":        'bot.util.utilities',
+                 "UtilityCog":          'bot.utility.utility',
                  "FeedbackCog":         'bot.feedback.feedback'}
 
 
