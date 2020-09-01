@@ -34,6 +34,43 @@ class ModerationCog(commands.Cog):
         # Role instances
         self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))
 
+    @commands.command(name='avatar')
+    @command_log
+    async def user_avatar(self, ctx: commands.Context, *, user: discord.Member):
+        description = "[.jpg]({0}) | [.png]({1}) | [.webp]({2})".format(user.avatar_url_as(format="jpg"),
+                                                                        user.avatar_url_as(format="png"),
+                                                                        user.avatar_url_as(format="webp"))
+        possible_gif_url = str(user.avatar_url_as())
+
+        if ".gif" in possible_gif_url:
+            description += " | [.gif]({0})".format(possible_gif_url)
+
+        embed = discord.Embed(title=f"Avatar von {user}", color=constants.EMBED_COLOR_MODERATION,
+                              timestamp=datetime.utcnow(),
+                              description=description)
+        embed.set_footer(text="Erstellt am")
+        embed.set_image(url=user.avatar_url)
+
+        await ctx.send(embed=embed)
+
+    @user_avatar.error
+    async def convert_user_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Error Handler for commands which take a username and try to convert them to a user/member object.
+
+        Handles an exception which may occurs during the execution of commands when trying to convert a username to a
+        user/member object. The global error handler will still be called for every error thrown.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            error (commands.CommandError): The error raised during the execution of the command.
+        """
+        if isinstance(error, commands.BadArgument):
+            regex = re.search(r"\"(.*)\"", error.args[0])  # Regex to get the text between two quotes.
+            user = regex.group(1) if regex is not None else None
+
+            await ctx.send(f"Ich konnte leider keinen Nutzer namens **{user}** finden. :confused: Hast du dich "
+                           f"möglicherweise vertippt?")
+
     @commands.command(name='report')
     @command_log
     async def report_user(self, ctx: commands.Context, offender: discord.Member, *, description: str):
