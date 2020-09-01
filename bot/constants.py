@@ -1,39 +1,26 @@
 """File which contains constants used for this bot."""
 
 import os
-
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
-SERVER_ID = 356078768953098240
-
-
-# API Keys
-DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 
 # Bot Settings
-BOT_PREFIX = '!'
-INITIAL_EXTNS = {"AdminCog":        'bot.admin.admin',
-                 "ModerationCog":   'bot.moderation.moderation',
-                 "UniversityCog":   'bot.university.university',
-                 "UtilitiesCog":    'bot.util.utilities',
-                 "FeedbackCog":     'bot.feedback.feedback'}
+BOT_PREFIX = '$'
+INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
+                 "RoleManagementCog":   'bot.role_management.role_management',
+                 "ModerationCog":       'bot.moderation.moderation',
+                 "UniversityCog":       'bot.university.university',
+                 "UtilitiesCog":        'bot.util.utilities',
+                 "FeedbackCog":         'bot.feedback.feedback'}
 
 
-# Filepaths
-LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
-
-
-# Job times
-DATE_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER = {"month": "9", "day": "15", "hour": "4", "minute": "0"}
+# Job Times
+DATE_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER = {"month": "9", "day": "21", "hour": "4", "minute": "0"}
 DATE_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER = {"month": "11", "day": "1", "hour": "4", "minute": "0"}
-DATE_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER = {"month": "2", "day": "15", "hour": "4", "minute": "0"}
+DATE_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER = {"month": "2", "day": "20", "hour": "4", "minute": "0"}
 DATE_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER = {"month": "4", "day": "1", "hour": "4", "minute": "0"}
-
-## SQLite Database
-DB_FILE_PATH = os.getenv("DB_FILE_PATH")
-DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
 
 
 # Important URLs
@@ -55,21 +42,10 @@ TIMEOUT_USER_SELECTION = 15
 TIMEOUT_INFORMATION = 8
 
 
-# Special Channel IDs
-CHANNEL_ID_BOT = 729066220627951757
-CHANNEL_ID_REPORT = 729066220627951757
-CHANNEL_ID_MODMAIL = 744301781202501803
-CHANNEL_ID_ROLES = 729066220627951757
-CHANNEL_ID_SUGGESTIONS = 729066220627951757
-CHANNEL_ID_GROUP_EXCHANGE = 729066220627951757
-
-
-# Special Role IDs
-ROLE_ID_MODERATOR = 356080544670285825
-
-
-# Special User IDs
-USER_ID_CONTRIBUTOR = 310100064687226882
+# Discord Server Boosts
+DISCORD_BOOST_LVL1_CAP = 2
+DISCORD_BOOST_LVL2_CAP = 15
+DISCORD_BOOST_LVL3_CAP = 30
 
 
 # Embed Colors
@@ -95,11 +71,6 @@ EMBED_COLOR_GROUP_EXCHANGE = 0xECFF00
 EMBED_COLOR_BOTONLY = 0xFF7900
 EMBED_COLOR_WARNING = 0xFF0000
 
-# Discord Server Boosts
-DISCORD_BOOST_LVL1_CAP = 2
-DISCORD_BOOST_LVL2_CAP = 15
-DISCORD_BOOST_LVL3_CAP = 30
-
 
 # Special Emojis
 EMOJI_PIN = "\U0001F4CC"
@@ -118,3 +89,31 @@ EMOJI_DOWNVOTE = "\U00002B07\U0000FE0F"
 
 ZERO_WIDTH_SPACE = "\U0000200B"
 EMOJI_CHANNEL_NAME_SEPARATOR = "\U0001F539"
+
+
+# API Keys
+DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+
+
+# File Paths
+LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
+DB_FILE_PATH = os.getenv("DB_FILE_PATH")
+DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
+
+
+# Special Discord IDs
+SERVER_ID = os.getenv("SERVER_ID")
+
+## Channel IDs
+CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT")
+CHANNEL_ID_REPORT = os.getenv("CHANNEL_ID_REPORT")
+CHANNEL_ID_MODMAIL = os.getenv("CHANNEL_ID_MODMAIL")
+CHANNEL_ID_ROLES = os.getenv("CHANNEL_ID_ROLES")
+CHANNEL_ID_SUGGESTIONS = os.getenv("CHANNEL_ID_SUGGESTIONS")
+CHANNEL_ID_GROUP_EXCHANGE = os.getenv("CHANNEL_ID_GROUP_EXCHANGE")
+
+## Role IDs
+ROLE_ID_MODERATOR = os.getenv("ROLE_ID_MODERATOR")
+
+## User IDs
+USER_ID_CONTRIBUTOR = 310100064687226882

@@ -1,4 +1,4 @@
-"""Contains a Cog for all utility funcionality."""
+"""Contains a Cog for all utility functionality."""
 
 from datetime import datetime
 from typing import List
@@ -20,6 +20,11 @@ class UtilitiesCog(commands.Cog):
             bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
         """
         self.bot = bot
+
+        self.guild = bot.get_guild(int(constants.SERVER_ID))
+
+        # Role instances
+        self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))
 
     @commands.command(name='ping')
     @command_log
@@ -71,7 +76,7 @@ class UtilitiesCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
-        contributor = await commands.MemberConverter().convert(ctx, str(constants.USER_ID_CONTRIBUTOR))
+        contributor = await commands.UserConverter().convert(ctx, str(constants.USER_ID_CONTRIBUTOR))
 
         description = "**__SAM__** ist ein multi-funktionaler Discord-Bot, welcher speziell für den Server der " \
                       "Informatik-Fakultät der Universität Wien entwickelt wurde. Sein Ziel ist es unterschiedlichste" \
@@ -104,7 +109,7 @@ class UtilitiesCog(commands.Cog):
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
         if payload.emoji.name == constants.EMOJI_PIN:
-            channel = self.bot.get_channel(payload.channel_id)
+            channel = self.guild.get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
 
             reaction = next(x for x in message.reactions if x.emoji == constants.EMOJI_PIN)
@@ -114,9 +119,9 @@ class UtilitiesCog(commands.Cog):
                     await message.pin(reason="Ausreichend Nutzer haben mit dem Pin-Emoji reagiert.")
                     log.info("A message has been pinned in channel %s via user reactions.", channel)
                 except discord.HTTPException:
-                    channel.send("Es sieht so aus, als wurden bereits zu viele Nachrichten in diesem Channel angepinnt. "
-                                 ":pushpin:\nEin <@&{0}> könnte in diesem Fall die Pins ein wenig aufräumen. "
-                                 ":broom:".format(constants.ROLE_ID_MODERATOR))
+                    channel.send("Es sieht so aus, als wurden bereits zu viele Nachrichten in diesem Channel "
+                                 "angepinnt. :pushpin:\nEin {0} könnte in diesem Fall die Pins ein wenig aufräumen. "
+                                 ":broom:".format(self.role_moderator.mention))
 
 
 def build_serverinfo_strings(guild: discord.Guild) -> List[str]:

@@ -23,6 +23,11 @@ class FeedbackCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
+        self.guild = bot.get_guild(int(constants.SERVER_ID))
+
+        # Channel instances
+        self.ch_suggestion = self.guild.get_channel(int(constants.CHANNEL_ID_SUGGESTIONS))
+
     @commands.group(name="suggestion", hidden=True, invoke_without_command=True, aliases=["suggest"])
     @command_log
     async def manage_suggestions(self, ctx: commands.Context, *, suggestion: str):
@@ -41,7 +46,7 @@ class FeedbackCog(commands.Cog):
         suggestion_id = self._db_connector.add_suggestion(ctx.author.id, ctx.message.created_at)
 
         embed = _build_suggestion_embed(ctx.author, suggestion, suggestion_id)
-        message = await ctx.guild.get_channel(constants.CHANNEL_ID_SUGGESTIONS).send(embed=embed)
+        message = await self.ch_suggestion.send(embed=embed)
 
         self._db_connector.set_suggestion_message_id(suggestion_id, message.id)
 
@@ -64,7 +69,7 @@ class FeedbackCog(commands.Cog):
             reason (Optional[str]): The reason for this decision.
         """
         await ctx.message.delete()
-        await self._change_suggestion_status(suggestion_id, SuggestionStatus.APPROVED, ctx.guild, ctx.author, reason)
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.APPROVED, ctx.author, reason)
 
         log.info("Suggestion #%s has been approved by %s.", suggestion_id, ctx.author)
 
@@ -84,7 +89,7 @@ class FeedbackCog(commands.Cog):
             reason (Optional[str]): The reason for the decision.
         """
         await ctx.message.delete()
-        await self._change_suggestion_status(suggestion_id, SuggestionStatus.DENIED, ctx.guild, ctx.author, reason)
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.DENIED, ctx.author, reason)
 
         log.info("Suggestion #%s has been denied by %s.", suggestion_id, ctx.author)
 
@@ -104,7 +109,7 @@ class FeedbackCog(commands.Cog):
             reason (Optional[str]): The reason for the decision.
         """
         await ctx.message.delete()
-        await self._change_suggestion_status(suggestion_id, SuggestionStatus.CONSIDERED, ctx.guild, ctx.author, reason)
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.CONSIDERED, ctx.author, reason)
 
         log.info("Suggestion #%s is being considered by %s.", suggestion_id, ctx.author)
 
@@ -124,7 +129,7 @@ class FeedbackCog(commands.Cog):
             reason (Optional[str]): The reason for the decision.
         """
         await ctx.message.delete()
-        await self._change_suggestion_status(suggestion_id, SuggestionStatus.IMPLEMENTED, ctx.guild, ctx.author, reason)
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.IMPLEMENTED, ctx.author, reason)
 
         log.info("Suggestion #%s marked as implemented by %s.", suggestion_id, ctx.author)
 
@@ -146,8 +151,8 @@ class FeedbackCog(commands.Cog):
             await ctx.send("Ich konnte leider keinen Vorschlag mit der von dir angegebenen Nummer finden. :frowning2:",
                            delete_after=constants.TIMEOUT_INFORMATION)
 
-    async def _change_suggestion_status(self, suggestion_id: int, status: SuggestionStatus, guild: discord.Guild,
-                                        author: discord.Member, reason: Optional[str]):
+    async def _change_suggestion_status(self, suggestion_id: int, status: SuggestionStatus, author: discord.Member,
+                                        reason: Optional[str]):
         """Method which changes the status of a suggestion.
 
         Changes the status of the suggestion in the db, adapts the corresponding embed in the suggestion channel to
@@ -156,7 +161,6 @@ class FeedbackCog(commands.Cog):
         Args:
             status (SuggestionStatus): The new status of the suggestion.
             author (discord.Member): The user who invoked the command to change it.
-            guild (discord.Guild): The Discord server on which to find the suggestion.
             suggestion_id (int): The id of the suggestion.
             reason (Optional[str]): The reason for the decision.
         """
@@ -165,10 +169,10 @@ class FeedbackCog(commands.Cog):
             raise commands.BadArgument("The suggestion with the specified ID doesn't exist.")
 
         suggestion_data = self._db_connector.get_suggestion(suggestion_id)
-        message = await guild.get_channel(constants.CHANNEL_ID_SUGGESTIONS).fetch_message(suggestion_data[0])
+        message = await self.ch_suggestion.fetch_message(suggestion_data[0])
 
         await _refresh_suggestion_embed(message, author, reason, SuggestionStatus(suggestion_data[1]))
-        await _notify_user_suggestion_change(guild, int(suggestion_data[2]))
+        await self._notify_user_suggestion_change(int(suggestion_data[2]))
 
     @commands.Cog.listener(name='on_raw_reaction_add')
     async def suggestion_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -181,9 +185,9 @@ class FeedbackCog(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
-        if not payload.member.bot and payload.channel_id == constants.CHANNEL_ID_SUGGESTIONS and \
+        if not payload.member.bot and payload.channel_id == self.ch_suggestion.id and \
                 self._db_connector.get_suggestion_status(payload.message_id) == SuggestionStatus.UNDECIDED:
-            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+            message = await self.ch_suggestion.fetch_message(payload.message_id)
             reactions = message.reactions
 
             if payload.emoji.name in (constants.EMOJI_UPVOTE, constants.EMOJI_DOWNVOTE):
@@ -200,23 +204,21 @@ class FeedbackCog(commands.Cog):
                     new_embed = _recolor_embed(message.embeds[0], constants.EMBED_COLOR_SUGGESTION_MEMBERS_DISLIKE)
                     await message.edit(embed=new_embed)
 
+    async def _notify_user_suggestion_change(self, user_id: int):
+        """Method which notifies a user about changes regarding his suggestion.
 
-async def _notify_user_suggestion_change(guild: discord.Guild, user_id: int):
-    """Method which notifies a user about changes regarding his suggestion.
+        Gets the corresponding Discord member and sends a personalized DM to him informing him about changes regarding
+        his suggestion.
 
-    Gets the corresponding Discord member and sends a personalized DM to him informing him about changes regarding his
-    suggestion.
+        Args:
+            user_id (int): The id of the user who submitted the suggestion.
+        """
+        member = self.guild.get_member(user_id)
+        name = member.nick if member.nick else member.name
+        text = "Hey, {0}!\nEs gibt Neuigkeiten bezüglich deines Vorschlags.Sieh am besten gleich in {1} nach, wie " \
+               "das Urteil ausgefallen ist. :fingers_crossed:".format(name, self.ch_suggestion.mention)
 
-    Args:
-        guild (discord.Guild): The Discord server on which to find the suggestion.
-        user_id (int): The id of the user who submitted the suggestion.
-    """
-    member = guild.get_member(user_id)
-    name = member.nick if member.nick else member.name
-    text = "Hey, {0}!\nEs gibt Neuigkeiten bezüglich deines Vorschlags.Sieh am besten gleich in <#{1}> nach, wie " \
-           "das Urteil ausgefallen ist. :fingers_crossed:".format(name, constants.CHANNEL_ID_SUGGESTIONS)
-
-    await member.send(text)
+        await member.send(text)
 
 
 async def _refresh_suggestion_embed(message: discord.Message, author: discord.Member, reason: Optional[str],
