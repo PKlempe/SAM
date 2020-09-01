@@ -16,7 +16,7 @@ from discord.ext import commands
 from bot import constants
 from bot.logger import command_log
 from bot.persistence import DatabaseConnector
-from bot.util import SelectionEmoji
+from bot.utility import SelectionEmoji
 
 
 class UniversityCog(commands.Cog):

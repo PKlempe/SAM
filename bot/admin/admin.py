@@ -27,6 +27,11 @@ class AdminCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
+        self.guild = bot.get_guild(int(constants.SERVER_ID))
+
+        # Channel instances
+        self.ch_bot = self.guild.get_channel(int(constants.CHANNEL_ID_BOT))
+
     # A special method that registers as a commands.check() for every command and subcommand in this cog.
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author)  # Only owners of the bot can use the commands defined in this Cog.
@@ -134,16 +139,15 @@ class AdminCog(commands.Cog):
 
     @cmd_for_bot_stuff.command(name="cogs", hidden=True)
     @command_log
-    async def embed_available_cogs(self, ctx: commands.Context):
+    async def embed_available_cogs(self, _ctx: commands.Context):
         """Command handler for the `bot` subcommand `cogs`.
 
         Creates an Embed containing a list of all available Cogs and their current status (un-/loaded). This embed will
         then be posted in the configured bot channel.
 
         Args:
-            ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
-        ch_bot = ctx.guild.get_channel(constants.CHANNEL_ID_BOT)
         str_cogs = _create_cogs_embed_string(self.bot.cogs)
         description = "Auflistung sämtlich vorhandener \"Cogs\" des Bots. Die Farbe vor den Namen signalisiert, ob " \
                       "die jeweilige Erweiterung momentan geladen ist oder nicht."
@@ -153,7 +157,7 @@ class AdminCog(commands.Cog):
         embed.set_footer(text="Erstellt am")
         embed.add_field(name="Status", value=str_cogs)
 
-        await ch_bot.send(embed=embed)
+        await self.ch_bot.send(embed=embed)
 
     @cmd_for_bot_stuff.group(name="cog", hidden=True, invoke_without_command=True)
     @command_log
@@ -166,20 +170,6 @@ class AdminCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
         await ctx.send_help(ctx.command)
-
-    @management_cog.error
-    async def management_cog_error(self, ctx: commands.Context, error: commands.CommandError):
-        """Error handler for the `bot` subcommand group `cog`.
-
-        Special errors occurring during reloading, unloading or loading of a Cog are handled in here.
-
-        Args:
-            ctx (discord.ext.commands.Context): The context from which this command is invoked.
-            error (commands.CommandError): The error raised during the execution of a command.
-        """
-        if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, KeyError):
-            await ctx.guild.get_channel(constants.CHANNEL_ID_BOT).send("Es konnte leider kein Cog mit diesem Namen "
-                                                                       "gefunden werden.")
 
     @management_cog.command(name='load', hidden=True)
     @command_log
@@ -196,6 +186,7 @@ class AdminCog(commands.Cog):
 
         self.bot.load_extension(constants.INITIAL_EXTNS[extn_name])
         log.warning("%s has been loaded.", extn_name)
+        await self.ch_bot.send(f":arrow_heading_down: `{extn_name}` has been successfully loaded.")
 
     @management_cog.command(name='unload', hidden=True)
     @command_log
@@ -212,6 +203,7 @@ class AdminCog(commands.Cog):
 
         self.bot.unload_extension(constants.INITIAL_EXTNS[extn_name])
         log.warning("%s has been unloaded.", extn_name)
+        await self.ch_bot.send(f":arrow_heading_up: `{extn_name}` has been successfully unloaded.")
 
     @management_cog.group(name='reload', hidden=True, invoke_without_command=True)
     @command_log
@@ -229,6 +221,7 @@ class AdminCog(commands.Cog):
 
         self.bot.reload_extension(constants.INITIAL_EXTNS[extn_name])
         log.warning("%s has been reloaded.", extn_name)
+        await self.ch_bot.send(f":arrows_counterclockwise: `{extn_name}` has been successfully reloaded.")
 
     @reload_extension.command(name='all', hidden=True)
     @command_log
@@ -244,6 +237,24 @@ class AdminCog(commands.Cog):
         for cog_name, path in constants.INITIAL_EXTNS.items():
             self.bot.reload_extension(path)
             log.warning("%s has been reloaded.", cog_name)
+
+        await self.ch_bot.send(":arrows_counterclockwise: All cogs have been successfully reloaded.")
+
+    @load_extension.error
+    @unload_extension.error
+    @reload_extension.error
+    @reload_all_extension.error
+    async def management_cog_error(self, _ctx: commands.Context, error: commands.CommandError):
+        """Error handler for the `bot` subcommand group `cog`.
+
+        Special errors occurring during reloading, unloading or loading of a Cog are handled in here.
+
+        Args:
+            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            error (commands.CommandError): The error raised during the execution of a command.
+        """
+        if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, KeyError):
+            await self.ch_bot.send("Es konnte leider kein Cog mit diesem Namen gefunden werden.")
 
     @cmd_for_bot_stuff.group(name="presence", invoke_without_command=True)
     @command_log

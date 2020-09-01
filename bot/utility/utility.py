@@ -10,7 +10,7 @@ from bot import constants
 from bot.logger import command_log, log
 
 
-class UtilitiesCog(commands.Cog):
+class UtilityCog(commands.Cog):
     """Cog for Utility Functions."""
 
     def __init__(self, bot):
@@ -241,4 +241,4 @@ def setup(bot):
     Args:
         bot (Bot): The bot for which this cog should be enabled.
     """
-    bot.add_cog(UtilitiesCog(bot))
+    bot.add_cog(UtilityCog(bot))
