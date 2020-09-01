@@ -40,10 +40,9 @@ class ModerationCog(commands.Cog):
         description = "[.jpg]({0}) | [.png]({1}) | [.webp]({2})".format(user.avatar_url_as(format="jpg"),
                                                                         user.avatar_url_as(format="png"),
                                                                         user.avatar_url_as(format="webp"))
-        possible_gif_url = str(user.avatar_url_as())
 
-        if ".gif" in possible_gif_url:
-            description += " | [.gif]({0})".format(possible_gif_url)
+        if user.is_avatar_animated:
+            description += " | [.gif]({0})".format(user.avatar_url_as(format="gif"))
 
         embed = discord.Embed(title=f"Avatar von {user}", color=constants.EMBED_COLOR_MODERATION,
                               timestamp=datetime.utcnow(),
@@ -53,6 +52,29 @@ class ModerationCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @commands.command(name='info')
+    @command_log
+    async def user_info(self, ctx: commands.Context, *, user: discord.Member):
+        created_at = datetime.strftime(user.created_at, "%d.%m.%Y | %H:%M:%S")
+        joined_at = datetime.strftime(user.joined_at, "%d.%m.%Y | %H:%M:%S")
+        roles = " ".join([role.mention for role in reversed(user.roles[1:])])
+        description = f"Name am Server: {user.mention}"
+
+        if user.premium_since:
+            premium_since = datetime.strftime(user.premium_since, "%d.%m.%Y %H:%M:%S")
+            description += f"Boostet seit: {premium_since}"
+
+        embed = discord.Embed(title=str(user), description=description,
+                              color=constants.EMBED_COLOR_MODERATION)
+        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_footer(text=f"UserID: {user.id}")
+        embed.add_field(name="Erstellt am:", value=created_at, inline=True)
+        embed.add_field(name="Beigetreten am:", value=joined_at, inline=True)
+        embed.add_field(name="Rollen:", value=roles, inline=False)
+
+        await ctx.send(embed=embed)
+
+    @user_info.error
     @user_avatar.error
     async def convert_user_error(self, ctx: commands.Context, error: commands.CommandError):
         """Error Handler for commands which take a username and try to convert them to a user/member object.
