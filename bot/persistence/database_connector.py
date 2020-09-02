@@ -38,6 +38,20 @@ class DatabaseConnector:
                     except Error as error:
                         print("Command could not be executed, skipping it: {0}".format(error))
 
+    def add_member_name(self, user_id: int, name: str, timestamp: datetime.datetime):
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.INSERT_MEMBER_NAME, (user_id, name, timestamp))
+            db_manager.commit()
+
+    def get_member_names(self, user_id: int) -> Optional[tuple]:
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_MEMBER_NAMES, (user_id,))
+
+            rows = result.fetchall()
+            if rows:
+                return rows
+            return None
+
     def add_module_role(self, role_id: int):
         """Adds a role to the table "ModuleRole".
 

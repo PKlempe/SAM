@@ -214,9 +214,8 @@ class FeedbackCog(commands.Cog):
             user_id (int): The id of the user who submitted the suggestion.
         """
         member = self.guild.get_member(user_id)
-        name = member.nick if member.nick else member.name
         text = "Hey, {0}!\nEs gibt Neuigkeiten bezüglich deines Vorschlags.Sieh am besten gleich in {1} nach, wie " \
-               "das Urteil ausgefallen ist. :fingers_crossed:".format(name, self.ch_suggestion.mention)
+               "das Urteil ausgefallen ist. :fingers_crossed:".format(member.display_name, self.ch_suggestion.mention)
 
         await member.send(text)
 

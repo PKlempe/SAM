@@ -34,6 +34,13 @@ CREATE TABLE IF NOT EXISTS GroupOffer(
     UNIQUE (UserId, Course)
 );
 
-CREATE TABLE IF NOT EXISTS BotOnlyChannels(
+CREATE TABLE IF NOT EXISTS BotOnlyChannel(
     ChannelID TEXT PRIMARY KEY
+);
+
+CREATE TABLE IF NOT EXISTS MemberNameHistory(
+    UserID TEXT NOT NULL,
+    Name TEXT NOT NULL,
+    Timestamp TEXT NOT NULL,
+    PRIMARY KEY (UserID, Name, Timestamp)
 );

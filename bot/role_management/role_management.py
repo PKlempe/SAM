@@ -24,6 +24,11 @@ class RoleManagementCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
+        self.guild = bot.get_guild(int(constants.SERVER_ID))
+
+        # Channel instances
+        self.ch_role = self.guild.get_channel(int(constants.CHANNEL_ID_ROLES))
+
     @commands.group(name='module', invoke_without_command=True)
     @command_log
     async def toggle_module(self, ctx: commands.Context, *, str_modules: str):
@@ -39,8 +44,9 @@ class RoleManagementCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             str_modules (str): A string containing abbreviations of all the modules a user would like to toggle.
         """
-        if ctx.channel.id != constants.CHANNEL_ID_ROLES:
-            ctx.channel.send(value=f"Dieser Befehl wird nur in <#{constants.CHANNEL_ID_ROLES}> unterstützt. Bitte "
+        if ctx.channel.id != self.ch_role.id:
+            await ctx.message.delete()
+            ctx.channel.send(value=f"Dieser Befehl wird nur in {self.ch_role.mention} unterstützt. Bitte "
                                    f"versuche es dort noch einmal. ", delete_after=constants.TIMEOUT_INFORMATION)
             return
 
@@ -122,7 +128,7 @@ class RoleManagementCog(commands.Cog):
             error (commands.CommandError): The error raised during the execution of the command.
         """
         if isinstance(error, commands.BadArgument):
-            role = re.search(r"\"(.*)\"", error.args[0])  # Regex to get the text between two quotes.
+            role = re.search(r"\"(.*)\"", error.args[0])  # Regex for getting text between two quotes.
             role = role.group(1) if role is not None else None
 
             await ctx.author.send(f"Die von dir angegebene Rolle \"**__{role}__**\" existiert leider nicht.")

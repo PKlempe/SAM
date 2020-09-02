@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import List, Optional
+from sqlite3 import IntegrityError
 import re
 import operator
 
@@ -35,6 +36,30 @@ class ModerationCog(commands.Cog):
         # Role instances
         self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))
 
+    @commands.command(name='namehistory')
+    @command_log
+    async def member_nicknames(self, ctx: commands.Context, *, user: discord.Member):
+        nicknames = self._db_connector.get_member_names(user.id)
+        description = "Es werden maximal die __letzten {0} Namen__ eines Mitglieds angezeigt, welche auf diesem " \
+                      "Server verwendet wurden." \
+            .format(constants.LIMIT_NICKNAMES)
+
+        if nicknames:
+            embed = discord.Embed(title=f"Namensverlauf von {user} :page_with_curl:", description=description,
+                                  color=constants.EMBED_COLOR_MODERATION, timestamp=datetime.utcnow())
+            embed.set_footer(text="Stand")
+            embed.set_thumbnail(url=user.avatar_url)
+            embed.add_field(name=user.display_name, value="fortlaufend")
+
+            for name in nicknames[:constants.LIMIT_NICKNAMES]:
+                timestamp = datetime.strptime(name[1], '%Y-%m-%d %H:%M:%S.%f').strftime("%d.%m.%Y\num *%H:%M:%S*")
+                embed.add_field(name=name[0], value=f"bis {timestamp}")
+
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send(f"**__{user}__** hatte bisher keinen anderen Namen auf diesem Server. "
+                           ":face_with_monocle:")
+
     @commands.command(name='newmembers')
     @command_log
     async def new_members(self, ctx: commands.Context, amount: int = 12):
@@ -55,9 +80,9 @@ class ModerationCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @new_members.error
-    async def convert_user_error(self, ctx: commands.Context, error: commands.CommandError):
+    async def new_members_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, commands.BadArgument):
-            await ctx.send("**__ERROR:__** Die angegebene Menge an neuen Mitgliedern ist entweder nicht numerisch oder "
+            await ctx.send("**__Error:__** Die angegebene Menge an neuen Mitgliedern ist entweder nicht numerisch oder "
                            "leider zu groß. Sie darf **{0}** nicht überschreiten.".format(constants.LIMIT_NEW_MEMBERS))
 
     @commands.command(name='avatar')
@@ -113,11 +138,11 @@ class ModerationCog(commands.Cog):
             error (commands.CommandError): The error raised during the execution of the command.
         """
         if isinstance(error, commands.BadArgument):
-            regex = re.search(r"\"(.*)\"", error.args[0])  # Regex to get the text between two quotes.
-            user = regex.group(1) if regex is not None else None
+            regex = re.search(r"\"(.*)\"", error.args[0])  # Regex for getting text between two quotes.
+            user = regex.group(1) if regex else None
 
-            await ctx.send(f"Ich konnte leider keinen Nutzer namens **{user}** finden. :confused: Hast du dich "
-                           f"möglicherweise vertippt?")
+            await ctx.send(f"**__Error:__** Ich konnte leider keinen Nutzer namens **{user}** finden. :confused: "
+                           f"Hast du dich möglicherweise vertippt?")
 
     @commands.command(name='report')
     @command_log
@@ -152,14 +177,14 @@ class ModerationCog(commands.Cog):
             error (commands.CommandError): The error raised during the execution of the command.
         """
         if isinstance(error, commands.BadArgument):
-            regex = re.search(r"\"(.*)\"", error.args[0])  # Regex to get the text between two quotes.
-            user = regex.group(1) if regex is not None else None
+            regex = re.search(r"\"(.*)\"", error.args[0])  # Regex for getting text between two quotes.
+            user = regex.group(1) if regex else None
 
             await ctx.author.send(f"Ich konnte leider keinen Nutzer namens **{user}** finden. :confused: Hast du dich "
                                   f"möglicherweise vertippt?")
 
     @commands.group(name='purge', hidden=True)
-    @commands.has_role(constants.ROLE_ID_MODERATOR)
+    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def purge_messages(self, ctx: commands.Context, channel: Optional[discord.TextChannel], amount: int):
         """Command Handler for the `purge` command.
@@ -228,7 +253,7 @@ class ModerationCog(commands.Cog):
 
         embed = discord.Embed(title="Status: Offen", color=constants.EMBED_COLOR_MODMAIL_OPEN,
                               timestamp=datetime.utcnow(), description=msg_content)
-        embed.set_author(name=ctx.author.name + "#" + ctx.author.discriminator, icon_url=ctx.author.avatar_url)
+        embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
         embed.set_footer(text="Erhalten am")
 
         msg_modmail = await self.ch_modmail.send(embed=embed, files=msg_attachments)
@@ -244,7 +269,7 @@ class ModerationCog(commands.Cog):
                               "__Hier deine Bestätigung:__", embed=embed_confirmation)
 
     @modmail.command(name='get', hidden=True)
-    @commands.has_role(constants.ROLE_ID_MODERATOR)
+    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def get_modmail_with_status(self, ctx: commands.Context, *, status: str):
         """Command Handler for the modmail subcommand `get`.
@@ -257,16 +282,30 @@ class ModerationCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             status (str): The status specified by the moderator.
         """
-        if ctx.channel.id == self.ch_modmail.id:
-            try:
-                enum_status = ModmailStatus[status.upper()]
-                modmail = self._db_connector.get_all_modmail_with_status(enum_status)
+        if ctx.channel.id != self.ch_modmail.id:
+            await ctx.message.delete()
+            await ctx.author.send(f"Dieser Befehl wird nur in {self.ch_modmail.mention} unterstützt. Bitte "
+                                  f"versuche es dort noch einmal.")
+            return
 
-                embed = _modmail_create_list_embed(enum_status, modmail)
-                await self.ch_modmail.send(embed=embed)
-            except (KeyError, ValueError):
-                await ctx.channel.send("**__Error:__** Ungültiger oder nicht unterstützter Status `{0}`."
-                                       .format(status.title()))
+        enum_status = ModmailStatus[status.upper()]
+        modmail = self._db_connector.get_all_modmail_with_status(enum_status)
+
+        embed = _modmail_create_list_embed(enum_status, modmail)
+        await self.ch_modmail.send(embed=embed)
+
+    @get_modmail_with_status.error
+    async def get_modmail_error(self, _ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.CommandInvokeError):
+            if isinstance(error.original, KeyError):
+                await self.ch_modmail.send("**__Error:__** Ungültiger Modmail-Status `{0}`."
+                                           .format(error.original.args[0].title()))
+
+            elif isinstance(error.original, ValueError):
+                regex = re.search(r"\'(.*)\'", error.args[0])  # Regex for getting text between two quotes.
+                status = regex.group(1) if regex else None
+
+                await self.ch_modmail.send(f"**__Error:__** Nicht unterstützter Modmail-Status `{status}`.")
 
     @commands.Cog.listener(name='on_raw_reaction_add')
     async def modmail_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -376,6 +415,15 @@ class ModerationCog(commands.Cog):
 
         return str(reaction[0].emoji) == constants.EMOJI_CONFIRM
 
+    @commands.Cog.listener(name='on_member_update')
+    @commands.Cog.listener(name='on_user_update')
+    async def name_change(self, before: discord.Member, after: discord.Member):
+        try:
+            if before.display_name != after.display_name:
+                self._db_connector.add_member_name(before.id, before.display_name, datetime.utcnow())
+        except IntegrityError:
+            print("Oops!")
+
 
 def _build_purge_confirmation_embed(channel: discord.TextChannel, amount: int) -> discord.Embed:
     """Creates an embed for confirmation of the `purge` command.
@@ -475,7 +523,7 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
             dict_embed["title"] = "Zugewiesene Tickets: " + str(len(modmail))
             dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_ASSIGNED
         else:
-            raise ValueError("Nicht unterstützter Modmail-Status `{0}`.".format(status.name))
+            raise ValueError("Nicht unterstützter Modmail-Status '{0}'.".format(status.name.title()))
     elif status == ModmailStatus.OPEN:
         dict_embed["title"] = "Keine offenen Tickets! :tada:"
         dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_CLOSED
@@ -487,7 +535,7 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
         dict_embed["description"] = "**Es ist ruhig, zu ruhig...** Vielleicht gibt es momentan ja ein paar offene " \
                                     "Tickets die bearbeitet werden müssten."
     else:
-        raise ValueError("Nicht unterstützter Modmail-Status `{0}`.".format(status.name))
+        raise ValueError("Nicht unterstützter Modmail-Status '{0}'.".format(status.name.title()))
 
     return discord.Embed.from_dict(dict_embed)
 
