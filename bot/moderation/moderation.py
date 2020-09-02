@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import List, Optional
 import re
+import operator
 
 import discord
 from discord.ext import commands
@@ -33,6 +34,31 @@ class ModerationCog(commands.Cog):
 
         # Role instances
         self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))
+
+    @commands.command(name='newmembers')
+    @command_log
+    async def new_members(self, ctx: commands.Context, amount: int = 12):
+        if amount > constants.LIMIT_NEW_MEMBERS:
+            raise commands.BadArgument("The amount of new members to be displayed is too big.")
+
+        members = sorted(ctx.guild.members, key=operator.attrgetter("joined_at"), reverse=True)[:amount]
+        description = "Füge an das Ende des Befehls eine beliebige Zahl an, um die Menge an neuen Mitgliedern " \
+                      "individuell festzulegen. **(max. {0})**".format(constants.LIMIT_NEW_MEMBERS)
+
+        embed = discord.Embed(title="Neueste Mitglieder :couple:", color=constants.EMBED_COLOR_MODERATION,
+                              description=description, timestamp=datetime.utcnow())
+        embed.set_footer(text="Stand")
+
+        for member in members:
+            embed.add_field(name=str(member), value=datetime.strftime(member.joined_at, "%d.%m.%Y | *%H:%M:%S*"))
+
+        await ctx.send(embed=embed)
+
+    @new_members.error
+    async def convert_user_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send("**__ERROR:__** Die angegebene Menge an neuen Mitgliedern ist entweder nicht numerisch oder "
+                           "leider zu groß. Sie darf **{0}** nicht überschreiten.".format(constants.LIMIT_NEW_MEMBERS))
 
     @commands.command(name='avatar')
     @command_log
