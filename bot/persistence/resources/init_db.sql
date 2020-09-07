@@ -17,6 +17,13 @@ CREATE TABLE IF NOT EXISTS ModuleRole(
     RoleID TEXT PRIMARY KEY
 );
 
+CREATE TABLE IF NOT EXISTS MemberWarning(
+    ID INTEGER PRIMARY KEY,
+    UserID TEXT NOT NULL,
+    Timestamp TEXT NOT NULL,
+    Reason TEXT
+);
+
 CREATE TABLE IF NOT EXISTS GroupRequest(
     ID INTEGER PRIMARY KEY,
     UserId TEXT NOT NULL,
@@ -42,5 +49,5 @@ CREATE TABLE IF NOT EXISTS MemberNameHistory(
     UserID TEXT NOT NULL,
     Name TEXT NOT NULL,
     Timestamp TEXT NOT NULL,
-    PRIMARY KEY (UserID, Name, Timestamp)
+    PRIMARY KEY (UserID, Timestamp)
 );

@@ -38,6 +38,39 @@ class DatabaseConnector:
                     except Error as error:
                         print("Command could not be executed, skipping it: {0}".format(error))
 
+    def add_member_warning(self, user_id: int, timestamp: datetime.datetime, reason: Optional[str]):
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.INSERT_MEMBER_WARNING, (user_id, timestamp, reason))
+            db_manager.commit()
+
+    def remove_member_warning(self, warning_id: int):
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.DELETE_MEMBER_WARNING, (warning_id,))
+            db_manager.commit()
+
+    def remove_member_warnings(self, user_id: int):
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.DELETE_MEMBER_WARNINGS, (user_id,))
+            db_manager.commit()
+
+    def get_warning_userid(self, warning_id: int) -> Optional[int]:
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_WARNING_USERID, (warning_id,))
+
+            row = result.fetchone()
+            if row:
+                return row[0]
+            return None
+
+    def get_member_warnings(self, user_id: int) -> Optional[List[tuple]]:
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_MEMBER_WARNINGS, (user_id,))
+
+            rows = result.fetchall()
+            if rows:
+                return rows
+            return None
+
     def add_member_name(self, user_id: int, name: str, timestamp: datetime.datetime):
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.INSERT_MEMBER_NAME, (user_id, name, timestamp))

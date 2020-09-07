@@ -1,18 +1,20 @@
 """Contains a Cog for all functionality regarding Moderation."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
-from sqlite3 import IntegrityError
 import re
 import operator
 
 import discord
 from discord.ext import commands
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
 from bot import constants
 from bot.logger import command_log, log
 from bot.moderation import ModmailStatus
 from bot.persistence import DatabaseConnector
+from bot.util.time_parsing import get_future_timestamp
 
 
 class ModerationCog(commands.Cog):
@@ -24,17 +26,152 @@ class ModerationCog(commands.Cog):
         Args:
             bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
         """
-        self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
+        self.scheduler = AsyncIOScheduler(job_defaults={'misfire_grace_time': 24*60*60},
+                                          jobstores={'default': SQLAlchemyJobStore(
+                                              url=f'sqlite:///{constants.DB_FILE_PATH}')})
+        self.scheduler.start()
 
-        self.guild = bot.get_guild(int(constants.SERVER_ID))
+        # Static variable which is needed for running jobs created by the scheduler. A lot of data structures provided
+        # by discord.py can't be pickled (serialized) which is why IDs are being used instead. For converting them into
+        # usable objects, a bot/client object is needed, which should be the same for the whole application anyway.
+        ModerationCog.bot = bot
+        self.guild = self.bot.get_guild(int(constants.SERVER_ID))
 
         # Channel instances
         self.ch_report = self.guild.get_channel(int(constants.CHANNEL_ID_REPORT))
         self.ch_modmail = self.guild.get_channel(int(constants.CHANNEL_ID_MODMAIL))
+        self.ch_rules = self.guild.get_channel(int(constants.CHANNEL_ID_RULES))
 
         # Role instances
         self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))
+        self.role_muted = self.guild.get_role(int(constants.ROLE_ID_MUTED))
+
+    @commands.command(name='warnings')
+    @command_log
+    async def get_warnings(self, ctx: commands.Context, user: discord.Member):
+        warnings = self._db_connector.get_member_warnings(user.id)
+
+        if warnings:
+            embed = _create_warnings_embed(user, warnings)
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("Dieser Nutzer wurde bisher von niemanden verwarnt. :relieved:")
+
+    @commands.group(name='warning', aliases=["warn"], invoke_without_command=True)
+    @command_log
+    async def warn_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
+        self._db_connector.add_member_warning(user.id, datetime.utcnow(), reason)
+
+        # TODO: Check warnings and take actions if necessary.
+
+        await ctx.send(f"{user.mention} wurde verwarnt. :warning:")
+        await user.send(content=f"Hey, {user.display_name}! :wave:\nDu wurdest von **__{ctx.author}__** verwarnt. "
+                                f"Bitte halte dich in Zukunft an unsere {self.ch_rules.mention}, da wir ansonsten "
+                                f"gezwungen sind, härtere Strafen zu verhängen. :scales:")
+
+    @warn_user.command(name='remove')
+    @command_log
+    async def remove_warning(self, ctx: commands.Context, warning_id: int):
+        user_id = self._db_connector.get_warning_userid(warning_id)
+
+        if not user_id:
+            raise commands.BadArgument("The warning with the specified ID doesn't exist.")
+
+        user = self.guild.get_member(int(user_id))
+        self._db_connector.remove_member_warning(warning_id)
+
+        await ctx.send(f"Die Verwarnung für {user.mention} wurde erfolgreich aufgehoben. :white_check_mark:")
+        # TODO: Get warning and print additional info which warning exactly has been removed.
+
+    @remove_warning.error
+    async def remove_warning_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send("Ich konnte leider keine Verwarnung mit der von dir angegebenen ID finden. :cold_sweat: "
+                           "Hast du dich möglicherweise vertippt?")
+
+    @warn_user.command(name='clear')
+    @command_log
+    async def clear_warnings(self, ctx: commands.Context, *, user: discord.Member):
+        self._db_connector.remove_member_warnings(user.id)
+        await ctx.send(f"Alle Verwarnungen für {user.mention} wurden erfolgreich aufgehoben. :white_check_mark:")
+
+    @commands.command(name='mute')
+    @command_log
+    async def mute_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
+        if self.role_muted in user.roles:
+            await ctx.send("Dieser Nutzer ist bereits stummgeschalten. :flushed:")
+            return
+
+        await user.add_roles(self.role_muted, reason=reason)
+        await ctx.send(f"{user.mention} wurde stummgeschalten. :mute:")
+
+    @commands.command(name='unmute')
+    @command_log
+    async def unmute_user(self, ctx: commands.Context, user: discord.Member):
+        if self.role_muted not in user.roles:
+            await ctx.send("Dieser Nutzer ist nicht stummgeschalten. :thinking:")
+            return
+
+        await user.remove_roles(self.role_muted)
+        await ctx.send(f"{user.mention} ist nicht mehr stummgeschalten. :speaker:")
+        await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr stummgeschalten! :speaker: Versuch "
+                        f"bitte in Zukunft, dich mehr an unsere {self.ch_rules.mention} zu halten, da wir ansonsten "
+                        f"gezwungen sind, härtere Strafen zu verhängen. :scales:")
+
+    @commands.command(name='tempmute')
+    @command_log
+    async def tempmute_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: str):
+        if self.role_muted in user.roles:
+            await ctx.send("Dieser Nutzer ist bereits stummgeschalten. :flushed:")
+            return
+
+        run_date, pretty_duration = get_future_timestamp(duration)
+
+        await user.add_roles(self.role_muted, reason=reason)
+        await ctx.send(f"{user.mention} wurde für {pretty_duration} stummgeschalten. :mute:")
+
+        self.scheduler.add_job(_scheduled_unmute_user, 'date', run_date=run_date,
+                               args=[self.guild.id, self.ch_rules.id, self.role_muted.id, user.id])
+
+    @commands.command(name='ban')
+    @command_log
+    async def ban_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
+        await user.ban(reason=reason, delete_message_days=0)
+        await ctx.send(f"{user.mention} wurde gebannt. :do_not_litter:")
+
+        embed = _create_mod_action_embed("Bann", f"Du wurdest von **__{self.guild}__** gebannt.", ctx.author, reason)
+        await user.send(embed=embed)
+
+    @commands.command(name='tempban')
+    @command_log
+    async def tempban_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: str):
+        run_date, pretty_duration = get_future_timestamp(duration)
+
+        await user.ban(reason=reason, delete_message_days=0)
+        await ctx.send(f"{user.mention} wurde für {pretty_duration} gebannt. :do_not_litter:")
+
+        embed = _create_mod_action_embed("Bann", f"Du wurdest von **__{self.guild}__** für {pretty_duration} gebannt.",
+                                         ctx.author, reason)
+        await user.send(embed=embed)
+
+        self.scheduler.add_job(_scheduled_unban_user, 'date', run_date=run_date,
+                               args=[self.guild.id, self.ch_rules.id, user.id])
+
+    @tempmute_user.error
+    @tempban_user.error
+    async def temp_action_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
+            await ctx.send("**__Error:__** Die angegebene Zeitdauer ist ungültig. :clock330:")
+
+    @commands.command(name='kick')
+    @command_log
+    async def kick_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
+        await user.kick(reason=reason)
+        await ctx.send(f"{user.mention} wurde gekickt. :anger:")
+
+        embed = _create_mod_action_embed("Kick", f"Du wurdest von **__{self.guild}__** gekickt.", ctx.author, reason)
+        await user.send(embed=embed)
 
     @commands.command(name='namehistory')
     @command_log
@@ -49,7 +186,7 @@ class ModerationCog(commands.Cog):
                                   color=constants.EMBED_COLOR_MODERATION, timestamp=datetime.utcnow())
             embed.set_footer(text="Stand")
             embed.set_thumbnail(url=user.avatar_url)
-            embed.add_field(name=user.display_name, value="fortlaufend")
+            embed.add_field(name=user.display_name, value="aktuell")
 
             for name in nicknames[:constants.LIMIT_NICKNAMES]:
                 timestamp = datetime.strptime(name[1], '%Y-%m-%d %H:%M:%S.%f').strftime("%d.%m.%Y\num *%H:%M:%S*")
@@ -92,7 +229,7 @@ class ModerationCog(commands.Cog):
                                                                         user.avatar_url_as(format="png"),
                                                                         user.avatar_url_as(format="webp"))
 
-        if user.is_avatar_animated:
+        if user.is_avatar_animated():
             description += " | [.gif]({0})".format(user.avatar_url_as(format="gif"))
 
         embed = discord.Embed(title=f"Avatar von {user}", color=constants.EMBED_COLOR_MODERATION,
@@ -125,6 +262,15 @@ class ModerationCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @get_warnings.error
+    @warn_user.error
+    @clear_warnings.error
+    @mute_user.error
+    @unmute_user.error
+    @tempmute_user.error
+    @ban_user.error
+    @tempban_user.error
+    @kick_user.error
     @user_info.error
     @user_avatar.error
     async def convert_user_error(self, ctx: commands.Context, error: commands.CommandError):
@@ -418,11 +564,57 @@ class ModerationCog(commands.Cog):
     @commands.Cog.listener(name='on_member_update')
     @commands.Cog.listener(name='on_user_update')
     async def name_change(self, before: discord.Member, after: discord.Member):
-        try:
-            if before.display_name != after.display_name:
-                self._db_connector.add_member_name(before.id, before.display_name, datetime.utcnow())
-        except IntegrityError:
-            print("Oops!")
+        if before.display_name != after.display_name:
+            self._db_connector.add_member_name(before.id, before.display_name, datetime.utcnow())
+
+
+async def _scheduled_unmute_user(server_id, ch_rules_id, role_id, user_id):
+    guild = ModerationCog.bot.get_guild(int(server_id))
+    ch_rules = guild.get_channel(int(ch_rules_id))
+    user = guild.get_member(int(user_id))
+    role = guild.get_role(int(role_id))
+
+    await user.remove_roles(role, reason="Die für den Tempmute festgelegte Zeitdauer ist ausgelaufen.")
+    await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr stummgeschalten! :speaker: Versuch "
+                    f"bitte in Zukunft, dich mehr an unsere {ch_rules.mention} zu halten, da wir ansonsten "
+                    f"gezwungen sind, härtere Strafen zu verhängen. :scales:")
+
+
+async def _scheduled_unban_user(server_id, ch_rules_id, user_id):
+    guild = ModerationCog.bot.get_guild(int(server_id))
+    ch_rules = guild.get_channel(int(ch_rules_id))
+    user = await ModerationCog.bot.fetch_user(int(user_id))
+
+    await user.unban(reason="Die für den Tempban festgelegte Zeitdauer ist ausgelaufen.")
+    await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr von **__{guild}__** gebannt! :unlock: "
+                    f"Versuch bitte in Zukunft, dich mehr an unsere {ch_rules.mention} zu halten, da wir ansonsten "
+                    f"gezwungen sind, dich dauerhaft zu bannen. :scales:")
+
+
+def _create_warnings_embed(user: discord.Member, warnings: List[tuple]) -> discord.Embed:
+    embed = discord.Embed(title=f"Verwarnungen von {user.display_name} :rotating_light:", timestamp=datetime.utcnow(),
+                          description="__Gesamt:__ {0}".format(len(warnings)),
+                          color=constants.EMBED_COLOR_MODERATION)
+    embed.set_footer(text="Stand")
+    embed.set_thumbnail(url=user.avatar_url)
+
+    for warning in warnings:
+        timestamp = datetime.strptime(warning[1], '%Y-%m-%d %H:%M:%S.%f').strftime('%d.%m.%Y um %H:%M')
+        reason = warning[2] if warning[2] else "Keine Angabe."
+
+        embed.add_field(name=f"#{warning[0]} :small_orange_diamond: {timestamp}", value=f"**Grund:** {reason}",
+                        inline=False)
+    return embed
+
+
+def _create_mod_action_embed(action: str, description: str, moderator: discord.Member, reason: Optional[str]) \
+        -> discord.Embed:
+    embed = discord.Embed(title=f"{action}-Meldung", description=description, color=constants.EMBED_COLOR_WARNING)
+
+    if reason:
+        embed.add_field(name=f"Begründung von {moderator.display_name}", value=reason)
+
+    return embed
 
 
 def _build_purge_confirmation_embed(channel: discord.TextChannel, amount: int) -> discord.Embed:
