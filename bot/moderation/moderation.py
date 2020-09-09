@@ -1,7 +1,7 @@
 """Contains a Cog for all functionality regarding Moderation."""
 
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Union
 import re
 import operator
 
@@ -42,10 +42,90 @@ class ModerationCog(commands.Cog):
         self.ch_report = self.guild.get_channel(int(constants.CHANNEL_ID_REPORT))
         self.ch_modmail = self.guild.get_channel(int(constants.CHANNEL_ID_MODMAIL))
         self.ch_rules = self.guild.get_channel(int(constants.CHANNEL_ID_RULES))
+        self.ch_server_news = self.guild.get_channel(int(constants.CHANNEL_ID_NEWS))
 
         # Role instances
         self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))
         self.role_muted = self.guild.get_role(int(constants.ROLE_ID_MUTED))
+
+    @commands.group(name='lockdown', invoke_without_command=True)
+    @command_log
+    async def lockdown(self, ctx: commands.Context,
+                       ch_input: Optional[Union[discord.TextChannel, discord.VoiceChannel]]):
+        channel = ch_input if ch_input else ctx.channel
+        overwrite = channel.overwrites_for(ctx.guild.default_role)
+
+        if overwrite.send_messages is not None and not overwrite.send_messages:
+            await ctx.send("Dieser Kanal befindet sich bereits im Lockdown. :cop:")
+            return
+
+        confirmation_embed = _build_lockdown_confirmation_embed(channel)
+        is_confirmed = await self._send_confirmation_dialog(ctx, confirmation_embed)
+
+        if is_confirmed:
+            overwrite.update(send_messages=False, connect=False)
+            await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite,
+                                          reason=f"Der Kanal wurde von {ctx.author} in einen Lockdown versetzt.")
+
+            embed = _create_lockdown_embed()
+            await channel.send(embed=embed)
+
+    @lockdown.command(name='release')
+    @command_log
+    async def lockdown_release(self, ctx: commands.Context,
+                               ch_input: Optional[Union[discord.TextChannel, discord.VoiceChannel]]):
+        channel = ch_input if ch_input else ctx.channel
+        overwrite = channel.overwrites_for(ctx.guild.default_role)
+
+        if overwrite.send_messages is None or overwrite.send_messages:
+            await ctx.send("Dieser Kanal befindet sich derzeit nicht im Lockdown. :face_with_raised_eyebrow:")
+            return
+
+        overwrite.update(send_messages=None, connect=None)
+        await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite,
+                                      reason=f"Der Lockdown wurde von {ctx.author} aufgehoben.")
+
+        embed = _create_lockdown_reopen_embed()
+        await channel.send(embed=embed)
+
+    @lockdown.group(name='server', invoke_without_command=True)
+    @command_log
+    async def lockdown_server(self, ctx: commands.Context):
+        role = ctx.guild.default_role
+        permissions = role.permissions
+
+        if not permissions.send_messages:
+            await ctx.send("Der Server befindet sich bereits im Lockdown. :police_car::dash:")
+            return
+
+        confirmation_embed = _build_lockdown_confirmation_embed(None)
+        is_confirmed = await self._send_confirmation_dialog(ctx, confirmation_embed)
+
+        if is_confirmed:
+            permissions.send_messages = False
+            permissions.connect = False
+            await role.edit(permissions=permissions, reason=f"Der Server wurde von {ctx.author} in einen Lockdown "
+                                                            f"versetzt.")
+
+            embed = _create_server_lockdown_embed()
+            await self.ch_server_news.send(embed=embed)
+
+    @lockdown_server.command(name='release')
+    @command_log
+    async def lockdown_server_release(self, ctx: commands.Context):
+        role = ctx.guild.default_role
+        permissions = role.permissions
+
+        if permissions.send_messages:
+            await ctx.send("Der Server befindet sich derzeit nicht im Lockdown. :face_with_raised_eyebrow:")
+            return
+
+        permissions.send_messages = True
+        permissions.connect = True
+        await role.edit(permissions=permissions, reason=f"Der serverweite Lockdown wurde von {ctx.author} aufgehoben.")
+
+        embed = _create_server_lockdown_reopen_embed()
+        await self.ch_server_news.send(embed=embed)
 
     @commands.command(name='warnings')
     @command_log
@@ -82,7 +162,6 @@ class ModerationCog(commands.Cog):
         self._db_connector.remove_member_warning(warning_id)
 
         await ctx.send(f"Die Verwarnung für {user.mention} wurde erfolgreich aufgehoben. :white_check_mark:")
-        # TODO: Get warning and print additional info which warning exactly has been removed.
 
     @remove_warning.error
     async def remove_warning_error(self, ctx: commands.Context, error: commands.CommandError):
@@ -121,7 +200,7 @@ class ModerationCog(commands.Cog):
 
     @commands.command(name='tempmute')
     @command_log
-    async def tempmute_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: str):
+    async def tempmute_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: Optional[str]):
         if self.role_muted in user.roles:
             await ctx.send("Dieser Nutzer ist bereits stummgeschalten. :flushed:")
             return
@@ -145,7 +224,7 @@ class ModerationCog(commands.Cog):
 
     @commands.command(name='tempban')
     @command_log
-    async def tempban_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: str):
+    async def tempban_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: Optional[str]):
         run_date, pretty_duration = get_future_timestamp(duration)
 
         await user.ban(reason=reason, delete_message_days=0)
@@ -552,12 +631,15 @@ class ModerationCog(commands.Cog):
         await message.add_reaction(constants.EMOJI_CANCEL)
 
         def check_reaction(_reaction, user):
-            return _reaction.message.id == ctx.message.id and user == ctx.author and \
+            return user == ctx.author and _reaction.message.id == message.id and \
                    str(_reaction.emoji) in [constants.EMOJI_CANCEL, constants.EMOJI_CONFIRM]
 
         reaction = await self.bot.wait_for('reaction_add', timeout=constants.TIMEOUT_USER_SELECTION,
                                            check=check_reaction)
         await message.delete()
+
+        if str(reaction[0].emoji) == constants.EMOJI_CANCEL:
+            await ctx.message.delete()
 
         return str(reaction[0].emoji) == constants.EMOJI_CONFIRM
 
@@ -589,6 +671,52 @@ async def _scheduled_unban_user(server_id, ch_rules_id, user_id):
     await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr von **__{guild}__** gebannt! :unlock: "
                     f"Versuch bitte in Zukunft, dich mehr an unsere {ch_rules.mention} zu halten, da wir ansonsten "
                     f"gezwungen sind, dich dauerhaft zu bannen. :scales:")
+
+
+def _create_lockdown_embed() -> discord.Embed:
+    description = "Dieser Kanal befindet sich aufgrund von Unruhen derzeit im Lockdown, weswegen das Versenden " \
+                  "von Nachrichten vorübergehend nicht möglich ist. :mailbox_with_no_mail:\n\nDie Moderatoren sind " \
+                  "bemüht, die Ordnung schnellstmöglich wiederherzustellen. Bitte haltet davon ab, sie bezüglich der " \
+                  "aktuellen Situation zu kontaktieren, da dies die Wiedereröffnung des Kanals nur unnötig verzögern " \
+                  "würde.\n\n**__Wir bitten um Verständnis.__ :heart:**"
+
+    embed = discord.Embed(title=":rotating_light: LOCKDOWN :rotating_light:", color=constants.EMBED_COLOR_WARNING,
+                          description=description)
+
+    return embed
+
+
+def _create_server_lockdown_embed() -> discord.Embed:
+    description = "Der gesamte Server befindet sich aufgrund von Unruhen derzeit im Lockdown, weswegen das Versenden " \
+                  "von Nachrichten vorübergehend nicht möglich ist. :mailbox_with_no_mail:\n\nDie Moderatoren sind " \
+                  "bemüht, die Ordnung schnellstmöglich wiederherzustellen. Bitte haltet davon ab, sie bezüglich der " \
+                  "aktuellen Situation zu kontaktieren, da dies die Wiedereröffnung des Kanals nur unnötig verzögern " \
+                  "würde.\n\n**__Wir bitten um Verständnis.__ :heart:**"
+
+    embed = discord.Embed(title=":rotating_light: LOCKDOWN :rotating_light:", color=constants.EMBED_COLOR_WARNING,
+                          description=description)
+
+    return embed
+
+
+def _create_lockdown_reopen_embed() -> discord.Embed:
+    description = "Der Lockdown für diesen Kanal wurde aufgehoben und es können wieder ungehindert Nachrichten " \
+                  "versendet werden. \n\n**__Vielen Dank für die Geduld.__** :handshake:"
+
+    embed = discord.Embed(title=":sparkles: Lockdown-Aufhebung :sparkles:", color=constants.EMBED_COLOR_INFO,
+                          description=description)
+
+    return embed
+
+
+def _create_server_lockdown_reopen_embed() -> discord.Embed:
+    description = "Der serverweite Lockdown wurde aufgehoben und es können wieder ungehindert Nachrichten " \
+                  "versendet werden. \n\n**__Vielen Dank für die Geduld.__** :handshake:"
+
+    embed = discord.Embed(title=":sparkles: Lockdown-Aufhebung :sparkles:", color=constants.EMBED_COLOR_INFO,
+                          description=description)
+
+    return embed
 
 
 def _create_warnings_embed(user: discord.Member, warnings: List[tuple]) -> discord.Embed:
@@ -627,11 +755,24 @@ def _build_purge_confirmation_embed(channel: discord.TextChannel, amount: int) -
     Returns:
         (discord.Embed): The embed with the confirmation dialog
     """
-    description = "**Bist du sicher dass du im Channel {0} __{1} Nachrichten__ löschen möchtest?**\nDiese Operation " \
-                  "kann nicht rückgängig gemacht werden! Überlege dir daher gut, ob du das auch wirklich tun möchtest."\
-        .format(channel.mention, amount)
+    description = "**Bist du dir sicher, dass du im Kanal {0} __{1} Nachrichten__ löschen möchtest?**\nDiese " \
+                  "Operation kann nicht rückgängig gemacht werden! Überlege dir daher gut, ob du das auch wirklich " \
+                  "tun möchtest.".format(channel.mention, amount)
 
     return discord.Embed(title=":warning: Purge-Bestätigung :warning:", description=description,
+                         color=constants.EMBED_COLOR_WARNING)
+
+
+def _build_lockdown_confirmation_embed(channel: Optional[Union[discord.TextChannel, discord.VoiceChannel]]) \
+        -> discord.Embed:
+    if channel:
+        description = f"Bist du dir sicher, dass du den Kanal {channel.mention} in einen Lockdown versetzen möchtest? "\
+                      f"Niemand außer den Moderatoren ist dann noch in der Lage, hier Nachrichten zu versenden."
+    else:
+        description = f"Bist du dir sicher, dass du **__den gesamten Server__** in einen Lockdown versetzen möchtest? "\
+                      f"Niemand außer den Moderatoren ist dann noch in der Lage, Nachrichten zu versenden."
+
+    return discord.Embed(title=":warning: Lockdown-Bestätigung :warning:", description=description,
                          color=constants.EMBED_COLOR_WARNING)
 
 
