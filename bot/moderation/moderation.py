@@ -48,8 +48,14 @@ class ModerationCog(commands.Cog):
         self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))
         self.role_muted = self.guild.get_role(int(constants.ROLE_ID_MUTED))
 
+    # A special method that registers as a commands.check() for every command and subcommand in this cog.
+    # Only moderators can use the commands defined in this Cog except for `report` and `modmail`.
+    def cog_check(self, ctx):
+        if ctx.command.name in ["report", "modmail"]:
+            return True
+        return self.role_moderator in ctx.author.roles
+
     @commands.group(name='lockdown', hidden=True, invoke_without_command=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def lockdown(self, ctx: commands.Context,
                        ch_input: Optional[Union[discord.TextChannel, discord.VoiceChannel]]):
@@ -81,7 +87,6 @@ class ModerationCog(commands.Cog):
             await channel.send(embed=embed)
 
     @lockdown.command(name='lift', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def lockdown_lift(self, ctx: commands.Context,
                             ch_input: Optional[Union[discord.TextChannel, discord.VoiceChannel]]):
@@ -109,7 +114,6 @@ class ModerationCog(commands.Cog):
         await channel.send(embed=embed)
 
     @lockdown.group(name='server', hidden=True, invoke_without_command=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def lockdown_server(self, ctx: commands.Context):
         """Command Handler for the `server` subcommand of the `lockdown` command.
@@ -140,7 +144,6 @@ class ModerationCog(commands.Cog):
             await self.ch_server_news.send(embed=embed)
 
     @lockdown_server.command(name='lift', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def lockdown_server_lift(self, ctx: commands.Context):
         """Command Handler for the `lift` subcommand of the command `lockdown server`.
@@ -166,7 +169,6 @@ class ModerationCog(commands.Cog):
         await self.ch_server_news.send(embed=embed)
 
     @commands.command(name='warnings', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def get_warnings(self, ctx: commands.Context, user: discord.Member):
         """Command Handler for the `warnings` command.
@@ -186,7 +188,6 @@ class ModerationCog(commands.Cog):
             await ctx.send("Dieser Nutzer wurde bisher von niemanden verwarnt. :relieved:")
 
     @commands.group(name='warning', hidden=True, aliases=["warn"], invoke_without_command=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def warn_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
         """Command Handler for the `warning` command.
@@ -209,7 +210,6 @@ class ModerationCog(commands.Cog):
                                 f"gezwungen sind, härtere Strafen zu verhängen. :scales:")
 
     @warn_user.command(name='remove', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def remove_warning(self, ctx: commands.Context, warning_id: int):
         """Command Handler for the subcommand `remove` of the command `warning`.
@@ -245,7 +245,6 @@ class ModerationCog(commands.Cog):
                            "Hast du dich möglicherweise vertippt?")
 
     @warn_user.command(name='clear', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def clear_warnings(self, ctx: commands.Context, *, user: discord.Member):
         """Command Handler for the subcommand `clear` of the command `warning`.
@@ -260,7 +259,6 @@ class ModerationCog(commands.Cog):
         await ctx.send(f"Alle Verwarnungen für {user.mention} wurden erfolgreich aufgehoben. :white_check_mark:")
 
     @commands.command(name='mute', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def mute_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
         """Command Handler for the `mute` command.
@@ -280,7 +278,6 @@ class ModerationCog(commands.Cog):
         await ctx.send(f"{user.mention} wurde stummgeschalten. :mute:")
 
     @commands.command(name='unmute', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def unmute_user(self, ctx: commands.Context, user: discord.Member):
         """Command Handler for the `unmute` command.
@@ -302,7 +299,6 @@ class ModerationCog(commands.Cog):
                         f"gezwungen sind, härtere Strafen zu verhängen. :scales:")
 
     @commands.command(name='tempmute', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def tempmute_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: Optional[str]):
         """Command Handler for the `tempmute` command.
@@ -329,7 +325,6 @@ class ModerationCog(commands.Cog):
                                args=[self.guild.id, self.ch_rules.id, self.role_muted.id, user.id])
 
     @commands.command(name='ban', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def ban_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
         """Command Handler for the `ban` command.
@@ -348,7 +343,6 @@ class ModerationCog(commands.Cog):
         await user.send(embed=embed)
 
     @commands.command(name='tempban', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def tempban_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: Optional[str]):
         """Command Handler for the `tempban` command.
@@ -388,7 +382,6 @@ class ModerationCog(commands.Cog):
             await ctx.send("**__Error:__** Die angegebene Zeitdauer ist ungültig. :clock330:")
 
     @commands.command(name='kick', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def kick_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
         """Command Handler for the `kick` command.
@@ -407,7 +400,6 @@ class ModerationCog(commands.Cog):
         await user.send(embed=embed)
 
     @commands.command(name='namehistory', hidden=True, aliases=["aka"])
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def member_nicknames(self, ctx: commands.Context, *, user: discord.Member):
         """Command Handler for the `namehistory` command.
@@ -441,7 +433,6 @@ class ModerationCog(commands.Cog):
                            ":face_with_monocle:")
 
     @commands.command(name='newmembers', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def new_members(self, ctx: commands.Context, amount: int = 12):
         """Command Handler for the `newmembers` command.
@@ -485,7 +476,6 @@ class ModerationCog(commands.Cog):
                            "leider zu groß. Sie darf **{0}** nicht überschreiten.".format(constants.LIMIT_NEW_MEMBERS))
 
     @commands.command(name='avatar', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def user_avatar(self, ctx: commands.Context, *, user: discord.Member):
         """Command Handler for the `avatar` command.
@@ -513,7 +503,6 @@ class ModerationCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name='info', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def user_info(self, ctx: commands.Context, *, user: discord.Member):
         """Command Handler for the `info` command.
@@ -612,7 +601,6 @@ class ModerationCog(commands.Cog):
                                   f"möglicherweise vertippt?")
 
     @commands.group(name='purge', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def purge_messages(self, ctx: commands.Context, channel: Optional[discord.TextChannel], amount: int):
         """Command Handler for the `purge` command.
@@ -627,7 +615,6 @@ class ModerationCog(commands.Cog):
             channel (Optional[discord.TextChannel]): The channel in which the messages should be deleted.
             amount (int): The amount of messages which need to be purged.
         """
-        await ctx.message.delete()
         purge_channel = channel if channel else ctx.channel
 
         if amount <= 0 or amount > constants.LIMIT_PURGE_MESSAGES:
@@ -638,7 +625,7 @@ class ModerationCog(commands.Cog):
         is_confirmed = await self._send_confirmation_dialog(ctx, confirmation_embed)
 
         if is_confirmed:
-            deleted_messages = await purge_channel.purge(limit=amount)
+            deleted_messages = await purge_channel.purge(limit=amount + 1)
             await purge_channel.send('**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'
                                      .format(len(deleted_messages)), delete_after=constants.TIMEOUT_INFORMATION)
             log.info("SAM deleted %s messages in [#%s]", len(deleted_messages), purge_channel)
@@ -697,7 +684,6 @@ class ModerationCog(commands.Cog):
                               "__Hier deine Bestätigung:__", embed=embed_confirmation)
 
     @modmail.command(name='get', hidden=True)
-    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
     async def get_modmail_with_status(self, ctx: commands.Context, *, status: str):
         """Command Handler for the modmail subcommand `get`.
