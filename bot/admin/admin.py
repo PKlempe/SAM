@@ -94,7 +94,7 @@ class AdminCog(commands.Cog):
     async def edit(self, ctx: commands.Context):
         """Command Handler for the edit command.
 
-        This command has 2 subcomments,
+        This command has 2 subcommands,
         `edit content` to edit the content of a message and
         `edit embed` to edit the embed of a message.
 
