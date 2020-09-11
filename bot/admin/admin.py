@@ -90,7 +90,60 @@ class AdminCog(commands.Cog):
         embed = discord.Embed.from_dict(embed_dict)
         await channel.send(embed=embed)
 
+    @commands.group(name="edit", hidden=True, invoke_without_command=True)
+    async def edit(self, ctx: commands.Context):
+        """Command Handler for the edit command.
+
+        This command has 2 subcommands,
+        `edit content` to edit the content of a message and
+        `edit embed` to edit the embed of a message.
+
+        Args:
+              ctx (commands.Context): The context in which this command was invoked.
+        """
+        await ctx.send_help(ctx.command)
+
+    @edit.command(name="content", hidden=True)
+    async def edit_msg_content(self, _ctx: commands.Context, message: discord.Message, *, new_content: str):
+        """Command handler for editing the content of a message posted by the bot.
+
+        If the original message contained more than one embed only the first one will remain after editing.
+
+        Args:
+            _ctx (commands.Context): The context in which this command was invoked.
+            message (discord.Message): The message to be edited.
+            new_content (str). The new content to replace the original one.
+        """
+        if message.author != self.bot.user:
+            raise commands.BadArgument("Can only edit message from bot user. The message was from: %s" % str(message.author))
+        # First entry in embed list is used,
+        await message.edit(content=new_content, embed=(message.embeds[0] if message.embeds else None))
+
+    @edit.command(name="embed", hidden=True)
+    async def edit_msg_embed(self, _ctx: commands.Context, message: discord.Message, *, new_embed: str):
+        """Command handler for editing the content of a message posted by the bot.
+
+        If the original message contained more than one embed only the first one will remain after editing.
+
+        Args:
+            _ctx (commands.Context): The context in which this command was invoked.
+            message (discord.Message): The message to be edited.
+            new_embed (str). The new embed in JSON format.
+        """
+        if message.author != self.bot.user:
+            raise commands.BadArgument("Can only edit message from bot user. The message was from: {0}".format(
+                str(message.author)))
+
+        if is_pastebin_link(new_embed):
+            new_embed = parse_pastebin_link(new_embed)
+        embed_dict = json.loads(new_embed)
+        embed = discord.Embed.from_dict(embed_dict)
+        # Only first embed will be replaced.
+        await message.edit(content=message.content, embed=embed)
+
     @embed.error
+    @edit_msg_embed.error
+    @edit_msg_content.error
     @embed_by_json.error
     async def embed_error(self, ctx: commands.Context, error: commands.CommandError):
         """Error Handler for the 'embed' command and its subcommand 'embed json'
@@ -112,11 +165,19 @@ class AdminCog(commands.Cog):
                 'https://leovoel.github.io/embed-visualizer/.')
 
         async def handle_json_decode_error(ctx: commands.Context, error: json.JSONDecodeError):
-            await ctx.send("Der übergebene JSON-String konnte nicht geparsed werden: {0}".format(str(error)))
+            await ctx.send(
+                "Der übergebene JSON-String konnte nicht geparsed werden. Hier die erhaltene Fehlermeldung:\n{0}".format(
+                    str(error)))
+
+        async def handle_bad_argument_error(ctx: commands.Context, _error: commands.BadArgument):
+            await ctx.send(
+                "Tut mir leid, aber anscheinend gibt es Probleme mit der von dir angegebenen ID. Bist du dir sicher "
+                "dass du die richtige kopiert hast?")
 
         handler_mapper = {
             discord.errors.HTTPException: handle_http_exception,
-            json.JSONDecodeError: handle_json_decode_error
+            json.JSONDecodeError: handle_json_decode_error,
+            commands.BadArgument: handle_bad_argument_error
         }
 
         if error_type in handler_mapper:
