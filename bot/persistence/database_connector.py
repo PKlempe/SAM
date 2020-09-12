@@ -39,21 +39,46 @@ class DatabaseConnector:
                         print("Command could not be executed, skipping it: {0}".format(error))
 
     def add_member_warning(self, user_id: int, timestamp: datetime.datetime, reason: Optional[str]):
+        """Adds a warning to the table "MemberWarning".
+
+        Args:
+            user_id (int): The id of the member who has been warned.
+            timestamp (datetime.datetime): Timestamp representing the moment when the member was warned.
+            reason (Optional[str]): The reason provided by the moderator why the member was warned.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.INSERT_MEMBER_WARNING, (user_id, timestamp, reason))
             db_manager.commit()
 
     def remove_member_warning(self, warning_id: int):
+        """Removes the warning with the specified id from the table "MemberWarning".
+
+        Args:
+            warning_id (int): The id of the warning which should be removed.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.DELETE_MEMBER_WARNING, (warning_id,))
             db_manager.commit()
 
     def remove_member_warnings(self, user_id: int):
+        """Removes all warnings of a member from the table "MemberWarning".
+
+        Args:
+            user_id (int): The id of the member whose warnings should be removed.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.DELETE_MEMBER_WARNINGS, (user_id,))
             db_manager.commit()
 
     def get_warning_userid(self, warning_id: int) -> Optional[int]:
+        """Gets the id of the member which received the warning with the specified id.
+
+        Args:
+            warning_id (int): The id of warning whose receiver needs to be identified.
+
+        Returns:
+            Optional[int]: The id of the member who has been warned.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(queries.GET_WARNING_USERID, (warning_id,))
 
@@ -63,6 +88,15 @@ class DatabaseConnector:
             return None
 
     def get_member_warnings(self, user_id: int) -> Optional[List[tuple]]:
+        """Gets all the warnings of a specific member.
+
+        Args:
+            user_id (int): The id of the member whose warnings have been requested.
+
+        Returns:
+            Optional[List[tuple]]: A list containing the id of the warning, the timestamp when it happened and the
+                                   reason provided by the moderator.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(queries.GET_MEMBER_WARNINGS, (user_id,))
 
@@ -72,11 +106,27 @@ class DatabaseConnector:
             return None
 
     def add_member_name(self, user_id: int, name: str, timestamp: datetime.datetime):
+        """Adds a members old nickname to the table "MemberNameHistory".
+
+        Args:
+            user_id (int): The id of the member whose nickname has changed.
+            name (str): The old nickname used before the change.
+            timestamp (datetime.datetime): A timestamp representing when the nickname has been changed.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.INSERT_MEMBER_NAME, (user_id, name, timestamp))
             db_manager.commit()
 
-    def get_member_names(self, user_id: int) -> Optional[tuple]:
+    def get_member_names(self, user_id: int) -> Optional[List[tuple]]:
+        """Gets all the nicknames used by a member from the table "MemberNameHistory".
+
+        Args:
+            user_id (int): The id of the member whose nicknames have been requested.
+
+        Returns:
+            Optional[List[tuple]]: A list containing tuples consisting of the nickname and the timestamp representing
+                                   when the name has been replaced.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(queries.GET_MEMBER_NAMES, (user_id,))
 

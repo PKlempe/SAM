@@ -14,7 +14,7 @@ from bot import constants
 from bot.logger import command_log, log
 from bot.moderation import ModmailStatus
 from bot.persistence import DatabaseConnector
-from bot.util.time_parsing import get_future_timestamp
+from bot.util.time_parsing import get_future_timestamp, get_pretty_string_duration
 
 
 class ModerationCog(commands.Cog):
@@ -201,13 +201,16 @@ class ModerationCog(commands.Cog):
             reason (Optional[str]): The reason provided by the moderator.
         """
         self._db_connector.add_member_warning(user.id, datetime.utcnow(), reason)
-
-        # TODO: Check warnings and take actions if necessary.
-
         await ctx.send(f"{user.mention} wurde verwarnt. :warning:")
-        await user.send(content=f"Hey, {user.display_name}! :wave:\nDu wurdest von **__{ctx.author}__** verwarnt. "
-                                f"Bitte halte dich in Zukunft an unsere {self.ch_rules.mention}, da wir ansonsten "
-                                f"gezwungen sind, härtere Strafen zu verhängen. :scales:")
+
+        description = f"Du wurdest von **__{ctx.author}__** verwarnt.\nVersuch bitte, dich in Zukunft besser an " \
+                      f"unsere {self.ch_rules.mention} zu halten, da wir ansonsten gezwungen sind, härtere Strafen zu " \
+                      f"verhängen. :scales:"
+
+        embed = _build_mod_action_embed("Verwarnungs", description, ctx.author, reason)
+        await user.send(embed=embed)
+
+        await self.check_warnings(ctx, user)
 
     @warn_user.command(name='remove', hidden=True)
     @command_log
@@ -277,6 +280,10 @@ class ModerationCog(commands.Cog):
         await user.add_roles(self.role_muted, reason=reason)
         await ctx.send(f"{user.mention} wurde stummgeschalten. :mute:")
 
+        embed = _build_mod_action_embed("Mute", f"Du wurdest am Server **__{self.guild}__** auf unbestimmte Zeit "
+                                                f"stummgeschalten.", ctx.author, reason)
+        await user.send(embed=embed)
+
     @commands.command(name='unmute', hidden=True)
     @command_log
     async def unmute_user(self, ctx: commands.Context, user: discord.Member):
@@ -295,12 +302,13 @@ class ModerationCog(commands.Cog):
         await user.remove_roles(self.role_muted)
         await ctx.send(f"{user.mention} ist nicht mehr stummgeschalten. :speaker:")
         await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr stummgeschalten! :speaker: Versuch "
-                        f"bitte in Zukunft, dich mehr an unsere {self.ch_rules.mention} zu halten, da wir ansonsten "
+                        f"bitte, dich in Zukunft besser an unsere {self.ch_rules.mention} zu halten, da wir ansonsten "
                         f"gezwungen sind, härtere Strafen zu verhängen. :scales:")
 
     @commands.command(name='tempmute', hidden=True)
     @command_log
-    async def tempmute_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: Optional[str]):
+    async def tempmute_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: Optional[str],
+                            bot_activated: bool = False):
         """Command Handler for the `tempmute` command.
 
         Temporarily mutes the specified member server-wide for the duration given. This means the user won't be able to
@@ -310,23 +318,32 @@ class ModerationCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             user (discord.Member): The member who should be muted.
             duration (str): The amount of time the user should be banned from the server.
+                            Visit https://github.com/wroberts/pytimeparse for a complete list of accepted formats.
             reason (Optional[str]): The reason provided by the moderator.
+            bot_activated (bool): A boolean indicating if this command was automatically invoked by the bot.
         """
         if self.role_muted in user.roles:
             await ctx.send("Dieser Nutzer ist bereits stummgeschalten. :flushed:")
             return
 
-        run_date, pretty_duration = get_future_timestamp(duration)
+        prosecutor = self.bot.user if bot_activated else ctx.author
+        run_date = get_future_timestamp(duration)
+        pretty_duration = get_pretty_string_duration(duration)
 
         await user.add_roles(self.role_muted, reason=reason)
         await ctx.send(f"{user.mention} wurde für {pretty_duration} stummgeschalten. :mute:")
+
+        embed = _build_mod_action_embed("Tempmute", f"Du wurdest auf **__{self.guild}__** für {pretty_duration} "
+                                                    f"stummgeschalten.", prosecutor, reason)
+        await user.send(embed=embed)
 
         self.scheduler.add_job(_scheduled_unmute_user, 'date', run_date=run_date,
                                args=[self.guild.id, self.ch_rules.id, self.role_muted.id, user.id])
 
     @commands.command(name='ban', hidden=True)
     @command_log
-    async def ban_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
+    async def ban_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str],
+                       bot_activated: bool = False):
         """Command Handler for the `ban` command.
 
         Bans the specified member from the server.
@@ -335,16 +352,19 @@ class ModerationCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             user (discord.Member): The member who should be banned.
             reason (Optional[str]): The reason provided by the moderator.
+            bot_activated (bool): A boolean indicating if this command was automatically invoked by the bot.
         """
         await user.ban(reason=reason, delete_message_days=0)
         await ctx.send(f"{user.mention} wurde gebannt. :do_not_litter:")
 
-        embed = _build_mod_action_embed("Bann", f"Du wurdest von **__{self.guild}__** gebannt.", ctx.author, reason)
+        prosecutor = self.bot.user if bot_activated else ctx.author
+        embed = _build_mod_action_embed("Bann", f"Du wurdest von **__{self.guild}__** gebannt.", prosecutor, reason)
         await user.send(embed=embed)
 
     @commands.command(name='tempban', hidden=True)
     @command_log
-    async def tempban_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: Optional[str]):
+    async def tempban_user(self, ctx: commands.Context, user: discord.Member, duration: str, *, reason: Optional[str],
+                           bot_activated: bool = False):
         """Command Handler for the `tempban` command.
 
         Temporarily bans the specified member from the server for the duration given.
@@ -353,15 +373,19 @@ class ModerationCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             user (discord.Member): The member who should be banned.
             duration (str): The amount of time the user should be banned from the server.
+                            Visit https://github.com/wroberts/pytimeparse for a complete list of accepted formats.
             reason (Optional[str]): The reason provided by the moderator.
+            bot_activated (bool): A boolean indicating if this command was automatically invoked by the bot.
         """
-        run_date, pretty_duration = get_future_timestamp(duration)
+        prosecutor = self.bot.user if bot_activated else ctx.author
+        run_date = get_future_timestamp(duration)
+        pretty_duration = get_pretty_string_duration(duration)
 
         await user.ban(reason=reason, delete_message_days=0)
         await ctx.send(f"{user.mention} wurde für {pretty_duration} gebannt. :do_not_litter:")
 
         embed = _build_mod_action_embed("Bann", f"Du wurdest von **__{self.guild}__** für {pretty_duration} gebannt.",
-                                        ctx.author, reason)
+                                        prosecutor, reason)
         await user.send(embed=embed)
 
         self.scheduler.add_job(_scheduled_unban_user, 'date', run_date=run_date,
@@ -768,6 +792,34 @@ class ModerationCog(commands.Cog):
                 new_embed = await self.change_modmail_status(modmail, payload.emoji.name, False)
                 await modmail.edit(embed=new_embed)
 
+    async def check_warnings(self, ctx: commands.Context, user: discord.Member):
+        """Method which checks the amount of warnings a user has and punishes him if necessary.
+
+        The individual punishments and the amount of warnings needed to trigger it are stored in a dictionary and can
+        therefore be easily modified or expanded. If a specific limit has been reached the bot simply invokes one of his
+        own mod commands.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            user (discord.Member): The member which has been warned.
+        """
+        cntr_warnings = len(self._db_connector.get_member_warnings(user.id))
+        punishments = {
+            constants.LIMIT_WARNINGS_LVL_1:      ("tempmute", "1 week"),
+            constants.LIMIT_WARNINGS_LVL_2:      ("tempban", "2 weeks"),
+            constants.LIMIT_WARNINGS_LVL_3:      ("ban", None)
+        }
+
+        if cntr_warnings in punishments:
+            punishment = punishments[cntr_warnings]
+            reason = f"Automatisch durchgeführte Aktion aufgrund von insgesamt {cntr_warnings} Verwarnungen."
+
+            if punishment[1]:
+                await ctx.invoke(self.bot.get_command(punishment[0]), user=user, duration=punishment[1], reason=reason,
+                                 bot_activated=True)
+            else:
+                await ctx.invoke(self.bot.get_command(punishment[0]), user=user, reason=reason, bot_activated=True)
+
     async def change_modmail_status(self, modmail: discord.Message, emoji: str, reaction_added: bool) -> discord.Embed:
         """Method which changes the status of a modmail depending on the given emoji.
 
@@ -876,7 +928,7 @@ async def _scheduled_unmute_user(server_id: int, ch_rules_id: int, role_id: int,
 
     await user.remove_roles(role, reason="Die für den Tempmute festgelegte Zeitdauer ist ausgelaufen.")
     await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr stummgeschalten! :speaker: Versuch "
-                    f"bitte in Zukunft, dich mehr an unsere {ch_rules.mention} zu halten, da wir ansonsten "
+                    f"bitte, dich in Zukunft besser an unsere {ch_rules.mention} zu halten, da wir ansonsten "
                     f"gezwungen sind, härtere Strafen zu verhängen. :scales:")
 
 
@@ -897,7 +949,7 @@ async def _scheduled_unban_user(server_id: int, ch_rules_id: int, user_id: int):
 
     await user.unban(reason="Die für den Tempban festgelegte Zeitdauer ist ausgelaufen.")
     await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr von **__{guild}__** gebannt! :unlock: "
-                    f"Versuch bitte in Zukunft, dich mehr an unsere {ch_rules.mention} zu halten, da wir ansonsten "
+                    f"Versuch bitte, dich in Zukunft besser an unsere {ch_rules.mention} zu halten, da wir ansonsten "
                     f"gezwungen sind, dich dauerhaft zu bannen. :scales:")
 
 
