@@ -83,7 +83,7 @@ class ModerationCog(commands.Cog):
             overwrite.update(send_messages=False, connect=False)
             await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite,
                                           reason=f"Der Kanal wurde von {ctx.author} in einen Lockdown versetzt.")
-            log.info("Der Kanal [#%s] wurde in einen Lockdown versetzt.", channel)
+            log.info("Channel [#%s] has been put into Lockdown.", channel)
 
             embed = _build_lockdown_embed()
             await channel.send(embed=embed)
@@ -115,13 +115,14 @@ class ModerationCog(commands.Cog):
         overwrite.update(send_messages=None, connect=None)
         await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite,
                                       reason=f"Der Lockdown wurde von {ctx.author} aufgehoben.")
-        log.info("Der Lockdown für den Kanal [#%s] wurde aufgehoben.", channel)
+        log.info("Lockdown for channel [#%s] has been lifted.", channel)
 
         embed = _build_lockdown_lift_embed()
         await channel.send(embed=embed)
 
-        modlog_embed = _build_modlog_embed("Aufhebung: Channel-Lockdown :unlock:", color=constants.EMBED_COLOR_MODLOG_REPEAL,
-                                           moderator=ctx.author, user=None, reason=None)
+        modlog_embed = _build_modlog_embed("Aufhebung: Channel-Lockdown :unlock:",
+                                           color=constants.EMBED_COLOR_MODLOG_REPEAL, moderator=ctx.author, user=None,
+                                           reason=None)
         await self.ch_modlog.send(embed=modlog_embed)
 
     @lockdown.group(name='server', hidden=True, invoke_without_command=True)
@@ -150,7 +151,7 @@ class ModerationCog(commands.Cog):
             permissions.connect = False
             await role.edit(permissions=permissions, reason=f"Der Server wurde von {ctx.author} in einen Lockdown "
                                                             f"versetzt.")
-            log.info("Der komplette Server wurde in einen Lockdown versetzt.")
+            log.info("The whole Server has been put into Lockdown.")
 
             embed = _build_server_lockdown_embed()
             await self.ch_server_news.send(embed=embed)
@@ -180,7 +181,7 @@ class ModerationCog(commands.Cog):
         permissions.send_messages = True
         permissions.connect = True
         await role.edit(permissions=permissions, reason=f"Der serverweite Lockdown wurde von {ctx.author} aufgehoben.")
-        log.info("Der serverweite Lockdown wurde aufgehoben.")
+        log.info("The server-wide Lockdown has been lifted.")
 
         embed = _build_server_lockdown_lift_embed()
         await self.ch_server_news.send(embed=embed)
@@ -222,7 +223,7 @@ class ModerationCog(commands.Cog):
             reason (Optional[str]): The reason provided by the moderator.
         """
         self._db_connector.add_member_warning(user.id, datetime.utcnow(), reason)
-        log.info("Das Mitglied %s wurde verwarnt.", user)
+        log.info("Member %s has been warned.", user)
 
         await ctx.send(f"{user.mention} wurde verwarnt. :warning:")
 
@@ -256,7 +257,7 @@ class ModerationCog(commands.Cog):
         user = self.guild.get_member(int(user_id))
 
         self._db_connector.remove_member_warning(warning_id)
-        log.info("Die Verwarnung #%s wurde für %s aufgehoben.", warning_id, user)
+        log.info("Warning #%s has been removed from %s.", warning_id, user)
 
         modlog_embed = _build_modlog_embed("Aufhebung: Verwarnung", color=constants.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=user, reason=reason)
@@ -291,7 +292,7 @@ class ModerationCog(commands.Cog):
             reason (Optional[str]): The reason provided by the moderator.
         """
         self._db_connector.remove_member_warnings(user.id)
-        log.info("Sämtliche Verwarnungen für das Mitglied %s wurden aufgehoben.", user)
+        log.info("All warnings have been removed from %s.", user)
 
         modlog_embed = _build_modlog_embed("Aufhebung: Alle Verwarnungen", color=constants.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=user, reason=reason)
@@ -316,7 +317,7 @@ class ModerationCog(commands.Cog):
             return
 
         await user.add_roles(self.role_muted, reason=reason)
-        log.info("Das Mitglied %s wurde stummgeschalten.", user)
+        log.info("Member %s has been muted.", user)
 
         await ctx.send(f"{user.mention} wurde stummgeschalten. :mute:")
         embed = _build_mod_action_embed("Stummschaltungs", f"Du wurdest von **__{ctx.author}__** auf unbestimmte Zeit "
@@ -344,7 +345,7 @@ class ModerationCog(commands.Cog):
             return
 
         await user.remove_roles(self.role_muted, reason=reason)
-        log.info("Das Mitglied %s ist nicht mehr stummgeschalten.", user)
+        log.info("Member %s has been unmuted.", user)
 
         modlog_embed = _build_modlog_embed("Aufhebung: Stummschaltung :speaker:", color=constants.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=user, reason=reason)
@@ -381,7 +382,7 @@ class ModerationCog(commands.Cog):
         pretty_duration = get_pretty_string_duration(duration)
 
         await user.add_roles(self.role_muted, reason=reason)
-        log.info("Das Mitglied %s wurde für %s stummgeschalten.", user, pretty_duration)
+        log.info("Member %s has been muted until %s.", user, run_date.strftime("%d.%m.%Y %H:%M:%S"))
 
         await ctx.send(f"{user.mention} wurde für {pretty_duration} stummgeschalten. :mute:")
         embed = _build_mod_action_embed("Tempmute", f"Du wurdest von **__{prosecutor}__** für {pretty_duration} "
@@ -412,7 +413,7 @@ class ModerationCog(commands.Cog):
         prosecutor = self.bot.user if bot_activated else ctx.author
 
         await user.ban(reason=reason, delete_message_days=0)
-        log.info("Der Nutzer %s wurde vom Server gebannt.", user)
+        log.info("Member %s has been banned from the server.", user)
 
         await ctx.send(f"{user.mention} wurde gebannt. :do_not_litter:")
         embed = _build_mod_action_embed("Bann", f"Du wurdest durch **__{prosecutor}__** von **__{self.guild}__** "
@@ -444,7 +445,7 @@ class ModerationCog(commands.Cog):
         pretty_duration = get_pretty_string_duration(duration)
 
         await user.ban(reason=reason, delete_message_days=0)
-        log.info("Der Nutzer %s wurde für %s vom Server gebannt.", user, pretty_duration)
+        log.info("Member %s has been banned from the server until %s.", user, run_date.strftime("%d.%m.%Y %H:%M:%S"))
 
         await ctx.send(f"{user.mention} wurde für {pretty_duration} gebannt. :do_not_litter:")
         embed = _build_mod_action_embed("TempBann", f"Du wurdest durch **__{prosecutor}__** von **__{self.guild}__** "
@@ -485,7 +486,7 @@ class ModerationCog(commands.Cog):
             reason (Optional[str]): The reason provided by the moderator.
         """
         await user.kick(reason=reason)
-        log.info("Der Nutzer %s wurde vom Server gekickt.", user)
+        log.info("Member %s has been kicked from the server.", user)
 
         await ctx.send(f"{user.mention} wurde gekickt. :anger:")
         embed = _build_mod_action_embed("Kick", f"Du wurdest durch **__{ctx.author}__** von **__{self.guild}__** "
@@ -678,7 +679,7 @@ class ModerationCog(commands.Cog):
 
         embed = _create_report_embed(offender, ctx.author, ctx.channel, ctx.message, description)
         await self.ch_report.send(embed=embed)
-        log.info("Das Mitglied %s wurde an die Moderatoren gemeldet.", offender)
+        log.info("Member %s has been reported to the moderators.", offender)
 
     @report_user.error
     async def report_error(self, ctx: commands.Context, error: commands.CommandError):
@@ -771,7 +772,7 @@ class ModerationCog(commands.Cog):
 
         msg_modmail = await self.ch_modmail.send(embed=embed, files=msg_attachments)
         self._db_connector.add_modmail(msg_modmail.id, msg_author_name, msg_timestamp)
-        log.info("Der Nutzer %s hat eine Nachricht an die Moderatoren eingereicht.", ctx.author)
+        log.info("Member %s submitted a modmail.", ctx.author)
 
         await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_DONE)
         await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_ASSIGN)
