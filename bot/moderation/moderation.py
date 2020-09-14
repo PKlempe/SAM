@@ -39,6 +39,7 @@ class ModerationCog(commands.Cog):
         self.guild = self.bot.get_guild(int(constants.SERVER_ID))
 
         # Channel instances
+        self.ch_modlog = self.guild.get_channel(int(constants.CHANNEL_ID_MODLOG))
         self.ch_report = self.guild.get_channel(int(constants.CHANNEL_ID_REPORT))
         self.ch_modmail = self.guild.get_channel(int(constants.CHANNEL_ID_MODMAIL))
         self.ch_rules = self.guild.get_channel(int(constants.CHANNEL_ID_RULES))
@@ -84,8 +85,12 @@ class ModerationCog(commands.Cog):
                                           reason=f"Der Kanal wurde von {ctx.author} in einen Lockdown versetzt.")
             log.info("Der Kanal [#%s] wurde in einen Lockdown versetzt.", channel)
 
-            embed = _create_lockdown_embed()
+            embed = _build_lockdown_embed()
             await channel.send(embed=embed)
+
+            modlog_embed = _build_modlog_embed("Channel-Lockdown :lock:", color=constants.EMBED_COLOR_MODLOG_LOCKDOWN,
+                                               moderator=ctx.author, user=None, reason=None)
+            await self.ch_modlog.send(embed=modlog_embed)
 
     @lockdown.command(name='lift', hidden=True)
     @command_log
@@ -114,6 +119,10 @@ class ModerationCog(commands.Cog):
 
         embed = _build_lockdown_lift_embed()
         await channel.send(embed=embed)
+
+        modlog_embed = _build_modlog_embed("Aufhebung: Channel-Lockdown :unlock:", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+                                           moderator=ctx.author, user=None, reason=None)
+        await self.ch_modlog.send(embed=modlog_embed)
 
     @lockdown.group(name='server', hidden=True, invoke_without_command=True)
     @command_log
@@ -146,6 +155,10 @@ class ModerationCog(commands.Cog):
             embed = _build_server_lockdown_embed()
             await self.ch_server_news.send(embed=embed)
 
+            modlog_embed = _build_modlog_embed("Server-Lockdown :lock:", color=constants.EMBED_COLOR_MODLOG_LOCKDOWN,
+                                               moderator=ctx.author, user=None, reason=None)
+            await self.ch_modlog.send(embed=modlog_embed)
+
     @lockdown_server.command(name='lift', hidden=True)
     @command_log
     async def lockdown_server_lift(self, ctx: commands.Context):
@@ -171,6 +184,10 @@ class ModerationCog(commands.Cog):
 
         embed = _build_server_lockdown_lift_embed()
         await self.ch_server_news.send(embed=embed)
+
+        modlog_embed = _build_modlog_embed("Aufhebung: Server-Lockdown :unlock:", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+                                           moderator=ctx.author, user=None, reason=None)
+        await self.ch_modlog.send(embed=modlog_embed)
 
     @commands.command(name='warnings', hidden=True)
     @command_log
@@ -209,18 +226,19 @@ class ModerationCog(commands.Cog):
 
         await ctx.send(f"{user.mention} wurde verwarnt. :warning:")
 
-        description = f"Du wurdest von **__{ctx.author}__** verwarnt.\nVersuch bitte, dich in Zukunft besser an " \
-                      f"unsere {self.ch_rules.mention} zu halten, da wir ansonsten gezwungen sind, härtere Strafen zu " \
-                      f"verhängen. :scales:"
-
-        embed = _build_mod_action_embed("Verwarnungs", description, ctx.author, reason)
+        embed = _build_mod_action_embed("Verwarnungs", f"Du wurdest von **__{ctx.author}__** verwarnt.", reason,
+                                        self.ch_rules)
         await user.send(embed=embed)
+
+        modlog_embed = _build_modlog_embed("Verwarnung :warning:", color=constants.EMBED_COLOR_MODLOG_WARN, moderator=ctx.author,
+                                           user=user, reason=reason)
+        await self.ch_modlog.send(embed=modlog_embed)
 
         await self.check_warnings(ctx, user)
 
     @warn_user.command(name='remove', hidden=True)
     @command_log
-    async def remove_warning(self, ctx: commands.Context, warning_id: int):
+    async def remove_warning(self, ctx: commands.Context, warning_id: int, *, reason: Optional[str]):
         """Command Handler for the subcommand `remove` of the command `warning`.
 
         Removes the warning with the specified id from a member.
@@ -228,6 +246,7 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             warning_id (int): The id of the warning which should be removed.
+            reason (Optional[str]): The reason provided by the moderator.
         """
         user_id = self._db_connector.get_warning_userid(warning_id)
 
@@ -238,6 +257,10 @@ class ModerationCog(commands.Cog):
 
         self._db_connector.remove_member_warning(warning_id)
         log.info("Die Verwarnung #%s wurde für %s aufgehoben.", warning_id, user)
+
+        modlog_embed = _build_modlog_embed("Aufhebung: Verwarnung", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+                                           moderator=ctx.author, user=user, reason=reason)
+        await self.ch_modlog.send(embed=modlog_embed)
 
         await ctx.send(f"Die Verwarnung für {user.mention} wurde erfolgreich aufgehoben. :white_check_mark:")
 
@@ -257,7 +280,7 @@ class ModerationCog(commands.Cog):
 
     @warn_user.command(name='clear', hidden=True)
     @command_log
-    async def clear_warnings(self, ctx: commands.Context, *, user: discord.Member):
+    async def clear_warnings(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
         """Command Handler for the subcommand `clear` of the command `warning`.
 
         Removes all warnings given to the specified member.
@@ -265,9 +288,14 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             user (discord.Member): The member whose warnings should be cleared.
+            reason (Optional[str]): The reason provided by the moderator.
         """
         self._db_connector.remove_member_warnings(user.id)
         log.info("Sämtliche Verwarnungen für das Mitglied %s wurden aufgehoben.", user)
+
+        modlog_embed = _build_modlog_embed("Aufhebung: Alle Verwarnungen", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+                                           moderator=ctx.author, user=user, reason=reason)
+        await self.ch_modlog.send(embed=modlog_embed)
 
         await ctx.send(f"Alle Verwarnungen für {user.mention} wurden erfolgreich aufgehoben. :white_check_mark:")
 
@@ -291,13 +319,17 @@ class ModerationCog(commands.Cog):
         log.info("Das Mitglied %s wurde stummgeschalten.", user)
 
         await ctx.send(f"{user.mention} wurde stummgeschalten. :mute:")
-        embed = _build_mod_action_embed("Mute", f"Du wurdest am Server **__{self.guild}__** auf unbestimmte Zeit "
-                                                f"stummgeschalten.", ctx.author, reason)
+        embed = _build_mod_action_embed("Stummschaltungs", f"Du wurdest von **__{ctx.author}__** auf unbestimmte Zeit "
+                                                           f"stummgeschalten.", reason, self.ch_rules)
         await user.send(embed=embed)
+
+        modlog_embed = _build_modlog_embed("Stummschaltung :mute:", color=constants.EMBED_COLOR_MODLOG_MUTE,
+                                           moderator=ctx.author, user=user, reason=reason)
+        await self.ch_modlog.send(embed=modlog_embed)
 
     @commands.command(name='unmute', hidden=True)
     @command_log
-    async def unmute_user(self, ctx: commands.Context, user: discord.Member):
+    async def unmute_user(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
         """Command Handler for the `unmute` command.
 
         Unmutes the specified member on the server. This is done by removing the configured mute role from him.
@@ -305,13 +337,18 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             user (discord.Member): The member who should be unmuted.
+            reason (Optional[str]): The reason provided by the moderator.
         """
         if self.role_muted not in user.roles:
             await ctx.send("Dieser Nutzer ist nicht stummgeschalten. :thinking:")
             return
 
-        await user.remove_roles(self.role_muted)
+        await user.remove_roles(self.role_muted, reason=reason)
         log.info("Das Mitglied %s ist nicht mehr stummgeschalten.", user)
+
+        modlog_embed = _build_modlog_embed("Aufhebung: Stummschaltung :speaker:", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+                                           moderator=ctx.author, user=user, reason=reason)
+        await self.ch_modlog.send(embed=modlog_embed)
 
         await ctx.send(f"{user.mention} ist nicht mehr stummgeschalten. :speaker:")
         await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr stummgeschalten! :speaker: Versuch "
@@ -347,12 +384,16 @@ class ModerationCog(commands.Cog):
         log.info("Das Mitglied %s wurde für %s stummgeschalten.", user, pretty_duration)
 
         await ctx.send(f"{user.mention} wurde für {pretty_duration} stummgeschalten. :mute:")
-        embed = _build_mod_action_embed("Tempmute", f"Du wurdest auf **__{self.guild}__** für {pretty_duration} "
-                                                    f"stummgeschalten.", prosecutor, reason)
+        embed = _build_mod_action_embed("Tempmute", f"Du wurdest von **__{prosecutor}__** für {pretty_duration} "
+                                                    f"stummgeschalten.", reason, self.ch_rules)
         await user.send(embed=embed)
 
+        modlog_embed = _build_modlog_embed("Temporäre Stummschaltung :mute:", color=constants.EMBED_COLOR_MODLOG_MUTE,
+                                           moderator=ctx.author, user=user, reason=reason)
+        await self.ch_modlog.send(embed=modlog_embed)
+
         self.scheduler.add_job(_scheduled_unmute_user, 'date', run_date=run_date,
-                               args=[self.guild.id, self.ch_rules.id, self.role_muted.id, user.id])
+                               args=[self.guild.id, self.role_muted.id, user.id, self.ch_rules.id, self.ch_modlog.id])
 
     @commands.command(name='ban', hidden=True)
     @command_log
@@ -374,8 +415,13 @@ class ModerationCog(commands.Cog):
         log.info("Der Nutzer %s wurde vom Server gebannt.", user)
 
         await ctx.send(f"{user.mention} wurde gebannt. :do_not_litter:")
-        embed = _build_mod_action_embed("Bann", f"Du wurdest von **__{self.guild}__** gebannt.", prosecutor, reason)
+        embed = _build_mod_action_embed("Bann", f"Du wurdest durch **__{prosecutor}__** von **__{self.guild}__** "
+                                                f"gebannt.", reason, self.ch_rules)
         await user.send(embed=embed)
+
+        modlog_embed = _build_modlog_embed("Server-Bann :do_not_litter:", color=constants.EMBED_COLOR_MODLOG_BAN, moderator=ctx.author,
+                                           user=user, reason=reason)
+        await self.ch_modlog.send(embed=modlog_embed)
 
     @commands.command(name='tempban', hidden=True)
     @command_log
@@ -401,12 +447,16 @@ class ModerationCog(commands.Cog):
         log.info("Der Nutzer %s wurde für %s vom Server gebannt.", user, pretty_duration)
 
         await ctx.send(f"{user.mention} wurde für {pretty_duration} gebannt. :do_not_litter:")
-        embed = _build_mod_action_embed("Bann", f"Du wurdest von **__{self.guild}__** für {pretty_duration} gebannt.",
-                                        prosecutor, reason)
+        embed = _build_mod_action_embed("TempBann", f"Du wurdest durch **__{prosecutor}__** von **__{self.guild}__** "
+                                                    f"für {pretty_duration} gebannt.", reason, self.ch_rules)
         await user.send(embed=embed)
 
+        modlog_embed = _build_modlog_embed("Temporärer Server-Bann :do_not_litter:", color=constants.EMBED_COLOR_MODLOG_BAN,
+                                           moderator=ctx.author, user=user, reason=reason)
+        await self.ch_modlog.send(embed=modlog_embed)
+
         self.scheduler.add_job(_scheduled_unban_user, 'date', run_date=run_date,
-                               args=[self.guild.id, self.ch_rules.id, user.id])
+                               args=[self.guild.id, user.id, self.ch_rules.id, self.ch_modlog.id])
 
     @tempmute_user.error
     @tempban_user.error
@@ -438,8 +488,13 @@ class ModerationCog(commands.Cog):
         log.info("Der Nutzer %s wurde vom Server gekickt.", user)
 
         await ctx.send(f"{user.mention} wurde gekickt. :anger:")
-        embed = _build_mod_action_embed("Kick", f"Du wurdest von **__{self.guild}__** gekickt.", ctx.author, reason)
+        embed = _build_mod_action_embed("Kick", f"Du wurdest durch **__{ctx.author}__** von **__{self.guild}__** "
+                                                f"gekickt.", reason, self.ch_rules)
         await user.send(embed=embed)
+
+        modlog_embed = _build_modlog_embed("Server-Kick :anger:", color=constants.EMBED_COLOR_MODLOG_KICK, moderator=ctx.author,
+                                           user=user, reason=reason)
+        await self.ch_modlog.send(embed=modlog_embed)
 
     @commands.command(name='namehistory', hidden=True, aliases=["aka"])
     @command_log
@@ -930,7 +985,7 @@ class ModerationCog(commands.Cog):
             self._db_connector.add_member_name(before.id, before.display_name, datetime.utcnow())
 
 
-async def _scheduled_unmute_user(server_id: int, ch_rules_id: int, role_id: int, user_id: int):
+async def _scheduled_unmute_user(server_id: int, role_id: int, user_id: int, ch_rules_id: int, ch_modlog_id: int):
     """Method which is being called by the scheduler if the specified amount of time for the corresponding tempmute has
     ran out.
 
@@ -938,22 +993,30 @@ async def _scheduled_unmute_user(server_id: int, ch_rules_id: int, role_id: int,
 
     Args:
         server_id (int): The id of the server where the user should be unbanned from.
-        ch_rules_id (int): The id of the rules channel.
         role_id (int): The id of the mute role which should be removed from the user.
         user_id (int): The id of the user who should be unmuted.
+        ch_rules_id (int): The id of the rules channel.
+        ch_modlog_id (int): The id of the modlog channel.
     """
     guild = ModerationCog.bot.get_guild(int(server_id))
-    ch_rules = guild.get_channel(int(ch_rules_id))
     user = guild.get_member(int(user_id))
     role = guild.get_role(int(role_id))
+    ch_rules = guild.get_channel(int(ch_rules_id))
+    ch_modlog = guild.get_channel(int(ch_modlog_id))
 
     await user.remove_roles(role, reason="Die für den Tempmute festgelegte Zeitdauer ist ausgelaufen.")
     await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr stummgeschalten! :speaker: Versuch "
                     f"bitte, dich in Zukunft besser an unsere {ch_rules.mention} zu halten, da wir ansonsten "
                     f"gezwungen sind, härtere Strafen zu verhängen. :scales:")
 
+    modlog_embed = _build_modlog_embed("Aufhebung: Temporäre Stummschaltung :speaker:",
+                                       color=constants.EMBED_COLOR_MODLOG_REPEAL, moderator=ModerationCog.bot.user,
+                                       user=user, reason="Automatisch durchgeführte Aktion, da die spezifizierte Dauer "
+                                                         "abgelaufen ist.")
+    await ch_modlog.send(embed=modlog_embed)
 
-async def _scheduled_unban_user(server_id: int, ch_rules_id: int, user_id: int):
+
+async def _scheduled_unban_user(server_id: int, user_id: int, ch_rules_id: int, ch_modlog_id: int):
     """Method which is being called by the scheduler if the specified amount of time for the corresponding tempban has
     ran out.
 
@@ -961,20 +1024,47 @@ async def _scheduled_unban_user(server_id: int, ch_rules_id: int, user_id: int):
 
     Args:
         server_id (int): The id of the server where the user should be unbanned from.
-        ch_rules_id (int): The id of the rules channel.
         user_id (int): The id of the user who should be unbanned.
+        ch_rules_id (int): The id of the rules channel.
+        ch_modlog_id (int): The id of the modlog channel.
     """
     guild = ModerationCog.bot.get_guild(int(server_id))
-    ch_rules = guild.get_channel(int(ch_rules_id))
     user = await ModerationCog.bot.fetch_user(int(user_id))
+    ch_rules = guild.get_channel(int(ch_rules_id))
+    ch_modlog = guild.get_channel(int(ch_modlog_id))
 
     await user.unban(reason="Die für den Tempban festgelegte Zeitdauer ist ausgelaufen.")
     await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr von **__{guild}__** gebannt! :unlock: "
                     f"Versuch bitte, dich in Zukunft besser an unsere {ch_rules.mention} zu halten, da wir ansonsten "
                     f"gezwungen sind, dich dauerhaft zu bannen. :scales:")
 
+    modlog_embed = _build_modlog_embed("Aufhebung: Temporärer Server-Bann", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+                                       moderator=ModerationCog.bot.user, user=user,
+                                       reason="Automatisch durchgeführte Aktion, da die spezifizierte Dauer abgelaufen "
+                                              "ist.")
+    await ch_modlog.send(embed=modlog_embed)
 
-def _create_lockdown_embed() -> discord.Embed:
+
+def _build_modlog_embed(action: str, color: discord.Colour, moderator: Union[discord.Member, discord.ClientUser],
+                        user: Optional[discord.Member], reason: Optional[str]) -> discord.Embed:
+    """Creates an embed which gets posted in the configured modlog channel.
+
+     The embed serves as an information for other moderators about what happend on the server and is therefore in
+     general nothing more than a simple log message. It contains the moderator who performed the action, the affected
+     member (if any) and the optional reason provided by said moderator why this has happened.
+
+    Returns:
+        (discord.Embed): The info embed.
+    """
+    description = f"**Betroffener:** {user}\n" if user else ""
+    description += f"**Moderator:** {moderator}"
+    if reason:
+        description += f"\n**Begründung:** {reason}"
+
+    return discord.Embed(title=action, color=color, description=description)
+
+
+def _build_lockdown_embed() -> discord.Embed:
     """Creates an embed which informs members that the current channel has been locked down.
 
     Returns:
@@ -1067,8 +1157,8 @@ def _build_warnings_embed(user: discord.Member, warnings: List[tuple]) -> discor
     return embed
 
 
-def _build_mod_action_embed(action: str, description: str, moderator: discord.Member, reason: Optional[str]) \
-        -> discord.Embed:
+def _build_mod_action_embed(action: str, description: str, reason: Optional[str],
+                            ch_rules: discord.TextChannel) -> discord.Embed:
     """Creates an info embed for a specific mod action.
 
     The embed contains information about the action which has been performed, the moderator who did it and an optional
@@ -1077,16 +1167,20 @@ def _build_mod_action_embed(action: str, description: str, moderator: discord.Me
     Args:
         action (str): The mod action which has been performed.
         description (str): A description explaining what happened.
-        moderator (discord.Member): The Moderator who triggered the action.
         reason (Optional[str])
 
     Returns:
         (discord.Embed): The final info embed dialog
     """
-    embed = discord.Embed(title=f"{action}-Meldung", description=description, color=constants.EMBED_COLOR_WARNING)
+    embed = discord.Embed(title=f"{action}-Info", description=description, color=constants.EMBED_COLOR_WARNING)
 
     if reason:
-        embed.add_field(name=f"Begründung von {moderator.display_name}", value=reason)
+        embed.add_field(name="Begründung des Moderators:", value=reason)
+
+    if action != "Bann":
+        embed.add_field(name="Hinweis :information_source:", inline=False,
+                        value=f"Versuch bitte, dich in Zukunft besser an unsere {ch_rules.mention} zu halten, da "
+                              f"wir ansonsten gezwungen sind, härtere Strafen zu verhängen. :scales:")
 
     return embed
 
