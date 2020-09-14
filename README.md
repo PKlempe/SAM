@@ -16,6 +16,6 @@ As the development progesses, more information about this project will be shared
 
 | ![serverinfo-command](https://user-images.githubusercontent.com/49726903/90332893-11e31b80-dfc1-11ea-8ca9-fc244f79ba07.gif) | ![ufind-command](https://user-images.githubusercontent.com/49726903/90322332-4e782e00-df53-11ea-9947-c39831568656.gif) |
 |---------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------:|
-| ![exchange-command](https://user-images.githubusercontent.com/49726903/93120394-98c00c80-f6c3-11ea-9714-6da7dc6d5b73.gif) | ![4](https://www.cowgirlcontractcleaning.com/wp-content/uploads/sites/360/2018/05/placeholder-img.jpg) |
+| ![exchange-command](https://user-images.githubusercontent.com/49726903/93120394-98c00c80-f6c3-11ea-9714-6da7dc6d5b73.gif) |  |
 
 ###### Robot made by [Freepik](http://www.freepik.com/) from [Flaticon](https://www.flaticon.com/).
