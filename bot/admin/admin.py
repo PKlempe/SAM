@@ -332,7 +332,7 @@ class AdminCog(commands.Cog):
 
     @change_discord_presence.command(name="watching")
     @command_log
-    async def change_discord_presence_watching(self, _ctx: commands.Context,
+    async def change_discord_presence_watching(self, ctx: commands.Context,
                                                status: Optional[discord.Status] = discord.Status.online,
                                                *, activity_name: str):
         """Command handler for the `presence` subcommand `watching`.
@@ -341,16 +341,17 @@ class AdminCog(commands.Cog):
         Discord status can also be set via the optional status argument.
 
         Args:
-            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
             status (Optional[discord.Status]): The status which should be displayed.
             activity_name (str): The name of whatever the bot should be watching.
         """
         activity = discord.Activity(type=discord.ActivityType.watching, name=activity_name)
         await self.bot.change_presence(activity=activity, status=status)
+        await _notify_presence_change(ctx.channel, ctx.author)
 
     @change_discord_presence.command(name="listening")
     @command_log
-    async def change_discord_presence_listening(self, _ctx: commands.Context,
+    async def change_discord_presence_listening(self, ctx: commands.Context,
                                                 status: Optional[discord.Status] = discord.Status.online,
                                                 *, activity_name: str):
         """Command handler for the `presence` subcommand `listening`.
@@ -359,16 +360,17 @@ class AdminCog(commands.Cog):
         Discord status can also be set via the optional status argument.
 
         Args:
-            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
             status (Optional[discord.Status]): The status which should be displayed.
             activity_name (str): The name of what the bot should be listening to.
         """
         activity = discord.Activity(type=discord.ActivityType.listening, name=activity_name)
         await self.bot.change_presence(activity=activity, status=status)
+        await _notify_presence_change(ctx.channel, ctx.author)
 
     @change_discord_presence.command(name="playing")
     @command_log
-    async def change_discord_presence_playing(self, _ctx: commands.Context,
+    async def change_discord_presence_playing(self, ctx: commands.Context,
                                               status: Optional[discord.Status] = discord.Status.online,
                                               *, activity_name: str):
         """Command handler for the `presence` subcommand `playing`.
@@ -377,16 +379,17 @@ class AdminCog(commands.Cog):
         Discord status can also be set via the optional status argument.
 
         Args:
-            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
             status (Optional[discord.Status]): The status which should be displayed.
             activity_name (str): The name of the game which the bot should play.
         """
         activity = discord.Game(name=activity_name)
         await self.bot.change_presence(activity=activity, status=status)
+        await _notify_presence_change(ctx.channel, ctx.author)
 
     @change_discord_presence.command(name="streaming")
     @command_log
-    async def change_discord_presence_streaming(self, _ctx: commands.Context, stream_url: str,
+    async def change_discord_presence_streaming(self, ctx: commands.Context, stream_url: str,
                                                 status: Optional[discord.Status] = discord.Status.online,
                                                 *, activity_name: str):
         """Command handler for the `presence` subcommand `streaming`.
@@ -395,7 +398,7 @@ class AdminCog(commands.Cog):
         stream URL. The Discord status can also be set via the optional status argument.
 
         Args:
-            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
             stream_url (str): The URL of the stream. (The watch button will redirect to this link if clicked)
             status (Optional[discord.Status]): The status which should be displayed.
             activity_name (str): The name of whatever the bot should be streaming.
@@ -411,20 +414,22 @@ class AdminCog(commands.Cog):
             activity.platform = None
 
         await self.bot.change_presence(activity=activity, status=status)
+        await _notify_presence_change(ctx.channel, ctx.author)
 
     @change_discord_presence.command(name="clear")
     @command_log
-    async def change_discord_presence_clear(self, _ctx: commands.Context):
+    async def change_discord_presence_clear(self, ctx: commands.Context):
         """Command handler for the `presence` subcommand `clear`.
 
         This is a command that clears the currently set activity and sets the Discord status to "Online".
 
         Args:
-            _ctx (discord.ext.commands.Context): The context from which this command is invoked.
+            ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
         await self.bot.change_presence(activity=None)
+        await _notify_presence_change(ctx.channel, ctx.author)
 
-    @commands.command(name="botonly")
+    @commands.command(name="botonly", hidden=True)
     @command_log
     async def botonly(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
         """Command handler for the `botonly` command.
@@ -495,6 +500,11 @@ def parse_pastebin_link(url: str) -> str:
         split_index = url.find(".com/")
         url = url[:(split_index + 5)] + "raw/" + url[(split_index + 5):]
     return requests.get(url).text
+
+
+async def _notify_presence_change(channel: discord.TextChannel, author: discord.Member):
+    log.info("The bots presence has been changed by %s", author)
+    await channel.send(content=":white_check_mark: Die Präsenz wurde erfolgreich aktualisiert!")
 
 
 def _get_cog_name(extn_name: str) -> str:

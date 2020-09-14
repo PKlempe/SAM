@@ -18,15 +18,23 @@ GET_SUGGESTION_BY_ID = "SELECT MessageID, StatusID, AuthorID FROM Suggestion WHE
 
 # Module Roles
 INSERT_MODULE_ROLE = "INSERT INTO ModuleRole (RoleID) VALUES (?)"
-REMOVE_MODULE_ROLE = "DELETE FROM ModuleRole WHERE RoleID =  ?"
+REMOVE_MODULE_ROLE = "DELETE FROM ModuleRole WHERE RoleID = ?"
 
 
-# GroupExchange
+# Member Warnings
+INSERT_MEMBER_WARNING = "INSERT INTO MemberWarning (UserID, Timestamp, Reason) VALUES (?, ?, ?)"
+DELETE_MEMBER_WARNING = "DELETE FROM MemberWarning WHERE ID = ?"
+DELETE_MEMBER_WARNINGS = "DELETE FROM MemberWarning WHERE UserID = ?"
+GET_WARNING_USERID = "SELECT UserID FROM MemberWarning WHERE ID = ?"
+GET_MEMBER_WARNINGS = "SELECT ID, Timestamp, Reason FROM MemberWarning WHERE UserID = ?"
+
+
+# Group Exchange
 INSERT_GROUP_OFFER = "INSERT INTO GroupOffer (UserId, Course, GroupNr) VALUES (?, ?, ?)"
 INSERT_GROUP_REQUEST = "INSERT INTO GroupRequest (UserId, Course, GroupNr) VALUES (?, ?, ?)"
 UPDATE_GROUP_MESSAGE_ID = "UPDATE GroupOffer SET MessageId = ? WHERE UserId = ? AND Course = ?"
 
-# needs to be formatted to have as many ? as there are group numbers for requested groups
+## needs to be formatted to have as many ? as there are group numbers for requested groups
 FIND_GROUP_EXCHANGE_CANDIDATES = "SELECT DISTINCT offer.UserId, offer.MessageId, offer.GroupNr " \
                                  "FROM GroupOffer offer INNER JOIN GroupRequest request " \
                                  "ON offer.Course = request.Course " \
@@ -46,12 +54,17 @@ GET_GROUP_EXCHANGE_FOR_USER = "SELECT DISTINCT offer.Course, offer.MessageId, of
                               "WHERE offer.UserId = ? " \
                               "GROUP BY offer.Course"
 
-# These queries are ridiculously dangerous. Use with caution.
+## These queries are ridiculously dangerous. Use with caution.
 CLEAR_GROUP_EXCHANGE_OFFERS = "DELETE FROM GroupOffer"
 CLEAR_GROUP_EXCHANGE_REQUESTS = "DELETE FROM GroupRequest"
 
 
 # Bot-only Mode
-IS_CHANNEL_BOTONLY = "SELECT EXISTS(SELECT 1 FROM BotOnlyChannels WHERE ChannelID = ?)"
-ACTIVATE_BOTONLY_FOR_CHANNEL = "INSERT INTO BotOnlyChannels (ChannelID) VALUES (?)"
-DEACTIVATE_BOTONLY_FOR_CHANNEL = "DELETE FROM BotOnlyChannels WHERE ChannelID =  ?"
+IS_CHANNEL_BOTONLY = "SELECT EXISTS(SELECT 1 FROM BotOnlyChannel WHERE ChannelID = ?)"
+ACTIVATE_BOTONLY_FOR_CHANNEL = "INSERT INTO BotOnlyChannel (ChannelID) VALUES (?)"
+DEACTIVATE_BOTONLY_FOR_CHANNEL = "DELETE FROM BotOnlyChannel WHERE ChannelID =  ?"
+
+
+# Moderation
+INSERT_MEMBER_NAME = "INSERT INTO MemberNameHistory (UserID, Name, Timestamp) VALUES (?, ?, ?)"
+GET_MEMBER_NAMES = "SELECT Name, Timestamp FROM MemberNameHistory WHERE UserID = ? ORDER BY ROWID DESC"
