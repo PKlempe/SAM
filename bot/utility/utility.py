@@ -21,10 +21,8 @@ class UtilityCog(commands.Cog):
         """
         self.bot = bot
 
-        self.guild = bot.get_guild(int(constants.SERVER_ID))
-
         # Role instances
-        self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))
+        self.role_moderator = bot.get_guild(int(constants.SERVER_ID)).get_role(int(constants.ROLE_ID_MODERATOR))
 
     @commands.command(name='ping')
     @command_log
@@ -109,7 +107,7 @@ class UtilityCog(commands.Cog):
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
         if payload.emoji.name == constants.EMOJI_PIN:
-            channel = self.guild.get_channel(payload.channel_id)
+            channel = self.bot.get_guild(int(constants.SERVER_ID)).get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
 
             reaction = next(x for x in message.reactions if x.emoji == constants.EMOJI_PIN)

@@ -24,10 +24,8 @@ class RoleManagementCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
-        self.guild = bot.get_guild(int(constants.SERVER_ID))
-
         # Channel instances
-        self.ch_role = self.guild.get_channel(int(constants.CHANNEL_ID_ROLES))
+        self.ch_role = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_ROLES))
 
     @commands.group(name='module', invoke_without_command=True)
     @command_log

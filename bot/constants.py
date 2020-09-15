@@ -106,32 +106,32 @@ EMOJI_CHANNEL_NAME_SEPARATOR = "\U0001F539"
 
 
 # API Keys
-DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN") or "Undefined"
 
 
 # File Paths
 LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
-DB_FILE_PATH = os.getenv("DB_FILE_PATH")
+DB_FILE_PATH = os.getenv("DB_FILE_PATH") or "./database.sqlite3"
 DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
 
 
 # Special Discord IDs
-SERVER_ID = os.getenv("SERVER_ID")
+SERVER_ID = os.getenv("SERVER_ID") or "Undefined"
 
 ## Channel IDs
-CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT")
-CHANNEL_ID_MODLOG = os.getenv("CHANNEL_ID_MODLOG")
-CHANNEL_ID_NEWS = os.getenv("CHANNEL_ID_NEWS")
-CHANNEL_ID_RULES = os.getenv("CHANNEL_ID_RULES")
-CHANNEL_ID_REPORT = os.getenv("CHANNEL_ID_REPORT")
-CHANNEL_ID_MODMAIL = os.getenv("CHANNEL_ID_MODMAIL")
-CHANNEL_ID_ROLES = os.getenv("CHANNEL_ID_ROLES")
-CHANNEL_ID_SUGGESTIONS = os.getenv("CHANNEL_ID_SUGGESTIONS")
-CHANNEL_ID_GROUP_EXCHANGE = os.getenv("CHANNEL_ID_GROUP_EXCHANGE")
+CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT") or "Undefined"
+CHANNEL_ID_MODLOG = os.getenv("CHANNEL_ID_MODLOG") or "Undefined"
+CHANNEL_ID_NEWS = os.getenv("CHANNEL_ID_NEWS") or "Undefined"
+CHANNEL_ID_RULES = os.getenv("CHANNEL_ID_RULES") or "Undefined"
+CHANNEL_ID_REPORT = os.getenv("CHANNEL_ID_REPORT") or "Undefined"
+CHANNEL_ID_MODMAIL = os.getenv("CHANNEL_ID_MODMAIL") or "Undefined"
+CHANNEL_ID_ROLES = os.getenv("CHANNEL_ID_ROLES") or "Undefined"
+CHANNEL_ID_SUGGESTIONS = os.getenv("CHANNEL_ID_SUGGESTIONS") or "Undefined"
+CHANNEL_ID_GROUP_EXCHANGE = os.getenv("CHANNEL_ID_GROUP_EXCHANGE") or "Undefined"
 
 ## Role IDs
-ROLE_ID_MODERATOR = os.getenv("ROLE_ID_MODERATOR")
-ROLE_ID_MUTED = os.getenv("ROLE_ID_MUTED")
+ROLE_ID_MODERATOR = os.getenv("ROLE_ID_MODERATOR") or "Undefined"
+ROLE_ID_MUTED = os.getenv("ROLE_ID_MUTED") or "Undefined"
 
 ## User IDs
 USER_ID_CONTRIBUTOR = 310100064687226882

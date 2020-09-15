@@ -23,10 +23,8 @@ class FeedbackCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
-        self.guild = bot.get_guild(int(constants.SERVER_ID))
-
         # Channel instances
-        self.ch_suggestion = self.guild.get_channel(int(constants.CHANNEL_ID_SUGGESTIONS))
+        self.ch_suggestion = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_SUGGESTIONS))
 
     @commands.group(name="suggestion", hidden=True, invoke_without_command=True, aliases=["suggest"])
     @command_log
@@ -213,7 +211,7 @@ class FeedbackCog(commands.Cog):
         Args:
             user_id (int): The id of the user who submitted the suggestion.
         """
-        member = self.guild.get_member(user_id)
+        member = self.bot.get_guild(int(constants.SERVER_ID)).get_member(user_id)
         text = "Hey, {0}!\nEs gibt Neuigkeiten bezüglich deines Vorschlags.Sieh am besten gleich in {1} nach, wie " \
                "das Urteil ausgefallen ist. :fingers_crossed:".format(member.display_name, self.ch_suggestion.mention)
 

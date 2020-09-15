@@ -27,10 +27,8 @@ class AdminCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
-        self.guild = bot.get_guild(int(constants.SERVER_ID))
-
         # Channel instances
-        self.ch_bot = self.guild.get_channel(int(constants.CHANNEL_ID_BOT))
+        self.ch_bot = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_BOT))
 
     # A special method that registers as a commands.check() for every command and subcommand in this cog.
     async def cog_check(self, ctx):
