@@ -36,18 +36,17 @@ class ModerationCog(commands.Cog):
         # by discord.py can't be pickled (serialized) which is why IDs are being used instead. For converting them into
         # usable objects, a bot/client object is needed, which should be the same for the whole application anyway.
         ModerationCog.bot = bot
-        self.guild = self.bot.get_guild(int(constants.SERVER_ID))
 
         # Channel instances
-        self.ch_modlog = self.guild.get_channel(int(constants.CHANNEL_ID_MODLOG))
-        self.ch_report = self.guild.get_channel(int(constants.CHANNEL_ID_REPORT))
-        self.ch_modmail = self.guild.get_channel(int(constants.CHANNEL_ID_MODMAIL))
-        self.ch_rules = self.guild.get_channel(int(constants.CHANNEL_ID_RULES))
-        self.ch_server_news = self.guild.get_channel(int(constants.CHANNEL_ID_NEWS))
+        self.ch_modlog = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_MODLOG))
+        self.ch_report = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_REPORT))
+        self.ch_modmail = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_MODMAIL))
+        self.ch_rules = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_RULES))
+        self.ch_server_news = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_NEWS))
 
         # Role instances
-        self.role_moderator = self.guild.get_role(int(constants.ROLE_ID_MODERATOR))
-        self.role_muted = self.guild.get_role(int(constants.ROLE_ID_MUTED))
+        self.role_moderator = bot.get_guild(int(constants.SERVER_ID)).get_role(int(constants.ROLE_ID_MODERATOR))
+        self.role_muted = bot.get_guild(int(constants.SERVER_ID)).get_role(int(constants.ROLE_ID_MUTED))
 
     # A special method that registers as a commands.check() for every command and subcommand in this cog.
     # Only moderators can use the commands defined in this Cog except for `report` and `modmail`.
@@ -254,7 +253,7 @@ class ModerationCog(commands.Cog):
         if not user_id:
             raise commands.BadArgument("The warning with the specified ID doesn't exist.")
 
-        user = self.guild.get_member(int(user_id))
+        user = self.bot.get_guild(int(constants.SERVER_ID)).get_member(int(user_id))
 
         self._db_connector.remove_member_warning(warning_id)
         log.info("Warning #%s has been removed from %s.", warning_id, user)
@@ -394,7 +393,8 @@ class ModerationCog(commands.Cog):
         await self.ch_modlog.send(embed=modlog_embed)
 
         self.scheduler.add_job(_scheduled_unmute_user, 'date', run_date=run_date,
-                               args=[self.guild.id, self.role_muted.id, user.id, self.ch_rules.id, self.ch_modlog.id])
+                               args=[constants.SERVER_ID, self.role_muted.id, user.id, self.ch_rules.id,
+                                     self.ch_modlog.id])
 
     @commands.command(name='ban', hidden=True)
     @command_log
@@ -416,8 +416,9 @@ class ModerationCog(commands.Cog):
         log.info("Member %s has been banned from the server.", user)
 
         await ctx.send(f"{user.mention} wurde gebannt. :do_not_litter:")
-        embed = _build_mod_action_embed("Bann", f"Du wurdest durch **__{prosecutor}__** von **__{self.guild}__** "
-                                                f"gebannt.", reason, self.ch_rules)
+        embed = _build_mod_action_embed("Bann", "Du wurdest durch **__{0}__** von **__{1}__** gebannt."
+                                        .format(prosecutor, self.bot.get_guild(int(constants.SERVER_ID))),
+                                        reason, self.ch_rules)
         await user.send(embed=embed)
 
         modlog_embed = _build_modlog_embed("Server-Bann :do_not_litter:", color=constants.EMBED_COLOR_MODLOG_BAN, moderator=ctx.author,
@@ -448,8 +449,9 @@ class ModerationCog(commands.Cog):
         log.info("Member %s has been banned from the server until %s.", user, run_date.strftime("%d.%m.%Y %H:%M:%S"))
 
         await ctx.send(f"{user.mention} wurde für {pretty_duration} gebannt. :do_not_litter:")
-        embed = _build_mod_action_embed("TempBann", f"Du wurdest durch **__{prosecutor}__** von **__{self.guild}__** "
-                                                    f"für {pretty_duration} gebannt.", reason, self.ch_rules)
+        embed = _build_mod_action_embed("TempBann", "Du wurdest durch **__{0}__** von **__{1}__** für {2} gebannt."
+                                        .format(prosecutor, self.bot.get_guild(int(constants.SERVER_ID)),
+                                                pretty_duration), reason, self.ch_rules)
         await user.send(embed=embed)
 
         modlog_embed = _build_modlog_embed("Temporärer Server-Bann :do_not_litter:", color=constants.EMBED_COLOR_MODLOG_BAN,
@@ -457,7 +459,7 @@ class ModerationCog(commands.Cog):
         await self.ch_modlog.send(embed=modlog_embed)
 
         self.scheduler.add_job(_scheduled_unban_user, 'date', run_date=run_date,
-                               args=[self.guild.id, user.id, self.ch_rules.id, self.ch_modlog.id])
+                               args=[constants.SERVER_ID, user.id, self.ch_rules.id, self.ch_modlog.id])
 
     @tempmute_user.error
     @tempban_user.error
@@ -489,8 +491,9 @@ class ModerationCog(commands.Cog):
         log.info("Member %s has been kicked from the server.", user)
 
         await ctx.send(f"{user.mention} wurde gekickt. :anger:")
-        embed = _build_mod_action_embed("Kick", f"Du wurdest durch **__{ctx.author}__** von **__{self.guild}__** "
-                                                f"gekickt.", reason, self.ch_rules)
+        embed = _build_mod_action_embed("Kick", "Du wurdest durch **__{0}__** von **__{1}__** gekickt."
+                                        .format(ctx.author, self.bot.get_guild(int(constants.SERVER_ID))),
+                                        reason, self.ch_rules)
         await user.send(embed=embed)
 
         modlog_embed = _build_modlog_embed("Server-Kick :anger:", color=constants.EMBED_COLOR_MODLOG_KICK, moderator=ctx.author,
@@ -726,7 +729,7 @@ class ModerationCog(commands.Cog):
         if is_confirmed:
             deleted_messages = await purge_channel.purge(limit=amount + 1)
             await purge_channel.send('**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'
-                                     .format(len(deleted_messages)), delete_after=constants.TIMEOUT_INFORMATION)
+                                     .format(len(deleted_messages) - 1), delete_after=constants.TIMEOUT_INFORMATION)
             log.info("SAM deleted %s messages in [#%s]", len(deleted_messages), purge_channel)
 
     @purge_messages.error

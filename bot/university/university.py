@@ -31,10 +31,8 @@ class UniversityCog(commands.Cog):
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
 
-        self.guild = bot.get_guild(int(constants.SERVER_ID))
-
         # Channel instances
-        self.ch_group_exchange = self.guild.get_channel(int(constants.CHANNEL_ID_GROUP_EXCHANGE))
+        self.ch_group_exchange = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_GROUP_EXCHANGE))
 
         # Init scheduler for resetting the group exchange channel
         self.scheduler = AsyncIOScheduler()
@@ -278,7 +276,7 @@ class UniversityCog(commands.Cog):
                 group_text = "Gruppe {0}".format(key)
                 user_list = []
                 for item in subiter:
-                    user = self.guild.get_member(int(item[0]))
+                    user = self.bot.get_guild(int(constants.SERVER_ID)).get_member(int(item[0]))
                     msg = await channel.fetch_message(int(item[1]))
                     user_list.append("- [{0}]({1})".format(user, msg.jump_url))
                 yield group_text, "\n".join(user_list)
@@ -301,7 +299,7 @@ class UniversityCog(commands.Cog):
             embed (discord.Embed): The embed to send the potential candidates.
         """
         for candidate in potential_candidates:
-            await self.guild.get_member(int(candidate[0])).send(
+            await self.bot.get_guild(int(constants.SERVER_ID)).get_member(int(candidate[0])).send(
                 content="Ich habe ein neues Tauschangebot für dich gefunden:", embed=embed)
 
     async def open_group_exchange_channel(self):
@@ -310,7 +308,8 @@ class UniversityCog(commands.Cog):
         Makes the channel visible to all members by adding adding the read_messages permission to @everyone. It also
         posts an info message on how to use this service.
         """
-        await self.ch_group_exchange.set_permissions(self.guild.default_role, read_messages=True)
+        await self.ch_group_exchange.set_permissions(self.bot.get_guild(int(constants.SERVER_ID)).default_role,
+                                                     read_messages=True)
         embed = discord.Embed(title="Wie wirds gemacht?", color=constants.EMBED_COLOR_INFO,
                               description="Um das Finden eines Tauschpartners für alle möglichst einfach und "
                                           "unkompliziert zu gestalten, verwende bitte den Befehl:\n`!exchange "
@@ -344,7 +343,8 @@ class UniversityCog(commands.Cog):
         Makes the channel invisible by removing the read_messages permission from @everyone and purging all messages in
         the channel.
         """
-        await self.ch_group_exchange.set_permissions(self.guild.default_role, read_messages=False)
+        await self.ch_group_exchange.set_permissions(self.bot.get_guild(int(constants.SERVER_ID)).default_role,
+                                                     read_messages=False)
         # Limit is set to a high number because we can't simply remove "all".
         await self.ch_group_exchange.purge(limit=100000)
 
@@ -375,7 +375,7 @@ class UniversityCog(commands.Cog):
         """
         embed = discord.Embed(title="Deine Gruppentausch-Anfragen:", color=constants.EMBED_COLOR_GROUP_EXCHANGE)
         for request_of_user in requests_of_user:
-            course_channel = self.guild.get_channel(int(request_of_user[0]))
+            course_channel = self.bot.get_guild(int(constants.SERVER_ID)).get_channel(int(request_of_user[0]))
             msg = await self.ch_group_exchange.fetch_message(int(request_of_user[1]))
             course = _parse_course_from_channel_name(course_channel)
             offered_group = request_of_user[2]
