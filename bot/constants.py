@@ -106,7 +106,7 @@ EMOJI_CHANNEL_NAME_SEPARATOR = "\U0001F539"
 
 
 # API Keys
-DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN") or None
+DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN") or "Undefined"
 
 
 # File Paths
@@ -119,19 +119,19 @@ DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persi
 SERVER_ID = os.getenv("SERVER_ID")
 
 ## Channel IDs
-CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT") or None
-CHANNEL_ID_MODLOG = os.getenv("CHANNEL_ID_MODLOG") or None
-CHANNEL_ID_NEWS = os.getenv("CHANNEL_ID_NEWS") or None
-CHANNEL_ID_RULES = os.getenv("CHANNEL_ID_RULES") or None
-CHANNEL_ID_REPORT = os.getenv("CHANNEL_ID_REPORT") or None
-CHANNEL_ID_MODMAIL = os.getenv("CHANNEL_ID_MODMAIL") or None
-CHANNEL_ID_ROLES = os.getenv("CHANNEL_ID_ROLES") or None
-CHANNEL_ID_SUGGESTIONS = os.getenv("CHANNEL_ID_SUGGESTIONS") or None
-CHANNEL_ID_GROUP_EXCHANGE = os.getenv("CHANNEL_ID_GROUP_EXCHANGE") or None
+CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT") or "Undefined"
+CHANNEL_ID_MODLOG = os.getenv("CHANNEL_ID_MODLOG") or "Undefined"
+CHANNEL_ID_NEWS = os.getenv("CHANNEL_ID_NEWS") or "Undefined"
+CHANNEL_ID_RULES = os.getenv("CHANNEL_ID_RULES") or "Undefined"
+CHANNEL_ID_REPORT = os.getenv("CHANNEL_ID_REPORT") or "Undefined"
+CHANNEL_ID_MODMAIL = os.getenv("CHANNEL_ID_MODMAIL") or "Undefined"
+CHANNEL_ID_ROLES = os.getenv("CHANNEL_ID_ROLES") or "Undefined"
+CHANNEL_ID_SUGGESTIONS = os.getenv("CHANNEL_ID_SUGGESTIONS") or "Undefined"
+CHANNEL_ID_GROUP_EXCHANGE = os.getenv("CHANNEL_ID_GROUP_EXCHANGE") or "Undefined"
 
 ## Role IDs
-ROLE_ID_MODERATOR = os.getenv("ROLE_ID_MODERATOR") or None
-ROLE_ID_MUTED = os.getenv("ROLE_ID_MUTED") or None
+ROLE_ID_MODERATOR = os.getenv("ROLE_ID_MODERATOR") or "Undefined"
+ROLE_ID_MUTED = os.getenv("ROLE_ID_MUTED") or "Undefined"
 
 ## User IDs
 USER_ID_CONTRIBUTOR = 310100064687226882
