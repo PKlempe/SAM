@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 
 from bot import constants
-from bot.logger import command_log
+from bot.logger import command_log, log
 from bot.persistence import DatabaseConnector
 
 
@@ -169,6 +169,7 @@ class RoleManagementCog(commands.Cog):
 
         self._db_connector.add_reaction_role(message.id, emoji, role.id)
         await message.add_reaction(emoji)
+        log.info("A reaction role has been added to the message with id %s.", message.id)
 
         await ctx.send(":white_check_mark: Die Reaction-Role wurde erfolgreich erstellt.")
 
@@ -195,6 +196,7 @@ class RoleManagementCog(commands.Cog):
 
         self._db_connector.remove_reaction_role(message.id, emoji)
         await message.clear_reaction(emoji)
+        log.info("A reaction role has been removed from the message with id %s.", message.id)
 
         if len(message.reactions) == 1:
             self._db_connector.remove_reaction_role_group(message.id)
@@ -226,6 +228,8 @@ class RoleManagementCog(commands.Cog):
             return
 
         await message.clear_reactions()
+        log.info("All reaction roles of the message with id %s have been removed.", message.id)
+
         await ctx.send(":white_check_mark: Die Reaction-Roles wurden erfolgreich entfernt.")
 
     @reaction_role.command(name="unique")
@@ -247,6 +251,8 @@ class RoleManagementCog(commands.Cog):
 
         if self._db_connector.check_reaction_role_uniqueness(message.id):
             self._db_connector.remove_reaction_role_group(message.id)
+            log.info("A reaction role has been added to the message with id %s.", message.id)
+
             await ctx.send(":white_check_mark: Die Reaction-Roles der angegebenen Nachricht sind nicht mehr "
                            "\"exklusiv\".")
         else:
@@ -264,7 +270,7 @@ class RoleManagementCog(commands.Cog):
         still be called for every error thrown.
 
         Args:
-            -ctx (discord.ext.commands.Context): The context in which the command was called.
+            _ctx (discord.ext.commands.Context): The context in which the command was called.
             error (commands.CommandError): The error raised during the execution of the command.
         """
         if isinstance(error, commands.BadArgument):
