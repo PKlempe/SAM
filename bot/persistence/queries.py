@@ -3,7 +3,7 @@
 # Modmail
 INSERT_MODMAIL = "INSERT INTO Modmail (ID, Author, Timestamp) VALUES (?, ?, ?)"
 CHANGE_MODMAIL_STATUS = "UPDATE Modmail SET StatusID = ? WHERE ID = ?"
-GET_MODMAIL_STATUS = "SELECT StatusID FROM Modmail WHERE ID = ?"
+GET_MODMAIL_STATUS = "SELECT StatusID FROM Modmail WHERE ID = ? LIMIT 1"
 GET_ALL_MODMAIL_WITH_STATUS = "SELECT ID, Author, Timestamp FROM Modmail WHERE StatusID = ?"
 
 
@@ -11,9 +11,9 @@ GET_ALL_MODMAIL_WITH_STATUS = "SELECT ID, Author, Timestamp FROM Modmail WHERE S
 INSERT_SUGGESTION = "INSERT INTO Suggestion (AuthorID, Timestamp) VALUES (?, ?)"
 SET_SUGGESTION_MESSAGE_ID = "UPDATE Suggestion SET MessageID = ? WHERE ID = ?"
 SET_SUGGESTION_STATUS = "UPDATE Suggestion SET StatusID = ? WHERE ID = ?"
-GET_SUGGESTION_STATUS = "SELECT StatusID FROM Suggestion WHERE MessageID = ?"
+GET_SUGGESTION_STATUS = "SELECT StatusID FROM Suggestion WHERE MessageID = ? LIMIT 1"
 GET_ALL_SUGGESTIONS_WITH_STATUS = "SELECT ID, MessageID, AuthorID, Timestamp FROM Suggestion WHERE StatusID = ?"
-GET_SUGGESTION_BY_ID = "SELECT MessageID, StatusID, AuthorID FROM Suggestion WHERE ID = ?"
+GET_SUGGESTION_BY_ID = "SELECT MessageID, StatusID, AuthorID FROM Suggestion WHERE ID = ? LIMIT 1"
 
 
 # Module Roles
@@ -21,11 +21,21 @@ INSERT_MODULE_ROLE = "INSERT INTO ModuleRole (RoleID) VALUES (?)"
 REMOVE_MODULE_ROLE = "DELETE FROM ModuleRole WHERE RoleID = ?"
 
 
+# Reaction Roles
+GET_REACTION_ROLE = "SELECT RoleID FROM ReactionRole WHERE MessageID = ? AND Emoji = ? LIMIT 1"
+INSERT_REACTION_ROLE = "INSERT INTO ReactionRole (MessageID, Emoji, RoleID) VALUES (?,?,?)"
+REMOVE_REACTION_ROLE = "DELETE FROM ReactionRole WHERE MessageID = ? AND Emoji = ?"
+CLEAR_REACTION_ROLES = "DELETE FROM ReactionRole WHERE MessageID = ?"
+INSERT_REACTION_ROLE_GROUP = "INSERT INTO ReactionRoleGroup (MessageID) VALUES (?)"
+REMOVE_REACTION_ROLE_GROUP = "DELETE FROM ReactionRoleGroup WHERE MessageID = ?"
+IS_REACTION_ROLE_UNIQUE = "SELECT EXISTS(SELECT 1 FROM ReactionRoleGroup WHERE MessageID = ?)"
+
+
 # Member Warnings
 INSERT_MEMBER_WARNING = "INSERT INTO MemberWarning (UserID, Timestamp, Reason) VALUES (?, ?, ?)"
 DELETE_MEMBER_WARNING = "DELETE FROM MemberWarning WHERE ID = ?"
 DELETE_MEMBER_WARNINGS = "DELETE FROM MemberWarning WHERE UserID = ?"
-GET_WARNING_USERID = "SELECT UserID FROM MemberWarning WHERE ID = ?"
+GET_WARNING_USERID = "SELECT UserID FROM MemberWarning WHERE ID = ? LIMIT 1"
 GET_MEMBER_WARNINGS = "SELECT ID, Timestamp, Reason FROM MemberWarning WHERE UserID = ?"
 
 
@@ -44,7 +54,7 @@ FIND_GROUP_EXCHANGE_CANDIDATES = "SELECT DISTINCT offer.UserId, offer.MessageId,
                                  "AND request.GroupNr = ? " \
                                  "AND offer.GroupNr IN ({0})"
 
-GET_GROUP_EXCHANGE_MESSAGE = "SELECT MessageId FROM GroupOffer WHERE UserId = ? AND Course = ?"
+GET_GROUP_EXCHANGE_MESSAGE = "SELECT MessageId FROM GroupOffer WHERE UserId = ? AND Course = ? LIMIT 1"
 REMOVE_GROUP_EXCHANGE_OFFER = "DELETE FROM GroupOffer WHERE UserId = ? AND Course = ?"
 REMOVE_GROUP_EXCHANGE_REQUESTS = "DELETE FROM GroupRequest WHERE UserId = ? AND Course = ?"
 GET_GROUP_EXCHANGE_FOR_USER = "SELECT DISTINCT offer.Course, offer.MessageId, offer.GroupNr, group_concat(request.GroupNr, ',') " \

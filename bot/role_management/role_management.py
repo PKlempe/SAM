@@ -32,9 +32,9 @@ class RoleManagementCog(commands.Cog):
     async def toggle_module(self, ctx: commands.Context, *, str_modules: str):
         """Command Handler for the `module` command.
 
-        Allows members to assign/remove so called mod roles to/from themselves. This way users can toggle text channels
-        about specific courses to be visible or not to them. When the operation is finished, SAM will send an overview
-        about the changes he did per direct message to the user who invoked the command.
+        Allows members to assign/remove so called module roles to/from themselves. This way users can toggle text
+        channels about specific courses to be visible or not to them. When the operation is finished, SAM will send an
+        overview about the changes he did per direct message to the user who invoked the command.
         If the command is invoked outside of the configured role channel, the bot will post a short info that this
         command should only be invoked there and delete this message shortly after.
 
@@ -58,6 +58,7 @@ class RoleManagementCog(commands.Cog):
         for module in modules:
             module_upper = module.upper()
             try:
+                # TODO: Check if role is whitelisted.
                 role = await converter.convert(ctx, module_upper)
 
                 if role in ctx.author.roles:
@@ -89,11 +90,9 @@ class RoleManagementCog(commands.Cog):
         try:
             self._db_connector.add_module_role(module_role.id)
             await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde erfolgreich zu den verfügbaren Modul-Rollen "
-                           f"hinzugefügt.",
-                           delete_after=constants.TIMEOUT_INFORMATION)
+                           f"hinzugefügt.")
         except IntegrityError:
-            await ctx.send(f"Die Rolle \"**__{module_role}__**\" gehört bereits zu den verfügbaren Modul-Rollen.",
-                           delete_after=constants.TIMEOUT_INFORMATION)
+            await ctx.send(f"Die Rolle \"**__{module_role}__**\" gehört bereits zu den verfügbaren Modul-Rollen.")
 
     @toggle_module.command(name="remove", hidden=True)
     @commands.is_owner()
@@ -130,6 +129,197 @@ class RoleManagementCog(commands.Cog):
             role = role.group(1) if role is not None else None
 
             await ctx.author.send(f"Die von dir angegebene Rolle \"**__{role}__**\" existiert leider nicht.")
+
+    @commands.group(name="reactionrole", aliases=["rr"], hidden=True, invoke_without_command=True)
+    @commands.is_owner()
+    @command_log
+    async def reaction_role(self, ctx: commands.Context):
+        """Command Handler for the `reactionrole` command.
+
+        Allows the bot owner to manage so called "reaction roles" for messages in the configured role channel. This can
+        be done via multiple subcommands like `add`, `remove` or `clear`.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+        """
+        await ctx.send_help(ctx.command)
+
+    @reaction_role.command(name="add")
+    @commands.is_owner()
+    @command_log
+    async def add_reaction_role(self, ctx: commands.Context, message: discord.Message, emoji: str, role: discord.Role):
+        """Command Handler for the subcommand `add` of the `reactionrole` command.
+
+        Adds a reaction to a specified message and creates a corresponding database entry for it to work as a so called
+        reaction role.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            message (discord.Message): The message to which the reaction role should be added.
+            emoji (str): The emoji of the reaction which will be added.
+            role (discord.Role): The specific role a member should get when adding the reaction.
+        """
+        if message.channel.id != self.ch_role.id:
+            await ctx.send(f":information_source: Reaction-Roles können nur für Nachrichten im Kanal "
+                           f"{self.ch_role.mention} erstellt werden.")
+            return
+        if emoji in [reaction.emoji for reaction in message.reactions]:
+            await ctx.send(":x: Für den angegebenen Emoji existiert bereits eine Reaction-Role.")
+            return
+
+        self._db_connector.add_reaction_role(message.id, emoji, role.id)
+        await message.add_reaction(emoji)
+
+        await ctx.send(":white_check_mark: Die Reaction-Role wurde erfolgreich erstellt.")
+
+    @reaction_role.command(name="remove")
+    @commands.is_owner()
+    @command_log
+    async def remove_reaction_role(self, ctx: commands.Context, message: discord.Message, emoji: str):
+        """Command Handler for the subcommand `remove` of the `reactionrole` command.
+
+        Removes the reaction from a specified message and deletes the corresponding database entry of the reaction role.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            message (discord.Message): The message from which the reaction role should be removed.
+            emoji (str): The emoji of the reaction.
+        """
+        if message.channel.id != self.ch_role.id:
+            await ctx.send(f":information_source: Nachrichten außerhalb des Kanals {self.ch_role.mention} können keine "
+                           f"Reaction-Roles besitzen.")
+            return
+        if emoji not in [reaction.emoji for reaction in message.reactions]:
+            await ctx.send(":x: Für den angegebenen Emoji existiert leider keine Reaction-Role.")
+            return
+
+        self._db_connector.remove_reaction_role(message.id, emoji)
+        await message.clear_reaction(emoji)
+
+        if len(message.reactions) == 1:
+            self._db_connector.remove_reaction_role_group(message.id)
+
+        await ctx.send(":white_check_mark: Die Reaction-Role wurde erfolgreich entfernt.")
+
+    @reaction_role.command(name="clear")
+    @commands.is_owner()
+    @command_log
+    async def clear_reaction_roles(self, ctx: commands.Context, message: discord.Message):
+        """Command Handler for the subcommand `clear` of the `reactionrole` command.
+
+        Removes all the reaction from a specified message and deletes all the corresponding database entry of the
+        reaction roles.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            message (discord.Message): The message from which the reaction roles should be removed.
+        """
+        if message.channel.id != self.ch_role.id:
+            await ctx.send(f":information_source: Nachrichten außerhalb des Kanals {self.ch_role.mention} können keine "
+                           f"Reaction-Roles besitzen.")
+            return
+        had_reaction_roles = self._db_connector.clear_reaction_roles(message.id)
+        self._db_connector.remove_reaction_role_group(message.id)
+
+        if not had_reaction_roles:
+            await ctx.send("Die von dir angegebene Nachricht hat keine Reaction-Roles. :face_with_monocle:")
+            return
+
+        await message.clear_reactions()
+        await ctx.send(":white_check_mark: Die Reaction-Roles wurden erfolgreich entfernt.")
+
+    @reaction_role.command(name="unique")
+    @commands.is_owner()
+    @command_log
+    async def toggle_reaction_roles_exclusiveness(self, ctx: commands.Context, message: discord.Message):
+        """Command Handler for the subcommand `unique` of the `reactionrole` command.
+
+        Marks all the reaction roles of a message as "unique" by adding the message id to a specific table in the db.
+        This means that users can only have one of the configured reaction roles of this message at a time.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            message (discord.Message): The message from which the reaction roles should be removed.
+        """
+        if len(message.reactions) == 0:
+            await ctx.send(":x: Die angegebene Nachricht besitzt keine Reaction-Roles.")
+            return
+
+        if self._db_connector.check_reaction_role_uniqueness(message.id):
+            self._db_connector.remove_reaction_role_group(message.id)
+            await ctx.send(":white_check_mark: Die Reaction-Roles der angegebenen Nachricht sind nicht mehr "
+                           "\"exklusiv\".")
+        else:
+            self._db_connector.add_reaction_role_group(message.id)
+            await ctx.send(":white_check_mark: Die Reaction-Roles der angegebenen Nachricht sind nun \"exklusiv\".")
+
+    @add_reaction_role.error
+    @remove_reaction_role.error
+    @clear_reaction_roles.error
+    @toggle_reaction_roles_exclusiveness.error
+    async def reaction_role_error(self, _ctx: commands.Context, error: commands.CommandError):
+        """Error Handler for the `reactionrole` command group.
+
+        Handles specific exceptions which occur during the execution of this command. The global error handler will
+        still be called for every error thrown.
+
+        Args:
+            -ctx (discord.ext.commands.Context): The context in which the command was called.
+            error (commands.CommandError): The error raised during the execution of the command.
+        """
+        if isinstance(error, commands.BadArgument):
+            print("**__Error:__** Die von dir angegebene Nachricht/Rolle existiert nicht.")
+
+    @commands.Cog.listener(name='on_raw_reaction_add')
+    async def reaction_role_add(self, payload: discord.RawReactionActionEvent):
+        """Event listener which triggers if a reaction has been added by a user.
+
+        If the affected message is in the specified role channel and the added reaction represents one of the configured
+        reaction roles, the corresponding role specified in the db will be added to the user.
+
+        Args:
+            payload (discord.RawReactionActionEvent): The payload for the triggered event.
+        """
+        if payload.channel_id == self.ch_role.id and not payload.member.bot:
+            if self._db_connector.check_reaction_role_uniqueness(payload.message_id):
+                message = await self.ch_role.fetch_message(payload.message_id)
+
+                for reaction in message.reactions:
+                    if reaction.emoji != payload.emoji.name:
+                        await reaction.remove(payload.member)
+
+            role_id = self._db_connector.get_reaction_role(payload.message_id, payload.emoji.name)
+            role = self.bot.get_guild(payload.guild_id).get_role(role_id)
+            await payload.member.add_roles(role, reason="Selbstzuweisung via Reaction.")
+
+    @commands.Cog.listener(name='on_raw_reaction_remove')
+    async def reaction_role_remove(self, payload: discord.RawReactionActionEvent):
+        """Event listener which triggers if a reaction has been removed.
+
+        If the affected message is in the specified role channel and the removed reaction represents one of the
+        configured reaction roles, the corresponding role specified in the db will removed from the user.
+
+        Args:
+            payload (discord.RawReactionActionEvent): The payload for the triggered event.
+        """
+        role_id = self._db_connector.get_reaction_role(payload.message_id, payload.emoji.name)
+        role = self.bot.get_guild(payload.guild_id).get_role(role_id)
+
+        member = self.bot.get_guild(payload.guild_id).get_member(payload.user_id)
+        await member.remove_roles(role, reason="Automatische/Manuelle Entfernung via Reaction.")
+
+    @commands.Cog.listener(name='on_raw_message_delete')
+    async def delete_reaction_role_group(self, payload: discord.RawReactionActionEvent):
+        """Event listener which triggers if a message has been deleted.
+
+        If the affected message was in the specified role channel and was listed as a special Reaction Role Group in
+         the db, the corresponding entry will be removed.
+
+        Args:
+            payload (discord.RawReactionActionEvent): The payload for the triggered event.
+        """
+        if payload.channel_id == self.ch_role.id:
+            self._db_connector.remove_reaction_role_group(payload.message_id)
 
 
 def _create_embed_module_roles(modules_added: List[str], modules_removed: List[str], modules_error: List[str]) \

@@ -84,7 +84,7 @@ class DatabaseConnector:
 
             row = result.fetchone()
             if row:
-                return row[0]
+                return int(row[0])
             return None
 
     def get_member_warnings(self, user_id: int) -> Optional[List[tuple]]:
@@ -139,7 +139,7 @@ class DatabaseConnector:
         """Adds a role to the table "ModuleRole".
 
         Args:
-            role_id (int): The role id of the role which should be added.
+            role_id (int): The id of the role which should be added.
         """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.INSERT_MODULE_ROLE, (role_id,))
@@ -154,6 +154,105 @@ class DatabaseConnector:
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.REMOVE_MODULE_ROLE, (role_id,))
             db_manager.commit()
+
+    def get_reaction_role(self, msg_id: int, emoji: str) -> Optional[int]:
+        """Gets the role id for the specified reaction on a specific message.
+
+        Args:
+            msg_id (int): The id of the message which has been reacted to.
+            emoji (str): The emoji of the reaction.
+
+        Returns:
+            Optional[int]: The id of the role associated with the given message + reaction.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_REACTION_ROLE, (msg_id, emoji))
+
+            row = result.fetchone()
+            if row:
+                return int(row[0])
+            return None
+
+    def add_reaction_role(self, msg_id: int, emoji: str, role_id: int):
+        """Adds information needed for a reaction role to the table "ReactionRole".
+
+        Args:
+            msg_id (int): The id of the message which users should react to.
+            emoji (str): The emoji for the reaction role.
+            role_id (int): The id of the role for the reaction role.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.INSERT_REACTION_ROLE, (msg_id, emoji, role_id))
+            db_manager.commit()
+
+    def remove_reaction_role(self, msg_id: int, emoji: str):
+        """Removes information needed for a reaction role from the table "ReactionRole".
+
+        Args:
+            msg_id (int): The id of the message which users should react to.
+            emoji (str): The emoji for the specific reaction role.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.REMOVE_REACTION_ROLE, (msg_id, emoji))
+            db_manager.commit()
+
+    def clear_reaction_roles(self, msg_id: int) -> bool:
+        """Removes all information needed for the reaction roles of a specific message from the table "ReactionRole".
+
+        Args:
+            msg_id (int): The id of the message which reaction roles should be removed.
+
+        Returns:
+            bool: A boolean indicating if any reaction roles have been deleted.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            affected_rows = db_manager.execute(queries.CLEAR_REACTION_ROLES, (msg_id,)).rowcount
+            db_manager.commit()
+
+            return affected_rows != 0
+
+    def add_reaction_role_group(self, msg_id: int):
+        """Adds the id of a message to the table "ReactionRoleGroup".
+
+        The existence of a message id in this table indicates, that a user should only be able to have one of the
+        specified reaction roles of a message at any time given.
+
+        Args:
+            msg_id (int): The id of the message which users can react to.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.INSERT_REACTION_ROLE_GROUP, (msg_id,))
+            db_manager.commit()
+
+    def remove_reaction_role_group(self, msg_id: int):
+        """Removes the id of a message from the table "ReactionRoleGroup".
+
+        The absence of a message id in this table indicates, that a user can have multiple reaction roles of this
+        message at once.
+
+        Args:
+            msg_id (int): The id of the message which users can react to.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.REMOVE_REACTION_ROLE_GROUP, (msg_id,))
+            db_manager.commit()
+
+    def check_reaction_role_uniqueness(self, msg_id: int) -> bool:
+        """Checks if the reaction roles of a message have been declared as unique.
+
+        If yes, this means that a user can only have one of these roles at any time given.
+
+        Args:
+            msg_id (int): The id of the message which users can react to.
+
+        Returns:
+            bool: A boolean indicating if the reaction roles of a message have been declared as unique.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.IS_REACTION_ROLE_UNIQUE, (msg_id,))
+
+            row = result.fetchone()
+            return bool(row[0])
 
     def add_suggestion(self, author_id: int, timestamp: datetime.datetime) -> int:
         """Adds a suggestion to the table "Suggestion".

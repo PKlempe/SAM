@@ -253,7 +253,7 @@ class ModerationCog(commands.Cog):
         if not user_id:
             raise commands.BadArgument("The warning with the specified ID doesn't exist.")
 
-        user = self.bot.get_guild(int(constants.SERVER_ID)).get_member(int(user_id))
+        user = self.bot.get_guild(int(constants.SERVER_ID)).get_member(user_id)
 
         self._db_connector.remove_member_warning(warning_id)
         log.info("Warning #%s has been removed from %s.", warning_id, user)
@@ -643,6 +643,7 @@ class ModerationCog(commands.Cog):
     @ban_user.error
     @tempban_user.error
     @kick_user.error
+    @member_nicknames.error
     @user_info.error
     @user_avatar.error
     async def convert_user_error(self, ctx: commands.Context, error: commands.CommandError):
