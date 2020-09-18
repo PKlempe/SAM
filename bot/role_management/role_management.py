@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 
 from bot import constants
-from bot.logger import command_log
+from bot.logger import command_log, log
 from bot.persistence import DatabaseConnector
 
 
@@ -35,6 +35,8 @@ class RoleManagementCog(commands.Cog):
         Allows members to assign/remove so called mod roles to/from themselves. This way users can toggle text channels
         about specific courses to be visible or not to them. When the operation is finished, SAM will send an overview
         about the changes he did per direct message to the user who invoked the command.
+        Keep in mind that this only works if the desired role has been whitelisted as a module role by the bot owner.
+
         If the command is invoked outside of the configured role channel, the bot will post a short info that this
         command should only be invoked there and delete this message shortly after.
 
@@ -60,6 +62,9 @@ class RoleManagementCog(commands.Cog):
             try:
                 role = await converter.convert(ctx, module_upper)
 
+                if not self._db_connector.check_module_role(role.id):
+                    raise commands.BadArgument("The specified role hasn't been whitelisted as a module role.")
+
                 if role in ctx.author.roles:
                     await ctx.author.remove_roles(role, atomic=True, reason="Selbstständig entfernt via SAM.")
                     modules_removed.append(module_upper)
@@ -68,6 +73,9 @@ class RoleManagementCog(commands.Cog):
                     modules_added.append(module_upper)
             except commands.BadArgument:
                 modules_error.append(module_upper)
+
+        if len(modules_error) < len(modules):
+            log.info("Module roles of the member %s have been changed.", ctx.author)
 
         embed = _create_embed_module_roles(modules_added, modules_removed, modules_error)
         await ctx.author.send(embed=embed)
@@ -88,12 +96,12 @@ class RoleManagementCog(commands.Cog):
 
         try:
             self._db_connector.add_module_role(module_role.id)
+            log.info("Role \"%s\" has been whitelisted as a module role.", module_role)
+
             await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde erfolgreich zu den verfügbaren Modul-Rollen "
-                           f"hinzugefügt.",
-                           delete_after=constants.TIMEOUT_INFORMATION)
+                           f"hinzugefügt.")
         except IntegrityError:
-            await ctx.send(f"Die Rolle \"**__{module_role}__**\" gehört bereits zu den verfügbaren Modul-Rollen.",
-                           delete_after=constants.TIMEOUT_INFORMATION)
+            await ctx.send(f"Die Rolle \"**__{module_role}__**\" gehört bereits zu den verfügbaren Modul-Rollen.")
 
     @toggle_module.command(name="remove", hidden=True)
     @commands.is_owner()
@@ -110,8 +118,9 @@ class RoleManagementCog(commands.Cog):
         module_role = await commands.RoleConverter().convert(ctx, module_name.upper())
 
         self._db_connector.remove_module_role(module_role.id)
-        await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde aus den verfügbaren Modul-Rollen entfernt.",
-                       delete_after=constants.TIMEOUT_INFORMATION)
+        log.info("Role \"%s\" has been disabled as a module role.", module_role)
+
+        await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde aus den verfügbaren Modul-Rollen entfernt.")
 
     @add_module_role.error
     @remove_module_role.error

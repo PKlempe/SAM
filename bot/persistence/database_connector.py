@@ -155,6 +155,21 @@ class DatabaseConnector:
             db_manager.execute(queries.REMOVE_MODULE_ROLE, (role_id,))
             db_manager.commit()
 
+    def check_module_role(self, role_id: int) -> bool:
+        """Check if there's an entry for the specified role in the table "ModuleRole".
+
+        Args:
+            role_id (int): The id of the role which needs to be checked.
+
+        Returns:
+            bool: A boolean indicating if the role has been whitelisted.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.CHECK_IF_MODULE_ROLE, (role_id,))
+
+            row = result.fetchone()
+            return bool(row[0])
+
     def add_suggestion(self, author_id: int, timestamp: datetime.datetime) -> int:
         """Adds a suggestion to the table "Suggestion".
 
