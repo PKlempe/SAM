@@ -9,11 +9,11 @@ from sqlite3 import IntegrityError
 from typing import Dict, List, Optional, Union, Iterable, Tuple, Callable, Awaitable
 
 import discord
-import aiohttp
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext import commands
 
 from bot import constants
+from bot import singletons
 from bot.logger import command_log
 from bot.persistence import DatabaseConnector
 from bot.utility import SelectionEmoji
@@ -30,7 +30,6 @@ class UniversityCog(commands.Cog):
         """
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
-        self.http_session = aiohttp.ClientSession()
 
         # Channel instances
         self.ch_group_exchange = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_GROUP_EXCHANGE))
@@ -79,7 +78,7 @@ class UniversityCog(commands.Cog):
         search_filters = "%20%2Be%20c%3A6"  # URL Encoding
         query_url = constants.URL_UFIND_API + "/staff/?query=" + search_term + search_filters
 
-        async with self.http_session.get(query_url) as response:
+        async with singletons.http_session.get(query_url) as response:
             response.raise_for_status()
             await response.text(encoding='utf-8')
 
@@ -92,7 +91,7 @@ class UniversityCog(commands.Cog):
         index = await self._staff_selection(ctx.author, ctx.channel, persons) if len(persons) > 1 else 0
         staff_url = constants.URL_UFIND_API + "/staff/" + persons[index].attrib["id"]
 
-        async with self.http_session.get(staff_url) as response:
+        async with singletons.http_session.get(staff_url) as response:
             response.raise_for_status()
             await response.text(encoding='utf-8')
 
@@ -692,8 +691,8 @@ def _create_embed_staff(staff_data: Dict[str, Union[datetime, str, None]]) -> di
     """
     embed = discord.Embed(color=constants.EMBED_COLOR_UNIVERSITY, title=staff_data["title"],
                           timestamp=staff_data["last_modified"])
-    # embed.set_thumbnail(url=constants.URL_UFIND_LOGO)
-    embed.set_footer(text="powered by u:find <> Zuletzt geändert")
+
+    embed.set_footer(text="powered by u:find \U000026A1 Zuletzt geändert")
     embed.add_field(name="Kontakt", inline=True, value=staff_data["contact"])
     embed.add_field(name="Weblinks", inline=True, value=staff_data["weblinks"])
     if staff_data["office_hours"] is not None:

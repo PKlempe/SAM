@@ -4,11 +4,12 @@ import asyncio
 import traceback
 
 import discord
-from aiohttp import ClientResponseError
 from discord.ext import commands
+from aiohttp import ClientResponseError
 
 from bot import constants
 from bot.logger import log
+
 
 bot = commands.Bot(command_prefix=constants.BOT_PREFIX)
 
