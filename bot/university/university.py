@@ -9,7 +9,7 @@ from sqlite3 import IntegrityError
 from typing import Dict, List, Optional, Union, Iterable, Tuple, Callable, Awaitable
 
 import discord
-import requests
+import aiohttp
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext import commands
 
@@ -30,6 +30,7 @@ class UniversityCog(commands.Cog):
         """
         self.bot = bot
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
+        self.http_session = aiohttp.ClientSession()
 
         # Channel instances
         self.ch_group_exchange = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_GROUP_EXCHANGE))
@@ -76,28 +77,29 @@ class UniversityCog(commands.Cog):
             search_term (str): The term to be searched for (most likely firstname, lastname or both).
         """
         search_filters = "%20%2Be%20c%3A6"  # URL Encoding
-        response = requests.get(constants.URL_UFIND_API + "/staff/?query=" + search_term + search_filters)
-        response.encoding = "utf-8"
+        query_url = constants.URL_UFIND_API + "/staff/?query=" + search_term + search_filters
 
-        if response.status_code == 200:
-            xml = ET.fromstring(response.text)
-            persons = xml.findall("person")
-            index = 0
-
-            if len(persons) > 0:
-                if len(persons) > 1:
-                    index = await self._staff_selection(ctx.author, ctx.channel, persons)
-
-                response = requests.get(constants.URL_UFIND_API + "/staff/" + persons[index].attrib["id"])
-                response.encoding = "utf-8"
-
-                staff_data = _parse_staff_xml(response.text)
-                embed = _create_embed_staff(staff_data)
-                await ctx.channel.send(embed=embed)
-            else:
-                raise ValueError("No person with the specified name was found.")
-        else:
+        async with self.http_session.get(query_url) as response:
             response.raise_for_status()
+            await response.text(encoding='utf-8')
+
+            xml = ET.fromstring(await response.text())
+
+        persons = xml.findall("person")
+        if not persons:
+            raise ValueError("No person with the specified name was found.")
+
+        index = await self._staff_selection(ctx.author, ctx.channel, persons) if len(persons) > 1 else 0
+        staff_url = constants.URL_UFIND_API + "/staff/" + persons[index].attrib["id"]
+
+        async with self.http_session.get(staff_url) as response:
+            response.raise_for_status()
+            await response.text(encoding='utf-8')
+
+            staff_data = _parse_staff_xml(await response.text())
+
+        embed = _create_embed_staff(staff_data)
+        await ctx.channel.send(embed=embed)
 
     @ufind_get_staff_data.error
     async def ufind_error(self, ctx, error: commands.CommandError):
@@ -111,8 +113,8 @@ class UniversityCog(commands.Cog):
             error (commands.CommandError): The error raised during the execution of the command.
         """
         if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
-            await ctx.send("Ich konnte leider niemanden unter dem von dir angegeben Namen finden. :slight_frown: "
-                           "Möglicherweise hast du dich vertippt.")
+            await ctx.send("Ich konnte leider niemanden unter dem von dir angegeben Namen finden. :slight_frown:\n"
+                           "Hast du dich möglicherweise vertippt?")
 
     async def _staff_selection(self, author: discord.User, channel: discord.TextChannel, persons: List[ET.Element]) \
             -> int:
