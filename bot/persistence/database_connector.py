@@ -266,6 +266,8 @@ class DatabaseConnector:
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(queries.IS_REACTION_ROLE_UNIQUE, (msg_id,))
 
+            return bool(result[0])
+
     def add_suggestion(self, author_id: int, timestamp: datetime.datetime) -> int:
         """Adds a suggestion to the table "Suggestion".
 
