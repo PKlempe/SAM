@@ -19,6 +19,7 @@ GET_SUGGESTION_BY_ID = "SELECT MessageID, StatusID, AuthorID FROM Suggestion WHE
 # Module Roles
 INSERT_MODULE_ROLE = "INSERT INTO ModuleRole (RoleID) VALUES (?)"
 REMOVE_MODULE_ROLE = "DELETE FROM ModuleRole WHERE RoleID = ?"
+CHECK_IF_MODULE_ROLE = "SELECT EXISTS(SELECT 1 FROM ModuleRole WHERE RoleID = ?)"
 
 
 # Reaction Roles
