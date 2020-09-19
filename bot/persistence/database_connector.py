@@ -211,7 +211,7 @@ class DatabaseConnector:
 
             return affected_rows != 0
 
-    def add_reaction_role_group(self, msg_id: int):
+    def add_reaction_role_uniqueness_group(self, msg_id: int):
         """Adds the id of a message to the table "ReactionRoleGroup".
 
         The existence of a message id in this table indicates, that a user should only be able to have one of the
@@ -221,10 +221,10 @@ class DatabaseConnector:
             msg_id (int): The id of the message which users can react to.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.INSERT_REACTION_ROLE_GROUP, (msg_id,))
+            db_manager.execute(queries.INSERT_REACTION_ROLE_UNIQUENESS_GROUP, (msg_id,))
             db_manager.commit()
 
-    def remove_reaction_role_group(self, msg_id: int):
+    def remove_reaction_role_uniqueness_group(self, msg_id: int):
         """Removes the id of a message from the table "ReactionRoleGroup".
 
         The absence of a message id in this table indicates, that a user can have multiple reaction roles of this
@@ -234,10 +234,10 @@ class DatabaseConnector:
             msg_id (int): The id of the message which users can react to.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            db_manager.execute(queries.REMOVE_REACTION_ROLE_GROUP, (msg_id,))
+            db_manager.execute(queries.REMOVE_REACTION_ROLE_UNIQUENESS_GROUP, (msg_id,))
             db_manager.commit()
 
-    def check_reaction_role_uniqueness(self, msg_id: int) -> bool:
+    def is_reaction_role_uniqueness_group(self, msg_id: int) -> bool:
         """Checks if the reaction roles of a message have been declared as unique.
 
         If yes, this means that a user can only have one of these roles at any time given.

@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS ReactionRole(
     PRIMARY KEY (MessageID, Emoji)
 );
 
-CREATE TABLE IF NOT EXISTS ReactionRoleGroup(
+CREATE TABLE IF NOT EXISTS ReactionRoleUniquenessGroup(
     MessageID TEXT PRIMARY KEY
 );
 

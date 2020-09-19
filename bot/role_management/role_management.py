@@ -199,7 +199,7 @@ class RoleManagementCog(commands.Cog):
         log.info("A reaction role has been removed from the message with id %s.", message.id)
 
         if len(message.reactions) == 1:
-            self._db_connector.remove_reaction_role_group(message.id)
+            self._db_connector.remove_reaction_role_uniqueness_group(message.id)
 
         await ctx.send(":white_check_mark: Die Reaction-Role wurde erfolgreich entfernt.")
 
@@ -221,7 +221,7 @@ class RoleManagementCog(commands.Cog):
                            f"Reaction-Roles besitzen.")
             return
         had_reaction_roles = self._db_connector.clear_reaction_roles(message.id)
-        self._db_connector.remove_reaction_role_group(message.id)
+        self._db_connector.remove_reaction_role_uniqueness_group(message.id)
 
         if not had_reaction_roles:
             await ctx.send("Die von dir angegebene Nachricht hat keine Reaction-Roles. :face_with_monocle:")
@@ -249,14 +249,14 @@ class RoleManagementCog(commands.Cog):
             await ctx.send(":x: Die angegebene Nachricht besitzt keine Reaction-Roles.")
             return
 
-        if self._db_connector.check_reaction_role_uniqueness(message.id):
-            self._db_connector.remove_reaction_role_group(message.id)
+        if self._db_connector.is_reaction_role_uniqueness_group(message.id):
+            self._db_connector.remove_reaction_role_uniqueness_group(message.id)
             log.info("A reaction role has been added to the message with id %s.", message.id)
 
             await ctx.send(":white_check_mark: Die Reaction-Roles der angegebenen Nachricht sind nicht mehr "
                            "\"exklusiv\".")
         else:
-            self._db_connector.add_reaction_role_group(message.id)
+            self._db_connector.add_reaction_role_uniqueness_group(message.id)
             await ctx.send(":white_check_mark: Die Reaction-Roles der angegebenen Nachricht sind nun \"exklusiv\".")
 
     @add_reaction_role.error
@@ -287,7 +287,7 @@ class RoleManagementCog(commands.Cog):
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
         if payload.channel_id == self.ch_role.id and not payload.member.bot:
-            if self._db_connector.check_reaction_role_uniqueness(payload.message_id):
+            if self._db_connector.is_reaction_role_uniqueness_group(payload.message_id):
                 message = await self.ch_role.fetch_message(payload.message_id)
 
                 for reaction in message.reactions:
@@ -325,7 +325,7 @@ class RoleManagementCog(commands.Cog):
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
         if payload.channel_id == self.ch_role.id:
-            self._db_connector.remove_reaction_role_group(payload.message_id)
+            self._db_connector.remove_reaction_role_uniqueness_group(payload.message_id)
 
 
 def _create_embed_module_roles(modules_added: List[str], modules_removed: List[str], modules_error: List[str]) \
