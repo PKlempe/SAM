@@ -17,6 +17,17 @@ CREATE TABLE IF NOT EXISTS ModuleRole(
     RoleID TEXT PRIMARY KEY
 );
 
+CREATE TABLE IF NOT EXISTS ReactionRole(
+    MessageID TEXT NOT NULL,
+    Emoji TEXT NOT NULL,
+    RoleID TEXT NOT NULL,
+    PRIMARY KEY (MessageID, Emoji)
+);
+
+CREATE TABLE IF NOT EXISTS ReactionRoleUniquenessGroup(
+    MessageID TEXT PRIMARY KEY
+);
+
 CREATE TABLE IF NOT EXISTS MemberWarning(
     ID INTEGER PRIMARY KEY,
     UserID TEXT NOT NULL,
