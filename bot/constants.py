@@ -7,7 +7,7 @@ load_dotenv(find_dotenv())
 
 
 # Bot Settings
-BOT_PREFIX = '$'
+BOT_PREFIX = '!'
 INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
                  "RoleManagementCog":   'bot.role_management.role_management',
                  "ModerationCog":       'bot.moderation.moderation',
