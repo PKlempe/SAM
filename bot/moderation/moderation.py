@@ -12,7 +12,7 @@ from bot import constants, singletons
 from bot.logger import command_log, log
 from bot.moderation import ModmailStatus
 from bot.persistence import DatabaseConnector
-from bot.util.time_parsing import get_future_timestamp, get_pretty_string_duration
+from bot.utility.time_parsing import get_future_timestamp, get_pretty_string_duration
 
 
 class ModerationCog(commands.Cog):

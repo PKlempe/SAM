@@ -124,10 +124,12 @@ CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT") or "Undefined"
 CHANNEL_ID_MODLOG = os.getenv("CHANNEL_ID_MODLOG") or "Undefined"
 CHANNEL_ID_NEWS = os.getenv("CHANNEL_ID_NEWS") or "Undefined"
 CHANNEL_ID_RULES = os.getenv("CHANNEL_ID_RULES") or "Undefined"
+CHANNEL_ID_FAQ = os.getenv("CHANNEL_ID_FAQ") or "Undefined"
 CHANNEL_ID_REPORT = os.getenv("CHANNEL_ID_REPORT") or "Undefined"
 CHANNEL_ID_MODMAIL = os.getenv("CHANNEL_ID_MODMAIL") or "Undefined"
 CHANNEL_ID_ROLES = os.getenv("CHANNEL_ID_ROLES") or "Undefined"
 CHANNEL_ID_SUGGESTIONS = os.getenv("CHANNEL_ID_SUGGESTIONS") or "Undefined"
+CHANNEL_ID_QUESTIONS = os.getenv("CHANNEL_ID_QUESTIONS") or "Undefined"
 CHANNEL_ID_GROUP_EXCHANGE = os.getenv("CHANNEL_ID_GROUP_EXCHANGE") or "Undefined"
 
 ## Role IDs

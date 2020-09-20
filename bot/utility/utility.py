@@ -121,6 +121,44 @@ class UtilityCog(commands.Cog):
                                  "angepinnt. :pushpin:\nEin {0} könnte in diesem Fall die Pins ein wenig aufräumen. "
                                  ":broom:".format(self.role_moderator.mention))
 
+    @commands.Cog.listener(name='on_member_join')
+    async def welcome_message(self, user: discord.Member):
+        """Event listener which triggers if a user joins the server.
+
+        If the server gets a new member, the bot automatically welcomes him by sending a private message with some
+        usefull tips.
+
+        Args:
+            user (discord.Member): The new member on the server.
+        """
+        content = "Hallo! :wave: :grinning:\nIch bin **SAM**, der Management-Bot für den Discord-Server der " \
+                  "**__Uni Wien INF/WINF__**. Es freut mich sehr, dass du zu uns gefunden hast!\n\nHier ein paar " \
+                  "Tipps damit du sofort durchstarten kannst:"
+
+        description = "**- Hol dir als __allererstes__ ein paar Rollen im Channel <#{0}>.**\n" \
+                      "Was das genau bedeutet und wie es funktioniert, wird dir dort in einer kurzen Anleitung " \
+                      "erklärt.\n\n" \
+                      "**- Lies dir unsere <#{1}> durch.**\n" \
+                      "Wir legen großen Wert darauf, dass sich auch wirklich jeder auf unserem Server wohlfühlt. Um " \
+                      "dies zu gewährleisten, gibt es eine Gruppe an Moderatoren, die für die Einhaltung der Regeln " \
+                      "sorgen und bei Problemen auch jederzeit kontaktiert werden können.\n\n" \
+                      "**- Sieh dir die <#{2}> an.**\n" \
+                      "Dort findest du Antworten zu den am häufigsten gestellten Fragen. Sollte das nicht " \
+                      "ausreichen, dann stelle einfach eine neue Frage in <#{3}> oder schreibe einen " \
+                      "Moderator direkt an.\n\n" \
+                      "**- Hab Spaß und sei Teil der Community! :heart:**\n" \
+                      "Unser Ziel ist es eine zentrale Anlaufstelle für Studierende zu schaffen, was nur mithilfe " \
+                      "unserer Mitglieder funktionieren kann. Stelle/Beantworte Fragen, teile Unterlagen/Lösungen " \
+                      "mit anderen und starte bzw. nimm an Diskussionen teil. Getrau dich ruhig aktiv zu sein, wir " \
+                      "sind hier auf Discord sowieso alle anonym. :spy:\n" \
+            .format(constants.CHANNEL_ID_ROLES, constants.CHANNEL_ID_RULES, constants.CHANNEL_ID_FAQ,
+                    constants.CHANNEL_ID_QUESTIONS)
+
+        embed = discord.Embed(description=description, color=constants.EMBED_COLOR_INFO) \
+            .add_field(name=constants.ZERO_WIDTH_SPACE, value="> **Ein Studium ist nicht immer leicht, aber "
+                                                              "__gemeinsam__ schaffen wir das!** :muscle:")
+        await user.send(content=content, embed=embed)
+
 
 def build_serverinfo_strings(guild: discord.Guild) -> List[str]:
     """Function for building the strings needed for the serverinfo Embed.
