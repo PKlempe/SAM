@@ -2,9 +2,18 @@
 import atexit
 from asyncio import get_event_loop
 from aiohttp import ClientSession
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+
+from bot.constants import DB_FILE_PATH
 
 
 http_session = ClientSession()
+scheduler = AsyncIOScheduler(job_defaults={'misfire_grace_time': 24*60*60},
+                             jobstores={'default': SQLAlchemyJobStore(
+                                 url=f'sqlite:///{DB_FILE_PATH}')})
+
+scheduler.start()
 
 
 @atexit.register

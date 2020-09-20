@@ -7,10 +7,8 @@ import operator
 
 import discord
 from discord.ext import commands
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
-from bot import constants
+from bot import constants, singletons
 from bot.logger import command_log, log
 from bot.moderation import ModmailStatus
 from bot.persistence import DatabaseConnector
@@ -27,10 +25,6 @@ class ModerationCog(commands.Cog):
             bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
         """
         self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
-        self.scheduler = AsyncIOScheduler(job_defaults={'misfire_grace_time': 24*60*60},
-                                          jobstores={'default': SQLAlchemyJobStore(
-                                              url=f'sqlite:///{constants.DB_FILE_PATH}')})
-        self.scheduler.start()
 
         # Static variable which is needed for running jobs created by the scheduler. A lot of data structures provided
         # by discord.py can't be pickled (serialized) which is why IDs are being used instead. For converting them into
@@ -185,7 +179,8 @@ class ModerationCog(commands.Cog):
         embed = _build_server_lockdown_lift_embed()
         await self.ch_server_news.send(embed=embed)
 
-        modlog_embed = _build_modlog_embed("Aufhebung: Server-Lockdown :unlock:", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+        modlog_embed = _build_modlog_embed("Aufhebung: Server-Lockdown :unlock:",
+                                           color=constants.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=None, reason=None)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -230,8 +225,8 @@ class ModerationCog(commands.Cog):
                                         self.ch_rules)
         await user.send(embed=embed)
 
-        modlog_embed = _build_modlog_embed("Verwarnung :warning:", color=constants.EMBED_COLOR_MODLOG_WARN, moderator=ctx.author,
-                                           user=user, reason=reason)
+        modlog_embed = _build_modlog_embed("Verwarnung :warning:", color=constants.EMBED_COLOR_MODLOG_WARN,
+                                           moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
         await self.check_warnings(ctx, user)
@@ -310,6 +305,7 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             user (discord.Member): The member who should be muted.
+            reason (Optional[str]): The reason provided by the moderator.
         """
         if self.role_muted in user.roles:
             await ctx.send("Dieser Nutzer ist bereits stummgeschalten. :flushed:")
@@ -346,7 +342,8 @@ class ModerationCog(commands.Cog):
         await user.remove_roles(self.role_muted, reason=reason)
         log.info("Member %s has been unmuted.", user)
 
-        modlog_embed = _build_modlog_embed("Aufhebung: Stummschaltung :speaker:", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+        modlog_embed = _build_modlog_embed("Aufhebung: Stummschaltung :speaker:",
+                                           color=constants.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -392,9 +389,7 @@ class ModerationCog(commands.Cog):
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
-        self.scheduler.add_job(_scheduled_unmute_user, 'date', run_date=run_date,
-                               args=[constants.SERVER_ID, self.role_muted.id, user.id, self.ch_rules.id,
-                                     self.ch_modlog.id])
+        singletons.scheduler.add_job(_scheduled_unmute_user, 'date', run_date=run_date, args=[user.id])
 
     @commands.command(name='ban', hidden=True)
     @command_log
@@ -421,8 +416,8 @@ class ModerationCog(commands.Cog):
                                         reason, self.ch_rules)
         await user.send(embed=embed)
 
-        modlog_embed = _build_modlog_embed("Server-Bann :do_not_litter:", color=constants.EMBED_COLOR_MODLOG_BAN, moderator=ctx.author,
-                                           user=user, reason=reason)
+        modlog_embed = _build_modlog_embed("Server-Bann :do_not_litter:", color=constants.EMBED_COLOR_MODLOG_BAN,
+                                           moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
     @commands.command(name='tempban', hidden=True)
@@ -454,12 +449,12 @@ class ModerationCog(commands.Cog):
                                                 pretty_duration), reason, self.ch_rules)
         await user.send(embed=embed)
 
-        modlog_embed = _build_modlog_embed("Temporärer Server-Bann :do_not_litter:", color=constants.EMBED_COLOR_MODLOG_BAN,
+        modlog_embed = _build_modlog_embed("Temporärer Server-Bann :do_not_litter:",
+                                           color=constants.EMBED_COLOR_MODLOG_BAN,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
-        self.scheduler.add_job(_scheduled_unban_user, 'date', run_date=run_date,
-                               args=[constants.SERVER_ID, user.id, self.ch_rules.id, self.ch_modlog.id])
+        singletons.scheduler.add_job(_scheduled_unban_user, 'date', run_date=run_date, args=[user.id])
 
     @tempmute_user.error
     @tempban_user.error
@@ -496,8 +491,8 @@ class ModerationCog(commands.Cog):
                                         reason, self.ch_rules)
         await user.send(embed=embed)
 
-        modlog_embed = _build_modlog_embed("Server-Kick :anger:", color=constants.EMBED_COLOR_MODLOG_KICK, moderator=ctx.author,
-                                           user=user, reason=reason)
+        modlog_embed = _build_modlog_embed("Server-Kick :anger:", color=constants.EMBED_COLOR_MODLOG_KICK,
+                                           moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
     @commands.command(name='namehistory', hidden=True, aliases=["aka"])
@@ -732,6 +727,10 @@ class ModerationCog(commands.Cog):
             await purge_channel.send('**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'
                                      .format(len(deleted_messages) - 1), delete_after=constants.TIMEOUT_INFORMATION)
             log.info("SAM deleted %s messages in [#%s]", len(deleted_messages), purge_channel)
+
+            embed = _build_modlog_embed("Purge", color=constants.EMBED_COLOR_MODLOG_PURGE,
+                                        moderator=ctx.author, user=None, reason=None)
+            await self.ch_modlog.send(embed=embed)
 
     @purge_messages.error
     async def purge_messages_error(self, ctx: commands.Context, error: commands.CommandError):
@@ -990,24 +989,20 @@ class ModerationCog(commands.Cog):
             self._db_connector.add_member_name(before.id, before.display_name, datetime.utcnow())
 
 
-async def _scheduled_unmute_user(server_id: int, role_id: int, user_id: int, ch_rules_id: int, ch_modlog_id: int):
+async def _scheduled_unmute_user(user_id: int):
     """Method which is being called by the scheduler if the specified amount of time for the corresponding tempmute has
     ran out.
 
     Unmutes a user with the specified ID on a specific server.
 
     Args:
-        server_id (int): The id of the server where the user should be unbanned from.
-        role_id (int): The id of the mute role which should be removed from the user.
         user_id (int): The id of the user who should be unmuted.
-        ch_rules_id (int): The id of the rules channel.
-        ch_modlog_id (int): The id of the modlog channel.
     """
-    guild = ModerationCog.bot.get_guild(int(server_id))
+    guild = ModerationCog.bot.get_guild(int(constants.SERVER_ID))
     user = guild.get_member(int(user_id))
-    role = guild.get_role(int(role_id))
-    ch_rules = guild.get_channel(int(ch_rules_id))
-    ch_modlog = guild.get_channel(int(ch_modlog_id))
+    role = guild.get_role(int(constants.ROLE_ID_MUTED))
+    ch_rules = guild.get_channel(int(constants.CHANNEL_ID_RULES))
+    ch_modlog = guild.get_channel(int(constants.CHANNEL_ID_MODLOG))
 
     await user.remove_roles(role, reason="Die für den Tempmute festgelegte Zeitdauer ist ausgelaufen.")
     await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr stummgeschalten! :speaker: Versuch "
@@ -1021,22 +1016,19 @@ async def _scheduled_unmute_user(server_id: int, role_id: int, user_id: int, ch_
     await ch_modlog.send(embed=modlog_embed)
 
 
-async def _scheduled_unban_user(server_id: int, user_id: int, ch_rules_id: int, ch_modlog_id: int):
+async def _scheduled_unban_user(user_id: int):
     """Method which is being called by the scheduler if the specified amount of time for the corresponding tempban has
     ran out.
 
     Unbans a user with the specified ID on a specific server.
 
     Args:
-        server_id (int): The id of the server where the user should be unbanned from.
         user_id (int): The id of the user who should be unbanned.
-        ch_rules_id (int): The id of the rules channel.
-        ch_modlog_id (int): The id of the modlog channel.
     """
-    guild = ModerationCog.bot.get_guild(int(server_id))
+    guild = ModerationCog.bot.get_guild(int(constants.SERVER_ID))
     user = await ModerationCog.bot.fetch_user(int(user_id))
-    ch_rules = guild.get_channel(int(ch_rules_id))
-    ch_modlog = guild.get_channel(int(ch_modlog_id))
+    ch_rules = guild.get_channel(int(constants.CHANNEL_ID_RULES))
+    ch_modlog = guild.get_channel(int(constants.CHANNEL_ID_MODLOG))
 
     await user.unban(reason="Die für den Tempban festgelegte Zeitdauer ist ausgelaufen.")
     await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr von **__{guild}__** gebannt! :unlock: "
