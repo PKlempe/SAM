@@ -17,10 +17,12 @@ INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
 
 
 # Job Times
-DATE_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER = {"month": "9", "day": "21", "hour": "4", "minute": "0"}
-DATE_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER = {"month": "11", "day": "1", "hour": "4", "minute": "0"}
-DATE_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER = {"month": "2", "day": "20", "hour": "4", "minute": "0"}
-DATE_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER = {"month": "4", "day": "1", "hour": "4", "minute": "0"}
+#JOB_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER = {"job_id": "op_ex_ws", "day": "21", "month": "9", "hour": "4", "minute": "0"}
+JOB_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER = {"job_id": "op_ex_ws", "day": "20", "month": "9", "hour": "15", "minute": "47"}
+
+JOB_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER = {"job_id": "cl_ex_ws", "day": "1", "month": "11", "hour": "4", "minute": "0"}
+JOB_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER = {"job_id": "op_ex_ss", "day": "20", "month": "2", "hour": "4", "minute": "0"}
+JOB_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER = {"job_id": "cl_ex_ss", "day": "1", "month": "4", "hour": "4", "minute": "0"}
 
 
 # Important URLs
@@ -74,6 +76,7 @@ EMBED_COLOR_SUGGESTION_IMPLEMENTED = 0x3498DB
 EMBED_COLOR_SUGGESTION_MEMBERS_LIKE = 0xADFF2F
 EMBED_COLOR_SUGGESTION_MEMBERS_DISLIKE = 0xCD5C5C
 
+EMBED_COLOR_MODLOG_PURGE = 0x000000
 EMBED_COLOR_MODLOG_REPEAL = 0xF5F50C
 EMBED_COLOR_MODLOG_WARN = 0xFF9D00
 EMBED_COLOR_MODLOG_KICK = 0xDC143C

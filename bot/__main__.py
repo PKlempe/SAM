@@ -7,20 +7,20 @@ import discord
 from discord.ext import commands
 from aiohttp import ClientResponseError
 
-from bot import constants
+from bot import constants as const
 from bot.logger import log
 
 
-bot = commands.Bot(command_prefix=constants.BOT_PREFIX)
+bot = commands.Bot(command_prefix=const.BOT_PREFIX)
 
 
 @bot.event
 async def on_ready():
     """Event handler for the Bot entering the ready state."""
-    print('- Logged in as: {0.user}'.format(bot))
+    print('- Successfully logged in as: {0.user}'.format(bot))
 
-    print('- Initialising extensions...')
-    for extension in constants.INITIAL_EXTNS.values():
+    print('- Initialising & Loading extensions...')
+    for extension in const.INITIAL_EXTNS.values():
         bot.load_extension(extension)
 
     print("\n\n======== BOT IS UP & RUNNING ========\n\n")
@@ -52,20 +52,20 @@ async def on_command_error(ctx, exception):
 
     if isinstance(exception, commands.CommandInvokeError) and isinstance(exception.original, asyncio.TimeoutError):
         await ctx.send("Du konntest dich wohl nicht entscheiden. Kein Problem, du kannst es einfach später nochmal "
-                       "versuchen. :smile:", delete_after=constants.TIMEOUT_INFORMATION)
+                       "versuchen. :smile:", delete_after=const.TIMEOUT_INFORMATION)
     elif isinstance(exception, commands.CommandInvokeError) and \
             isinstance(exception.original, ClientResponseError):
         status_code = exception.original.status
         reason = exception.original.message
 
         embed = discord.Embed(title="HTTP Error: {0}".format(status_code), description=reason,
-                              image=constants.URL_HTTP_CAT + f"/{status_code}.jpg")
+                              image=const.URL_HTTP_CAT + f"/{status_code}.jpg")
         await ctx.channel.send(content="Oh, oh. Anscheinend gibt es momentan ein Verbindungsproblem. :scream_cat:",
                                embed=embed)
-    elif isinstance(exception, commands.MissingRequiredArgument):
+    elif isinstance(exception, commands.MissingRequiredArgument) and ctx.channel.id != const.CHANNEL_ID_GROUP_EXCHANGE:
         await ctx.send_help(ctx.command)
 
 
 if __name__ == '__main__':
     print("- Contacting Discord servers...")
-    bot.run(constants.DISCORD_BOT_TOKEN)
+    bot.run(const.DISCORD_BOT_TOKEN)
