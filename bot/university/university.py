@@ -9,11 +9,11 @@ from sqlite3 import IntegrityError
 from typing import Dict, List, Optional, Union, Iterable, Tuple, Callable, Awaitable
 
 import discord
-import requests
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext import commands
 
 from bot import constants
+from bot import singletons
 from bot.logger import command_log
 from bot.persistence import DatabaseConnector
 from bot.utility import SelectionEmoji
@@ -76,28 +76,29 @@ class UniversityCog(commands.Cog):
             search_term (str): The term to be searched for (most likely firstname, lastname or both).
         """
         search_filters = "%20%2Be%20c%3A6"  # URL Encoding
-        response = requests.get(constants.URL_UFIND_API + "/staff/?query=" + search_term + search_filters)
-        response.encoding = "utf-8"
+        query_url = constants.URL_UFIND_API + "/staff/?query=" + search_term + search_filters
 
-        if response.status_code == 200:
-            xml = ET.fromstring(response.text)
-            persons = xml.findall("person")
-            index = 0
-
-            if len(persons) > 0:
-                if len(persons) > 1:
-                    index = await self._staff_selection(ctx.author, ctx.channel, persons)
-
-                response = requests.get(constants.URL_UFIND_API + "/staff/" + persons[index].attrib["id"])
-                response.encoding = "utf-8"
-
-                staff_data = _parse_staff_xml(response.text)
-                embed = _create_embed_staff(staff_data)
-                await ctx.channel.send(embed=embed)
-            else:
-                raise ValueError("No person with the specified name was found.")
-        else:
+        async with singletons.http_session.get(query_url) as response:
             response.raise_for_status()
+            await response.text(encoding='utf-8')
+
+            xml = ET.fromstring(await response.text())
+
+        persons = xml.findall("person")
+        if not persons:
+            raise ValueError("No person with the specified name was found.")
+
+        index = await self._staff_selection(ctx.author, ctx.channel, persons) if len(persons) > 1 else 0
+        staff_url = constants.URL_UFIND_API + "/staff/" + persons[index].attrib["id"]
+
+        async with singletons.http_session.get(staff_url) as response:
+            response.raise_for_status()
+            await response.text(encoding='utf-8')
+
+            staff_data = _parse_staff_xml(await response.text())
+
+        embed = _create_embed_staff(staff_data)
+        await ctx.channel.send(embed=embed)
 
     @ufind_get_staff_data.error
     async def ufind_error(self, ctx, error: commands.CommandError):
@@ -111,8 +112,8 @@ class UniversityCog(commands.Cog):
             error (commands.CommandError): The error raised during the execution of the command.
         """
         if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
-            await ctx.send("Ich konnte leider niemanden unter dem von dir angegeben Namen finden. :slight_frown: "
-                           "Möglicherweise hast du dich vertippt.")
+            await ctx.send("Ich konnte leider niemanden unter dem von dir angegeben Namen finden. :slight_frown:\n"
+                           "Hast du dich möglicherweise vertippt?")
 
     async def _staff_selection(self, author: discord.User, channel: discord.TextChannel, persons: List[ET.Element]) \
             -> int:
@@ -690,8 +691,8 @@ def _create_embed_staff(staff_data: Dict[str, Union[datetime, str, None]]) -> di
     """
     embed = discord.Embed(color=constants.EMBED_COLOR_UNIVERSITY, title=staff_data["title"],
                           timestamp=staff_data["last_modified"])
-    # embed.set_thumbnail(url=constants.URL_UFIND_LOGO)
-    embed.set_footer(text="powered by u:find <> Zuletzt geändert")
+
+    embed.set_footer(text="powered by u:find \U000026A1 Zuletzt geändert")
     embed.add_field(name="Kontakt", inline=True, value=staff_data["contact"])
     embed.add_field(name="Weblinks", inline=True, value=staff_data["weblinks"])
     if staff_data["office_hours"] is not None:

@@ -4,11 +4,12 @@ import asyncio
 import traceback
 
 import discord
-import requests
 from discord.ext import commands
+from aiohttp import ClientResponseError
 
 from bot import constants
 from bot.logger import log
+
 
 bot = commands.Bot(command_prefix=constants.BOT_PREFIX)
 
@@ -52,13 +53,15 @@ async def on_command_error(ctx, exception):
     if isinstance(exception, commands.CommandInvokeError) and isinstance(exception.original, asyncio.TimeoutError):
         await ctx.send("Du konntest dich wohl nicht entscheiden. Kein Problem, du kannst es einfach später nochmal "
                        "versuchen. :smile:", delete_after=constants.TIMEOUT_INFORMATION)
-    elif isinstance(exception, commands.CommandInvokeError) and isinstance(exception.original, requests.HTTPError):
-        status_code = exception.original.response.status_code
-        reason = exception.original.response.reason
+    elif isinstance(exception, commands.CommandInvokeError) and \
+            isinstance(exception.original, ClientResponseError):
+        status_code = exception.original.status
+        reason = exception.original.message
 
         embed = discord.Embed(title="HTTP Error: {0}".format(status_code), description=reason,
-                              image=constants.URL_HTTP_CAT + "/{0}.jpg".format(status_code))
-        await ctx.channel.send(content="Oh, oh. Anscheinend gibt es momentan ein Verbindungsproblem:", embed=embed)
+                              image=constants.URL_HTTP_CAT + f"/{status_code}.jpg")
+        await ctx.channel.send(content="Oh, oh. Anscheinend gibt es momentan ein Verbindungsproblem. :scream_cat:",
+                               embed=embed)
     elif isinstance(exception, commands.MissingRequiredArgument):
         await ctx.send_help(ctx.command)
 
