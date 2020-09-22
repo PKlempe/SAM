@@ -407,14 +407,15 @@ class ModerationCog(commands.Cog):
         """
         prosecutor = self.bot.user if bot_activated else ctx.author
 
-        await user.ban(reason=reason, delete_message_days=0)
-        log.info("Member %s has been banned from the server.", user)
-
-        await ctx.send(f"{user.mention} wurde gebannt. :do_not_litter:")
         embed = _build_mod_action_embed("Bann", "Du wurdest durch **__{0}__** von **__{1}__** gebannt."
                                         .format(prosecutor, self.bot.get_guild(int(constants.SERVER_ID))),
                                         reason, self.ch_rules)
         await user.send(embed=embed)
+
+        await user.ban(reason=reason, delete_message_days=0)
+        log.info("Member %s has been banned from the server.", user)
+
+        await ctx.send(f"{user.mention} wurde gebannt. :do_not_litter:")
 
         modlog_embed = _build_modlog_embed("Server-Bann :do_not_litter:", color=constants.EMBED_COLOR_MODLOG_BAN,
                                            moderator=ctx.author, user=user, reason=reason)
@@ -440,14 +441,15 @@ class ModerationCog(commands.Cog):
         run_date = get_future_timestamp(duration)
         pretty_duration = get_pretty_string_duration(duration)
 
-        await user.ban(reason=reason, delete_message_days=0)
-        log.info("Member %s has been banned from the server until %s.", user, run_date.strftime("%d.%m.%Y %H:%M:%S"))
-
-        await ctx.send(f"{user.mention} wurde für {pretty_duration} gebannt. :do_not_litter:")
         embed = _build_mod_action_embed("TempBann", "Du wurdest durch **__{0}__** von **__{1}__** für {2} gebannt."
                                         .format(prosecutor, self.bot.get_guild(int(constants.SERVER_ID)),
                                                 pretty_duration), reason, self.ch_rules)
         await user.send(embed=embed)
+
+        await user.ban(reason=reason, delete_message_days=0)
+        log.info("Member %s has been banned from the server until %s.", user, run_date.strftime("%d.%m.%Y %H:%M:%S"))
+
+        await ctx.send(f"{user.mention} wurde für {pretty_duration} gebannt. :do_not_litter:")
 
         modlog_embed = _build_modlog_embed("Temporärer Server-Bann :do_not_litter:",
                                            color=constants.EMBED_COLOR_MODLOG_BAN,
@@ -482,14 +484,15 @@ class ModerationCog(commands.Cog):
             user (discord.Member): The member who should be kicked.
             reason (Optional[str]): The reason provided by the moderator.
         """
-        await user.kick(reason=reason)
-        log.info("Member %s has been kicked from the server.", user)
-
-        await ctx.send(f"{user.mention} wurde gekickt. :anger:")
         embed = _build_mod_action_embed("Kick", "Du wurdest durch **__{0}__** von **__{1}__** gekickt."
                                         .format(ctx.author, self.bot.get_guild(int(constants.SERVER_ID))),
                                         reason, self.ch_rules)
         await user.send(embed=embed)
+
+        await user.kick(reason=reason)
+        log.info("Member %s has been kicked from the server.", user)
+
+        await ctx.send(f"{user.mention} wurde gekickt. :anger:")
 
         modlog_embed = _build_modlog_embed("Server-Kick :anger:", color=constants.EMBED_COLOR_MODLOG_KICK,
                                            moderator=ctx.author, user=user, reason=reason)
