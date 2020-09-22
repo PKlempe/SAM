@@ -435,7 +435,7 @@ def _build_group_exchange_offer_embed(author: discord.User, channel: discord.Tex
     embed = discord.Embed(title=_parse_course_from_channel_name(channel), color=constants.EMBED_COLOR_GROUP_EXCHANGE) \
         .set_thumbnail(url=author.avatar_url) \
         .add_field(name="Biete:", value="Gruppe {0}".format(offered_group)) \
-        .add_field(name="Suche:", value="Gruppen {0}".format(", ".join(map(str, requested_groups)))) \
+        .add_field(name="Suche:", value="Gruppe {0}".format(", ".join(map(str, requested_groups)))) \
         .add_field(name="Eingereicht von:", value="{0}\n{0.mention}".format(author), inline=False)
 
     return embed
