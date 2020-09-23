@@ -62,7 +62,8 @@ async def on_command_error(ctx, exception):
                               image=const.URL_HTTP_CAT + f"/{status_code}.jpg")
         await ctx.channel.send(content="Oh, oh. Anscheinend gibt es momentan ein Verbindungsproblem. :scream_cat:",
                                embed=embed)
-    elif isinstance(exception, commands.MissingRequiredArgument) and ctx.channel.id != const.CHANNEL_ID_GROUP_EXCHANGE:
+    elif isinstance(exception, commands.MissingRequiredArgument) and \
+            ctx.channel.id != int(const.CHANNEL_ID_GROUP_EXCHANGE):
         await ctx.send_help(ctx.command)
 
 
