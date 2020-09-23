@@ -160,7 +160,7 @@ class UniversityCog(commands.Cog):
             raise SyntaxError("Invalid course channel.")
 
         try:
-            requested_groups = list(map(int, requested_groups_str.replace(" ", "").split(',')))
+            requested_groups = list(map(int, requested_groups_str.split(',')))
         except ValueError:
             raise SyntaxError("Invalid symbol in list of requested groups: " + requested_groups_str)
 
@@ -187,29 +187,6 @@ class UniversityCog(commands.Cog):
             await self._notify_candidates_about_new_offer(potential_candidates,
                                                           notification_embed)
 
-    @exchange.error
-    async def exchange_error(self, ctx: commands.Context, error: commands.CommandError):
-        """Error Handler for the exchange command.
-
-        Args:
-            ctx (discord.ext.commands.Context): The context in which the command was called.
-            error (commands.CommandError): The error raised during the execution of the command.
-        """
-        if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
-            await ctx.author.send(
-                "**__Error:__** Die angebotene Gruppe kann nicht Teil der gewünschten Gruppen sein.")
-        if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, IntegrityError):
-            await ctx.author.send(
-                "**__Error:__** Du hast für diesen Kurs bereits ein aktives Tauschangebot.\nDu musst das alte Angebot "
-                "zuerst mit `{0}exchange remove <channel-mention>` löschen, bevor du ein neues einreichen kannst."
-                .format(self.bot.command_prefix))
-        if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, SyntaxError):
-            await ctx.author.send(
-                "**__Error:__** Der von dir eingegebene Befehl zur Erstellung eines Tauschangebots ist inkorrekt.\n"
-                "Bitte achte darauf, einen gültigen LV-Kanal anzugeben und die Nummern der gewünschten Gruppen "
-                "mittels Beistrich zu trennen. Für weitere Infos, siehe angepinnte Nachrichten in {0}. :pushpin:"
-                .format(self.ch_group_exchange.mention))
-
     @exchange.command(name="remove", hidden=True)
     @command_log
     async def remove_exchange(self, ctx: commands.Context, channel: discord.TextChannel):
@@ -227,6 +204,39 @@ class UniversityCog(commands.Cog):
             msg = await self.ch_group_exchange.fetch_message(message_id)
             await msg.delete()
         await ctx.author.send(":white_check_mark: Dein Tauschangebot wurde erfolgreich gelöscht.")
+
+    @exchange.error
+    @remove_exchange.error
+    async def exchange_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Error Handler for the exchange command.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            error (commands.CommandError): The error raised during the execution of the command.
+        """
+        if isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
+            await ctx.author.send(
+                "**__Error:__** Die angebotene Gruppe kann nicht Teil der gewünschten Gruppen sein.")
+        elif isinstance(error, commands.CommandInvokeError) and isinstance(error.original, IntegrityError):
+            await ctx.author.send(
+                "**__Error:__** Du hast für diesen Kurs bereits ein aktives Tauschangebot.\nDu musst das alte Angebot "
+                "zuerst mit `{0}exchange remove <channel-mention>` löschen, bevor du ein neues einreichen kannst."
+                    .format(self.bot.command_prefix))
+        elif isinstance(error, commands.CommandInvokeError) and isinstance(error.original, SyntaxError):
+            await ctx.author.send(
+                "**__Error:__** Der von dir eingegebene Befehl, zur Erstellung eines Tauschangebots, ist inkorrekt.\n"
+                "Bitte achte darauf, einen gültigen LV-Kanal anzugeben und die Nummern der gewünschten Gruppen "
+                "mittels Beistrich zu trennen. Für weitere Infos, siehe angepinnte Nachrichten in {0}. :pushpin:"
+                .format(self.ch_group_exchange.mention))
+        elif isinstance(error, commands.MissingRequiredArgument):
+            await ctx.author.send("**__Error:__** Der von dir eingegebene Befehl ist unvollständig bzw. inkorrekt.\n"
+                                  "Bitte lies dir die im Kanal {0} angepinnte Nachricht nochmals durch und versuche es "
+                                  "dann erneut. :pushpin:".format(self.ch_group_exchange.mention))
+        elif isinstance(error, commands.BadArgument):
+            await ctx.author.send("**__Error:__** Der von dir angegebene LV-Kanal existiert nicht.\nVersuche ihn "
+                                  "mittels einer Markierung (Bsp: #pr1...) anzugeben, um Probleme zu vermeiden. Für "
+                                  "weitere Infos, siehe angepinnte Nachrichten in {0}. :pushpin:"
+                                  .format(self.ch_group_exchange.mention))
 
     @exchange.command(name="list", hidden=True)
     @command_log
