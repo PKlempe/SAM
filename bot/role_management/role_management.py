@@ -45,7 +45,9 @@ class RoleManagementCog(commands.Cog):
             str_modules (str): A string containing abbreviations of all the modules a user would like to toggle.
         """
         if ctx.channel.id != self.ch_role.id:
-            await ctx.message.delete()
+            if not self._db_connector.is_botonly(ctx.channel.id):
+                await ctx.message.delete()
+
             ctx.channel.send(value=f"Dieser Befehl wird nur in {self.ch_role.mention} unterstützt. Bitte "
                                    f"versuche es dort noch einmal. ", delete_after=constants.TIMEOUT_INFORMATION)
             return
@@ -60,7 +62,6 @@ class RoleManagementCog(commands.Cog):
         for module in modules:
             module_upper = module.upper()
             try:
-                # TODO: Check if role is whitelisted.
                 role = await converter.convert(ctx, module_upper)
 
                 if not self._db_connector.check_module_role(role.id):
@@ -319,11 +320,12 @@ class RoleManagementCog(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
-        role_id = self._db_connector.get_reaction_role(payload.message_id, payload.emoji.name)
-        role = self.bot.get_guild(payload.guild_id).get_role(role_id)
+        if payload.channel_id == self.ch_role.id:
+            role_id = self._db_connector.get_reaction_role(payload.message_id, payload.emoji.name)
+            role = self.bot.get_guild(payload.guild_id).get_role(role_id)
 
-        member = self.bot.get_guild(payload.guild_id).get_member(payload.user_id)
-        await member.remove_roles(role, reason="Automatische/Manuelle Entfernung via Reaction.")
+            member = self.bot.get_guild(payload.guild_id).get_member(payload.user_id)
+            await member.remove_roles(role, reason="Automatische/Manuelle Entfernung via Reaction.")
 
     @commands.Cog.listener(name='on_raw_message_delete')
     async def delete_reaction_role_group(self, payload: discord.RawReactionActionEvent):

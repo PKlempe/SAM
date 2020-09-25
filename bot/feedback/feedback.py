@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import Optional
+
 import discord
 from discord.ext import commands
 
@@ -40,7 +41,9 @@ class FeedbackCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             suggestion (str): The suggestion provided by the user.
         """
-        await ctx.message.delete()
+        if not self._db_connector.is_botonly(ctx.channel.id):
+            await ctx.message.delete()
+
         suggestion_id = self._db_connector.add_suggestion(ctx.author.id, ctx.message.created_at)
 
         embed = _build_suggestion_embed(ctx.author, suggestion, suggestion_id)
@@ -66,9 +69,10 @@ class FeedbackCog(commands.Cog):
             suggestion_id (int): The id of the suggestion which should be approved.
             reason (Optional[str]): The reason for this decision.
         """
-        await ctx.message.delete()
-        await self._change_suggestion_status(suggestion_id, SuggestionStatus.APPROVED, ctx.author, reason)
+        if not self._db_connector.is_botonly(ctx.channel.id):
+            await ctx.message.delete()
 
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.APPROVED, ctx.author, reason)
         log.info("Suggestion #%s has been approved by %s.", suggestion_id, ctx.author)
 
     @manage_suggestions.command(name="deny")
@@ -86,9 +90,10 @@ class FeedbackCog(commands.Cog):
             suggestion_id (int): The id of the suggestion which should be approved.
             reason (Optional[str]): The reason for the decision.
         """
-        await ctx.message.delete()
-        await self._change_suggestion_status(suggestion_id, SuggestionStatus.DENIED, ctx.author, reason)
+        if not self._db_connector.is_botonly(ctx.channel.id):
+            await ctx.message.delete()
 
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.DENIED, ctx.author, reason)
         log.info("Suggestion #%s has been denied by %s.", suggestion_id, ctx.author)
 
     @manage_suggestions.command(name="consider")
@@ -106,9 +111,10 @@ class FeedbackCog(commands.Cog):
             suggestion_id (int): The id of the suggestion which should be approved.
             reason (Optional[str]): The reason for the decision.
         """
-        await ctx.message.delete()
-        await self._change_suggestion_status(suggestion_id, SuggestionStatus.CONSIDERED, ctx.author, reason)
+        if not self._db_connector.is_botonly(ctx.channel.id):
+            await ctx.message.delete()
 
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.CONSIDERED, ctx.author, reason)
         log.info("Suggestion #%s is being considered by %s.", suggestion_id, ctx.author)
 
     @manage_suggestions.command(name="implemented")
@@ -126,9 +132,10 @@ class FeedbackCog(commands.Cog):
             suggestion_id (int): The id of the suggestion which should be approved.
             reason (Optional[str]): The reason for the decision.
         """
-        await ctx.message.delete()
-        await self._change_suggestion_status(suggestion_id, SuggestionStatus.IMPLEMENTED, ctx.author, reason)
+        if not self._db_connector.is_botonly(ctx.channel.id):
+            await ctx.message.delete()
 
+        await self._change_suggestion_status(suggestion_id, SuggestionStatus.IMPLEMENTED, ctx.author, reason)
         log.info("Suggestion #%s marked as implemented by %s.", suggestion_id, ctx.author)
 
     @suggestion_approve.error
@@ -183,7 +190,7 @@ class FeedbackCog(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
-        if not payload.member.bot and payload.channel_id == self.ch_suggestion.id and \
+        if payload.channel_id == self.ch_suggestion.id and not payload.member.bot and \
                 self._db_connector.get_suggestion_status(payload.message_id) == SuggestionStatus.UNDECIDED:
             message = await self.ch_suggestion.fetch_message(payload.message_id)
             reactions = message.reactions
@@ -194,11 +201,12 @@ class FeedbackCog(commands.Cog):
 
                 # Changes the color of the embed depending if one side received at least 10 votes and the difference
                 # between them is bigger than 50% of total votes.
-                if constants.LIMIT_SUGGESTION_VOTES < reactions[0].count > reactions[1].count and \
-                        actual_difference > required_difference:
+                if reactions[0].count > int(constants.LIMIT_SUGGESTION_VOTES) and \
+                        reactions[0].count > reactions[1].count and actual_difference > required_difference:
                     new_embed = _recolor_embed(message.embeds[0], constants.EMBED_COLOR_SUGGESTION_MEMBERS_LIKE)
                     await message.edit(embed=new_embed)
-                elif constants.LIMIT_SUGGESTION_VOTES < reactions[1].count and actual_difference > required_difference:
+                elif reactions[1].count > int(constants.LIMIT_SUGGESTION_VOTES) and \
+                        actual_difference > required_difference:
                     new_embed = _recolor_embed(message.embeds[0], constants.EMBED_COLOR_SUGGESTION_MEMBERS_DISLIKE)
                     await message.edit(embed=new_embed)
 

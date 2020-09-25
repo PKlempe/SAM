@@ -440,7 +440,8 @@ class AdminCog(commands.Cog):
             channel (discord.Textchannel): The channel that is to be made bot-only
         """
         target_channel = channel if channel is not None else ctx.channel
-        is_channel_botonly = self._db_connector.is_botonly(target_channel)
+        is_channel_botonly = self._db_connector.is_botonly(target_channel.id)
+
         if is_channel_botonly:
             log.info("Deactivated bot-only mode for channel [#%s]", target_channel)
             self._db_connector.deactivate_botonly(target_channel)
@@ -453,18 +454,16 @@ class AdminCog(commands.Cog):
         await target_channel.send(embed=embed)
 
     @commands.Cog.listener(name='on_message')
-    async def on_message(self, ctx: discord.Message):
+    async def on_message(self, message: discord.Message):
         """Event Handler for new messages.
 
         Deletes a message if the channel it was posted in is in bot-only mode and the author isn't SAM.
 
         Args:
-            ctx (discord.Message): The context this method was called in. Must always be a message.
+            message (discord.Message): The context this method was called in. Must always be a message.
         """
-        if ctx.author == self.bot.user:
-            return
-        if self._db_connector.is_botonly(ctx.channel):
-            await ctx.delete()
+        if not message.author.bot and self._db_connector.is_botonly(message.channel.id):
+            await message.delete()
 
 
 def is_pastebin_link(json_string: str) -> bool:

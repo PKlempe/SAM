@@ -1,6 +1,9 @@
 [FORMAT]
 max-line-length=240
 
+[SIMILARITIES]
+ignore-imports=yes
+
 [MASTER]
 ignore=test
 
