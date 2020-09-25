@@ -165,9 +165,8 @@ class UniversityCog(commands.Cog):
             raise SyntaxError("Invalid symbol in list of requested groups: " + requested_groups_str)
 
         if offered_group in requested_groups:
-            raise ValueError(
-                "The offered Group was part of the requested groups. Offered Group {0}, Requested Groups: {1}".format(
-                    offered_group, requested_groups))
+            raise ValueError("The offered Group was part of the requested groups. Offered Group {0}, "
+                             "Requested Groups: {1}".format(offered_group, requested_groups))
 
         self._db_connector.add_group_offer_and_requests(ctx.author.id, channel.id, offered_group, requested_groups)
         embed = _build_group_exchange_offer_embed(ctx.author, channel, offered_group, requested_groups)
@@ -184,8 +183,7 @@ class UniversityCog(commands.Cog):
                                                        channel)
             notification_embed = _build_candidate_notification_embed(ctx.author, message, channel, offered_group,
                                                                      self.bot.command_prefix)
-            await self._notify_candidates_about_new_offer(potential_candidates,
-                                                          notification_embed)
+            await self._notify_candidates_about_new_offer(potential_candidates, notification_embed)
 
     @exchange.command(name="remove", hidden=True)
     @command_log
@@ -199,11 +197,16 @@ class UniversityCog(commands.Cog):
             channel (discord.TextChannel): The channel corresponding to the course.
         """
         message_id = self._db_connector.get_group_exchange_message(ctx.author.id, channel.id)
-        if message_id is not None:
+
+        if message_id:
             self._db_connector.remove_group_exchange_offer(ctx.author.id, channel.id)
             msg = await self.ch_group_exchange.fetch_message(message_id)
+
             await msg.delete()
-        await ctx.author.send(":white_check_mark: Dein Tauschangebot wurde erfolgreich gelöscht.")
+            await ctx.author.send(":white_check_mark: Dein Tauschangebot wurde erfolgreich gelöscht.")
+
+        else:
+            await ctx.author.send("Du besitzt derzeit kein aktives Tauschangebot für diesen Kurs. :face_with_monocle:")
 
     @exchange.error
     @remove_exchange.error
@@ -221,7 +224,7 @@ class UniversityCog(commands.Cog):
             await ctx.author.send(
                 "**__Error:__** Du hast für diesen Kurs bereits ein aktives Tauschangebot.\nDu musst das alte Angebot "
                 "zuerst mit `{0}exchange remove <channel-mention>` löschen, bevor du ein neues einreichen kannst."
-                    .format(self.bot.command_prefix))
+                .format(self.bot.command_prefix))
         elif isinstance(error, commands.CommandInvokeError) and isinstance(error.original, SyntaxError):
             await ctx.author.send(
                 "**__Error:__** Der von dir eingegebene Befehl, zur Erstellung eines Tauschangebots, ist inkorrekt.\n"
@@ -248,9 +251,9 @@ class UniversityCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
-        requests_of_user = self._db_connector.get_group_exchange_for_user(ctx.author.id)
-        if requests_of_user:
-            embed = await self._build_group_exchange_list_embed(requests_of_user)
+        exchange_requests = self._db_connector.get_group_exchange_for_user(ctx.author.id)
+        if exchange_requests:
+            embed = await self._build_group_exchange_list_embed(exchange_requests)
             await ctx.author.send(embed=embed)
         else:
             await ctx.author.send("Du hast zurzeit keine aktiven Tauschangebote. :hushed:")
@@ -286,14 +289,18 @@ class UniversityCog(commands.Cog):
             Examples:
                  Example Result: [(1, [(user1, msg1), (user2, msg2)], (2, [(user3, msg3), (...),...]),...]
             """
+            guild = self.bot.get_guild(int(constants.SERVER_ID))
             iterable_cand = itertools.groupby(cand, operator.itemgetter(2))
+
             for key, subiter in iterable_cand:
                 group_text = "Gruppe {0}".format(key)
                 user_list = []
+
                 for item in subiter:
-                    user = self.bot.get_guild(int(constants.SERVER_ID)).get_member(int(item[0]))
+                    user = guild.get_member(int(item[0]))
                     msg = await channel.fetch_message(int(item[1]))
                     user_list.append("- [{0}]({1})".format(user, msg.jump_url))
+
                 yield group_text, "\n".join(user_list)
 
         users_by_group = group_by_group_nr(potential_candidates)
@@ -301,39 +308,40 @@ class UniversityCog(commands.Cog):
             embed.add_field(name=group[0], value=group[1])
         await author.send(content="Ich habe potentielle Tauschpartner für dich gefunden:", embed=embed)
 
-    async def _notify_candidates_about_new_offer(self, potential_candidates: List[Tuple[str, str, int]],
-                                                 embed: discord.Embed):
+    async def _notify_candidates_about_new_offer(self, potential_candidates: List[tuple], embed: discord.Embed):
         """Notifies all potential candidates that a new relevant group exchange offer has been posted.
 
-        The candidates are informed via a direct message which contains infos about the new offer he or seh could
-        exchange groups with.
+        The candidates are informed via a direct message which contains information about the members and their offers
+        he/she could exchange groups with.
 
         Args:
-            potential_candidates (List[Tuple[str, str]]): The possible candidate ids and the message ids of their
-            exchange messages. They are to be informed
-            embed (discord.Embed): The embed to send the potential candidates.
+            potential_candidates (List[tuple]): The user ids of the potential candidates and the message ids of the
+                                                corresponding exchange messages.
+            embed (discord.Embed): The embed which should be send to the potential candidates.
         """
-        for candidate in potential_candidates:
-            await self.bot.get_guild(int(constants.SERVER_ID)).get_member(int(candidate[0])).send(
-                content="Ich habe ein neues Tauschangebot für dich gefunden:", embed=embed)
+        guild = self.bot.get_guild(int(constants.SERVER_ID))
 
-    async def _build_group_exchange_list_embed(self, requests_of_user: Tuple):
+        for candidate in potential_candidates:
+            member = guild.get_member(int(candidate[0]))
+            await member.send(content="Ich habe ein neues Tauschangebot für dich gefunden:", embed=embed)
+
+    async def _build_group_exchange_list_embed(self, exchange_requests: List[tuple]):
         """Builds an embed that contains infos about all group exchange requests a user has currently open.
 
         Args:
-            requests_of_user (Tuple): a tuple of channel_id, message_id, offered_group and requested groups joined with
-            commas.
+            exchange_requests (List[tuple]): A list containing tuples consisting of channel_id, message_id,
+            offered_group and requested groups joined with commas.
 
         Returns:
             (discord.Embed): The created embed.
         """
         embed = discord.Embed(title="Deine Gruppentausch-Anfragen:", color=constants.EMBED_COLOR_GROUP_EXCHANGE)
-        for request_of_user in requests_of_user:
-            course_channel = self.bot.get_guild(int(constants.SERVER_ID)).get_channel(int(request_of_user[0]))
-            msg = await self.ch_group_exchange.fetch_message(int(request_of_user[1]))
+        for request in exchange_requests:
+            course_channel = self.bot.get_guild(int(constants.SERVER_ID)).get_channel(int(request[0]))
+            msg = await self.ch_group_exchange.fetch_message(int(request[1]))
             course = _parse_course_from_channel_name(course_channel)
-            offered_group = request_of_user[2]
-            requested_groups = request_of_user[3]
+            offered_group = request[2]
+            requested_groups = request[3]
             embed.add_field(name=course, inline=False,
                             value="__Biete:__ Gruppe {0}\n__Suche:__ Gruppen {1}\n[[Zur Nachricht]]({2})"
                             .format(offered_group, requested_groups, msg.jump_url))

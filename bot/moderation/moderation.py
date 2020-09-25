@@ -677,7 +677,8 @@ class ModerationCog(commands.Cog):
             offender (discord.Member): The person accused of doing something wrong.
             description (str): A description of why this person has been reported.
         """
-        await ctx.message.delete()
+        if not self._db_connector.is_botonly(ctx.channel.id):
+            await ctx.message.delete()
 
         embed = _create_report_embed(offender, ctx.author, ctx.channel, ctx.message, description)
         await self.ch_report.send(embed=embed)
@@ -764,7 +765,8 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
-        await ctx.message.delete()
+        if not self._db_connector.is_botonly(ctx.channel.id):
+            await ctx.message.delete()
 
         msg_content = ctx.message.content[len(ctx.prefix + ctx.command.name):]
         msg_attachments = ctx.message.attachments
@@ -804,7 +806,9 @@ class ModerationCog(commands.Cog):
             status (str): The status specified by the moderator.
         """
         if ctx.channel.id != self.ch_modmail.id:
-            await ctx.message.delete()
+            if not self._db_connector.is_botonly(ctx.channel.id):
+                await ctx.message.delete()
+
             await ctx.author.send(f"Dieser Befehl wird nur in {self.ch_modmail.mention} unterstützt. Bitte "
                                   f"versuche es dort noch einmal.")
             return
@@ -848,8 +852,7 @@ class ModerationCog(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
-        if not payload.member.bot and payload.channel_id == self.ch_modmail.id and \
-                self.role_moderator in payload.member.roles:
+        if not payload.member.bot and payload.channel_id == self.ch_modmail.id:
             modmail = await self.ch_modmail.fetch_message(payload.message_id)
 
             if payload.emoji.name in (constants.EMOJI_MODMAIL_DONE, constants.EMOJI_MODMAIL_ASSIGN):
