@@ -190,7 +190,7 @@ class FeedbackCog(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
-        if not payload.member.bot and payload.channel_id == self.ch_suggestion.id and \
+        if payload.channel_id == self.ch_suggestion.id and not payload.member.bot and \
                 self._db_connector.get_suggestion_status(payload.message_id) == SuggestionStatus.UNDECIDED:
             message = await self.ch_suggestion.fetch_message(payload.message_id)
             reactions = message.reactions

@@ -852,7 +852,7 @@ class ModerationCog(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
-        if not payload.member.bot and payload.channel_id == self.ch_modmail.id:
+        if payload.channel_id == self.ch_modmail.id and not payload.member.bot:
             modmail = await self.ch_modmail.fetch_message(payload.message_id)
 
             if payload.emoji.name in (constants.EMOJI_MODMAIL_DONE, constants.EMOJI_MODMAIL_ASSIGN):

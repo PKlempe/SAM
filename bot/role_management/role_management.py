@@ -298,7 +298,7 @@ class RoleManagementCog(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
-        if not payload.member.bot and payload.channel_id == self.ch_role.id:
+        if payload.channel_id == self.ch_role.id and not payload.member.bot:
             if self._db_connector.is_reaction_role_uniqueness_group(payload.message_id):
                 message = await self.ch_role.fetch_message(payload.message_id)
 
