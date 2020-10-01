@@ -1,10 +1,10 @@
 """Contains a Cog for all gaming related functionality."""
 
+import re
 from typing import Optional
 
 import discord
 from discord.ext import commands
-import re
 
 from bot import constants as const
 from bot.persistence import DatabaseConnector
