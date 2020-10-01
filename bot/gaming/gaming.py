@@ -87,10 +87,7 @@ class GamingCog(commands.Cog):
 
         # Text Channel
         topic = f"Temporärer Gaming-Kanal. || Erstellt von: {ctx.author.display_name}"
-        overwrites_text = self.cat_gaming_channels.overwrites
-        overwrites_text[ctx.author] = discord.PermissionOverwrite(manage_messages=True)
-        await self.cat_gaming_channels.create_text_channel(name=name, topic=topic, overwrites=overwrites_text,
-                                                           reason=reason)
+        await self.cat_gaming_channels.create_text_channel(name=name, topic=topic, reason=reason)
 
         log.info("Temporary Game Room created by %s", ctx.author)
         await ctx.send(":white_check_mark: Der Game-Room wurde erfolgreich erstellt!",
