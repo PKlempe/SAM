@@ -63,6 +63,11 @@ class GamingCog(commands.Cog):
             name = f"{ctx.author.display_name}'s Room" if ch_name is None else ch_name
             limit = user_limit
 
+        # Remove channel number if user has added it himself.
+        regex = re.search(r"(\[#\d+])", name)
+        if regex:
+            name = name.replace(regex.group(1), "")
+
         ch_number_addition = self._determine_channel_number(name)
         if ch_number_addition:
             name += ch_number_addition
