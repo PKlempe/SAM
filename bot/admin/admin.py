@@ -444,10 +444,10 @@ class AdminCog(commands.Cog):
 
         if is_channel_botonly:
             log.info("Deactivated bot-only mode for channel [#%s]", target_channel)
-            self._db_connector.deactivate_botonly(target_channel)
+            self._db_connector.deactivate_botonly(target_channel.id)
         else:
             log.info("Activated bot-only mode for channel [#%s]", target_channel)
-            self._db_connector.activate_botonly(target_channel)
+            self._db_connector.activate_botonly(target_channel.id)
 
         is_enabled_string = 'aktiviert' if not is_channel_botonly else 'deaktiviert'
         embed = _build_botonly_embed(is_enabled_string)

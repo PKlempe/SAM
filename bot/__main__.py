@@ -11,7 +11,10 @@ from bot import constants as const
 from bot.logger import log
 
 
-bot = commands.Bot(command_prefix=const.BOT_PREFIX)
+intents = discord.Intents.default()
+intents.members = True
+
+bot = commands.Bot(command_prefix=const.BOT_PREFIX, intents=intents)
 
 
 @bot.event
