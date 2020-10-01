@@ -13,7 +13,8 @@ INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
                  "ModerationCog":       'bot.moderation.moderation',
                  "UniversityCog":       'bot.university.university',
                  "UtilityCog":          'bot.utility.utility',
-                 "FeedbackCog":         'bot.feedback.feedback'}
+                 "FeedbackCog":         'bot.feedback.feedback',
+                 "GamingCog":           'bot.gaming.gaming'}
 
 
 # Job Times
@@ -41,6 +42,8 @@ LIMIT_NICKNAMES = 12
 LIMIT_WARNINGS_LVL_1 = 3
 LIMIT_WARNINGS_LVL_2 = 5
 LIMIT_WARNINGS_LVL_3 = 6
+
+LIMIT_GAMING_CHANNELS = 8
 
 
 # Timeouts
@@ -118,6 +121,9 @@ DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persi
 
 # Special Discord IDs
 SERVER_ID = os.getenv("SERVER_ID") or "Undefined"
+
+## Category IDs
+CATEGORY_ID_GAMING_ROOMS =os.getenv("CATEGORY_ID_GAMING_ROOMS") or "Undefined"
 
 ## Channel IDs
 CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT") or "Undefined"
