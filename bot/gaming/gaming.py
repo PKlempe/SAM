@@ -51,6 +51,7 @@ class GamingCog(commands.Cog):
         if any(True for ch in self.cat_gaming_channels.voice_channels if ctx.author in ch.overwrites):
             raise NotImplementedError("Member already has an active Game Room.")
 
+        limit: Optional[int]
         if ch_name and not user_limit:
             try:
                 limit = int(ch_name)
