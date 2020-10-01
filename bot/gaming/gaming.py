@@ -46,8 +46,8 @@ class GamingCog(commands.Cog):
 
         if len(self.cat_gaming_channels.channels) >= const.LIMIT_GAMING_CHANNELS:
             raise RuntimeWarning("Too many game rooms at the moment.")
-        if user_limit and user_limit > 99:
-            raise discord.InvalidArgument("User limit cannot be bigger than 99.")
+        if user_limit and (user_limit < 1 or user_limit > 99):
+            raise discord.InvalidArgument("User limit cannot be outside range from 1 to 99.")
         if any(True for ch in self.cat_gaming_channels.voice_channels if ctx.author in ch.overwrites):
             raise NotImplementedError("Member already has an active Game Room.")
 
@@ -110,8 +110,8 @@ class GamingCog(commands.Cog):
             await ctx.send("Es gibt zurzeit zu viele aktive Game Rooms. Bitte versuche es später noch einmal. "
                            ":hourglass:", delete_after=const.TIMEOUT_INFORMATION)
         elif isinstance(error, commands.CommandInvokeError) and isinstance(error.original, discord.InvalidArgument):
-            await ctx.send("Das Nutzer-Limit für einen Sprachkanal darf 99 nicht überschreiten. Bitte versuche es noch "
-                           "einmal.", delete_after=const.TIMEOUT_INFORMATION)
+            await ctx.send("Das Nutzer-Limit für einen Sprachkanal muss zwischen 1 und 99 liegen. Bitte versuche es "
+                           "noch einmal.", delete_after=const.TIMEOUT_INFORMATION)
 
     def _determine_channel_number(self, name: str) -> Optional[str]:
         """Method which creates a string representing a channel number if needed.
