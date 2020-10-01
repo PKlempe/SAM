@@ -123,7 +123,7 @@ DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persi
 SERVER_ID = os.getenv("SERVER_ID") or "Undefined"
 
 ## Category IDs
-CATEGORY_ID_GAMING_ROOMS =os.getenv("CATEGORY_ID_GAMING_ROOMS") or "Undefined"
+CATEGORY_ID_GAMING_ROOMS = os.getenv("CATEGORY_ID_GAMING_ROOMS") or "Undefined"
 
 ## Channel IDs
 CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT") or "Undefined"
