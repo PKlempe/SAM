@@ -732,7 +732,7 @@ class ModerationCog(commands.Cog):
 
             def check(message):
                 return (True if user is None else message.author.id == user.id)
-            
+
             deleted_messages = await purge_channel.purge(limit=amount + 1, check=check)
             await purge_channel.send('**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'
                                      .format(len(deleted_messages) - 1), delete_after=constants.TIMEOUT_INFORMATION)
