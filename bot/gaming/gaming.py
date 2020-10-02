@@ -153,7 +153,8 @@ class GamingCog(commands.Cog):
         if before.channel and before.channel.category_id == self.cat_gaming_channels.id \
           and before.channel != after.channel and len(before.channel.members) == 0:
             reason = "No one was left in Game Room."
-            txt_ch_name = before.channel.name.lower().replace(" ", "-").replace("[#", "").replace("]", "")
+            txt_ch_name = re.sub(r"[^\w\s-]", "", before.channel.name.lower())  # Remove non-word chars except whitespaces
+            txt_ch_name = re.sub(r"\s", "-", txt_ch_name)                       # Replace whitespaces with "-"
             txt_ch = next(ch for ch in self.cat_gaming_channels.text_channels if ch.name == txt_ch_name)
 
             await before.channel.delete(reason=reason)

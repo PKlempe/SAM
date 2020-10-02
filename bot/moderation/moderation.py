@@ -1,6 +1,6 @@
 """Contains a Cog for all functionality regarding Moderation."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Union
 import re
 import operator
@@ -555,7 +555,8 @@ class ModerationCog(commands.Cog):
         embed.set_footer(text="Stand")
 
         for member in members:
-            embed.add_field(name=str(member), value=datetime.strftime(member.joined_at, "%d.%m.%Y | *%H:%M:%S*"))
+            local_joined_at = member.joined_at + member.joined_at.astimezone().utcoffset()
+            embed.add_field(name=str(member), value=datetime.strftime(local_joined_at, "%d.%m.%Y | *%X*"))
 
         await ctx.send(embed=embed)
 
