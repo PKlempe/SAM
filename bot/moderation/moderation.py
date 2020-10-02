@@ -1,6 +1,6 @@
 """Contains a Cog for all functionality regarding Moderation."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Union
 import re
 import operator
@@ -855,10 +855,14 @@ class ModerationCog(commands.Cog):
         """
         if payload.channel_id == self.ch_modmail.id and not payload.member.bot:
             modmail = await self.ch_modmail.fetch_message(payload.message_id)
+            reaction = next(x for x in modmail.reactions if x.emoji == payload.emoji.name)
 
-            if payload.emoji.name in (constants.EMOJI_MODMAIL_DONE, constants.EMOJI_MODMAIL_ASSIGN):
+            if payload.emoji.name in (constants.EMOJI_MODMAIL_DONE, constants.EMOJI_MODMAIL_ASSIGN) \
+                    and reaction.count <= 2:
                 new_embed = await self.change_modmail_status(modmail, payload.emoji.name, True)
                 await modmail.edit(embed=new_embed)
+            else:
+                await reaction.remove(payload.member)
 
     @commands.Cog.listener(name='on_raw_reaction_remove')
     async def modmail_reaction_remove(self, payload: discord.RawReactionActionEvent):
@@ -874,8 +878,8 @@ class ModerationCog(commands.Cog):
         if payload.channel_id == self.ch_modmail.id:
             modmail = await self.ch_modmail.fetch_message(payload.message_id)
 
-            if payload.emoji.name == constants.EMOJI_MODMAIL_DONE or \
-                    payload.emoji.name == constants.EMOJI_MODMAIL_ASSIGN:
+            if payload.emoji.name in (constants.EMOJI_MODMAIL_DONE, constants.EMOJI_MODMAIL_ASSIGN) \
+                    and next(x for x in modmail.reactions if x.emoji == payload.emoji.name).count <= 1:
                 new_embed = await self.change_modmail_status(modmail, payload.emoji.name, False)
                 await modmail.edit(embed=new_embed)
 
@@ -921,30 +925,25 @@ class ModerationCog(commands.Cog):
         Returns:
             discord.Embed: An adapted Embed corresponding to the new modmail status.
         """
-        curr_status = self._db_connector.get_modmail_status(modmail.id)
         dict_embed = modmail.embeds[0].to_dict()
         dict_embed["title"] = "Status: "
 
-        if reaction_added and emoji == constants.EMOJI_MODMAIL_DONE and curr_status != ModmailStatus.CLOSED:
+        if reaction_added and emoji == constants.EMOJI_MODMAIL_DONE:
             await modmail.clear_reaction(constants.EMOJI_MODMAIL_ASSIGN)
             self._db_connector.change_modmail_status(modmail.id, ModmailStatus.CLOSED)
-
             dict_embed["title"] += "Erledigt"
             dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_CLOSED
-        elif reaction_added and emoji == constants.EMOJI_MODMAIL_ASSIGN and curr_status != ModmailStatus.ASSIGNED:
+        elif reaction_added and emoji == constants.EMOJI_MODMAIL_ASSIGN:
             self._db_connector.change_modmail_status(modmail.id, ModmailStatus.ASSIGNED)
-
             dict_embed["title"] += "In Bearbeitung"
             dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_ASSIGNED
         else:
+            self._db_connector.change_modmail_status(modmail.id, ModmailStatus.OPEN)
             dict_embed["title"] += "Offen"
             dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_OPEN
 
-            if emoji == constants.EMOJI_MODMAIL_DONE and curr_status != ModmailStatus.OPEN:
-                self._db_connector.change_modmail_status(modmail.id, ModmailStatus.OPEN)
+            if emoji == constants.EMOJI_MODMAIL_DONE:
                 await modmail.add_reaction(constants.EMOJI_MODMAIL_ASSIGN)
-            elif emoji == constants.EMOJI_MODMAIL_ASSIGN and curr_status != ModmailStatus.OPEN:
-                self._db_connector.change_modmail_status(modmail.id, ModmailStatus.OPEN)
 
         return discord.Embed.from_dict(dict_embed)
 
