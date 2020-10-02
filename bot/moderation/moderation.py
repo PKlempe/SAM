@@ -705,7 +705,7 @@ class ModerationCog(commands.Cog):
 
     @commands.group(name='purge', hidden=True)
     @command_log
-    async def purge_messages(self, ctx: commands.Context, channel: Optional[discord.TextChannel], amount: int):
+    async def purge_messages(self, ctx: commands.Context, channel: Optional[discord.TextChannel], user: Optional[discord.Member], amount: int):
         """Command Handler for the `purge` command.
 
         Allows moderators to delete the specified amount of messages in a channel. After invocation, a confirmation
@@ -716,6 +716,7 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             channel (Optional[discord.TextChannel]): The channel in which the messages should be deleted.
+            user (Optinal[discord.Member]): The user who's messages should be deleted.
             amount (int): The amount of messages which need to be purged.
         """
         purge_channel = channel if channel else ctx.channel
@@ -728,7 +729,11 @@ class ModerationCog(commands.Cog):
         is_confirmed = await self._send_confirmation_dialog(ctx, confirmation_embed)
 
         if is_confirmed:
-            deleted_messages = await purge_channel.purge(limit=amount + 1)
+
+            def check(message):
+                return (True if user is None else message.author.id == user.id)
+            
+            deleted_messages = await purge_channel.purge(limit=amount + 1, check=check)
             await purge_channel.send('**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'
                                      .format(len(deleted_messages) - 1), delete_after=constants.TIMEOUT_INFORMATION)
             log.info("SAM deleted %s messages in [#%s]", len(deleted_messages), purge_channel)
