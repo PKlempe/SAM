@@ -287,6 +287,22 @@ class RoleManagementCog(commands.Cog):
         """
         if isinstance(error, commands.BadArgument):
             print("**__Error:__** Die von dir angegebene Nachricht/Rolle existiert nicht.")
+    
+    @commands.command(name="role")
+    @command_log
+    async def role(self, ctx: commands.Context, role: discord.Role, user: discord.Member):
+        if role.id not in {_role.id for _role in user.roles}:
+            try:
+                await user.add_roles(role)
+                await ctx.channel.send(embed=discord.Embed(description=f"Added {role.mention} to {user.mention}", colour=discord.Colour.green()))
+            except:
+                await ctx.channel.send(embed=discord.Embed(title="I do not have the permission to add that role", colour=discord.Colour.red()))
+        else:
+            try:
+                await user.remove_roles(role)
+                await ctx.channel.send(embed=discord.Embed(description=f"Removed {role.mention} from {user.mention}", colour=discord.Colour.green()))
+            except:
+                await ctx.channel.send(embed=discord.Embed(title="I do not have the permission to remove that role", colour=discord.Colour.red()))
 
     @commands.Cog.listener(name='on_raw_reaction_add')
     async def reaction_role_add(self, payload: discord.RawReactionActionEvent):
