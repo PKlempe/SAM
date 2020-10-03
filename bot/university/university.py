@@ -747,7 +747,14 @@ def _create_embed_staff(staff_data: Dict[str, Union[datetime, str, None]]) -> di
     if staff_data["assignments"] is not None:
         embed.add_field(name="Funktionen", inline=False, value=staff_data["assignments"])
     if staff_data["teaching"] is not None:
-        embed.add_field(name="Lehre", inline=False, value=staff_data["teaching"])
+        if len(staff_data["teaching"]) > 1024:
+            teaching_data = staff_data["teaching"][:1017]              # Shorten data to fit into embed
+            teaching_data = teaching_data[:teaching_data.rfind("\n")]  # Remove the last incomplete line
+            teaching_data += "\n- [...]"                               # Add indicator that the date has been shortened
+        else:
+            teaching_data = staff_data["teaching"]
+
+        embed.add_field(name="Lehre", inline=False, value=teaching_data)
 
     return embed
 
