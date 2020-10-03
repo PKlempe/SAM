@@ -73,24 +73,23 @@ class UniversityCog(commands.Cog):
 
         async with singletons.http_session.get(query_url) as response:
             response.raise_for_status()
-            await response.text(encoding='utf-8')
+            data_staff_multiple = await response.text(encoding='utf-8')
+            xml_staff_multiple = ET.fromstring(data_staff_multiple)
 
-            xml = ET.fromstring(await response.text())
-
-        persons = xml.findall("person")
+        persons = xml_staff_multiple.findall("person")
         if not persons:
             raise ValueError("No person with the specified name was found.")
 
         index = await self._staff_selection(ctx.author, ctx.channel, persons) if len(persons) > 1 else 0
         staff_url = constants.URL_UFIND_API + "/staff/" + persons[index].attrib["id"]
 
-        async with singletons.http_session.get(staff_url) as response:
-            response.raise_for_status()
-            await response.text(encoding='utf-8')
+        async with singletons.http_session.get(staff_url) as response2:
+            response2.raise_for_status()
+            data_staff_single = await response2.text(encoding='utf-8')
 
-            staff_data = _parse_staff_xml(await response.text())
+            dict_staff = _parse_staff_xml(data_staff_single)
 
-        embed = _create_embed_staff(staff_data)
+        embed = _create_embed_staff(dict_staff)
         await ctx.channel.send(embed=embed)
 
     @ufind_get_staff_data.error
@@ -702,7 +701,6 @@ def _create_staff_embed_teaching(staff_id: str, element: Optional[ET.Element]) -
         return None
 
     str_teaching = ""
-    last_semester = None
     for index, semester in enumerate(element):
         str_teaching += "__{0}__\n".format(semester.attrib["id"])
 
@@ -718,12 +716,22 @@ def _create_staff_embed_teaching(staff_id: str, element: Optional[ET.Element]) -
             # Filter out every Bachelor and Master seminar.
             if course_type != "LP" and "Bachelorseminar" not in course_name and "Masterseminar" not in course_name:
                 str_teaching += "- **{0}** {1}\n".format(course_type, course_name)
-        if index >= 1:
-            last_semester = semester.attrib["id"]
-            break
-    str_teaching += "[Lehre vor {0}]({1}/person.html?id={2}&teaching=true)" \
-        .format(last_semester, constants.URL_UFIND, staff_id)
 
+        if index >= 1:
+            break
+
+    url_ufind_teaching = "[Weitere Lehre]({0}/person.html?id={1}&teaching=true)" \
+        .format(constants.URL_UFIND, staff_id)
+
+    if len(str_teaching + url_ufind_teaching) > 1024:
+        indicator = "- [...]\n"
+        chars_remaining = (1024 - len(indicator + url_ufind_teaching))
+
+        str_teaching = str_teaching[:chars_remaining]           # Shorten data to fit into embed
+        str_teaching = str_teaching[:str_teaching.rfind("\n") + 1]  # Remove the last incomplete line
+        str_teaching += indicator                               # Add indicator that the date has been shortened
+
+    str_teaching += url_ufind_teaching
     return str_teaching
 
 
@@ -747,14 +755,7 @@ def _create_embed_staff(staff_data: Dict[str, Union[datetime, str, None]]) -> di
     if staff_data["assignments"] is not None:
         embed.add_field(name="Funktionen", inline=False, value=staff_data["assignments"])
     if staff_data["teaching"] is not None:
-        if len(staff_data["teaching"]) > 1024:
-            teaching_data = staff_data["teaching"][:1017]              # Shorten data to fit into embed
-            teaching_data = teaching_data[:teaching_data.rfind("\n")]  # Remove the last incomplete line
-            teaching_data += "\n- [...]"                               # Add indicator that the date has been shortened
-        else:
-            teaching_data = staff_data["teaching"]
-
-        embed.add_field(name="Lehre", inline=False, value=teaching_data)
+        embed.add_field(name="Lehre", inline=False, value=staff_data["teaching"])
 
     return embed
 
