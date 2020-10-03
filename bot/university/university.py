@@ -54,7 +54,7 @@ class UniversityCog(commands.Cog):
         """
         await ctx.send_help(ctx.command)
 
-    @ufind.command(name='staff')
+    @ufind.command(name="staff")
     @command_log
     async def ufind_get_staff_data(self, ctx: commands.Context, *, search_term: str):
         """Command Handler for the `ufind` subcommand `staff`.
@@ -68,29 +68,31 @@ class UniversityCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             search_term (str): The term to be searched for (most likely firstname, lastname or both).
         """
-        search_filters = "%20%2Be%20c%3A6"  # URL Encoding
-        query_url = constants.URL_UFIND_API + "/staff/?query=" + search_term + search_filters
+        async with ctx.channel.typing():
+            search_filters = "%20%2Be%20c%3A6"  # URL Encoding
+            query_url = constants.URL_UFIND_API + "/staff/?query=" + search_term + search_filters
 
-        async with singletons.http_session.get(query_url) as response:
-            response.raise_for_status()
-            data_staff_multiple = await response.text(encoding='utf-8')
-            xml_staff_multiple = ET.fromstring(data_staff_multiple)
+            async with singletons.http_session.get(query_url) as response:
+                response.raise_for_status()
+                data_staff_multiple = await response.text(encoding='utf-8')
+                xml_staff_multiple = ET.fromstring(data_staff_multiple)
 
-        persons = xml_staff_multiple.findall("person")
-        if not persons:
-            raise ValueError("No person with the specified name was found.")
+            persons = xml_staff_multiple.findall("person")
+            if not persons:
+                raise ValueError("No person with the specified name was found.")
 
         index = await self._staff_selection(ctx.author, ctx.channel, persons) if len(persons) > 1 else 0
         staff_url = constants.URL_UFIND_API + "/staff/" + persons[index].attrib["id"]
 
-        async with singletons.http_session.get(staff_url) as response2:
-            response2.raise_for_status()
-            data_staff_single = await response2.text(encoding='utf-8')
+        async with ctx.channel.typing():
+            async with singletons.http_session.get(staff_url) as response2:
+                response2.raise_for_status()
+                data_staff_single = await response2.text(encoding='utf-8')
 
-            dict_staff = _parse_staff_xml(data_staff_single)
+                dict_staff = _parse_staff_xml(data_staff_single)
 
-        embed = _create_embed_staff(dict_staff)
-        await ctx.channel.send(embed=embed)
+            embed = _create_embed_staff(dict_staff)
+            await ctx.channel.send(embed=embed)
 
     @ufind_get_staff_data.error
     async def ufind_error(self, ctx, error: commands.CommandError):
