@@ -522,9 +522,12 @@ class ModerationCog(commands.Cog):
             embed.set_thumbnail(url=user.avatar_url)
             embed.add_field(name=user.display_name, value="aktuell")
 
+            time_difference = datetime.utcnow().astimezone().utcoffset()
             for name in nicknames[:constants.LIMIT_NICKNAMES]:
-                timestamp = datetime.strptime(name[1], '%Y-%m-%d %H:%M:%S.%f').strftime("%d.%m.%Y\num *%H:%M:%S*")
-                embed.add_field(name=name[0], value=f"bis {timestamp}")
+                timestamp = datetime.strptime(name[1], '%Y-%m-%d %H:%M:%S.%f')
+                local_timestamp = timestamp + time_difference if time_difference else timestamp
+                str_time = local_timestamp.strftime("%d.%m.%Y\num *%X*")
+                embed.add_field(name=name[0], value=f"bis {str_time}")
 
             await ctx.send(embed=embed)
         else:
@@ -554,8 +557,9 @@ class ModerationCog(commands.Cog):
                               description=description, timestamp=datetime.utcnow())
         embed.set_footer(text="Stand")
 
+        time_difference = datetime.utcnow().astimezone().utcoffset()
         for member in members:
-            local_joined_at = member.joined_at + member.joined_at.astimezone().utcoffset()
+            local_joined_at = member.joined_at + time_difference
             embed.add_field(name=str(member), value=datetime.strftime(local_joined_at, "%d.%m.%Y | *%X*"))
 
         await ctx.send(embed=embed)
@@ -595,8 +599,7 @@ class ModerationCog(commands.Cog):
             description += " | [.gif]({0})".format(user.avatar_url_as(format="gif"))
 
         embed = discord.Embed(title=f"Avatar von {user}", color=constants.EMBED_COLOR_MODERATION,
-                              timestamp=datetime.utcnow(),
-                              description=description)
+                              timestamp=datetime.utcnow(), description=description)
         embed.set_footer(text="Erstellt am")
         embed.set_image(url=user.avatar_url)
 
@@ -614,17 +617,18 @@ class ModerationCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             user (discord.Member): The member whose information is being requested.
         """
-        created_at = datetime.strftime(user.created_at, "%d.%m.%Y | %H:%M:%S")
-        joined_at = datetime.strftime(user.joined_at, "%d.%m.%Y | %H:%M:%S")
+        time_difference = datetime.utcnow().astimezone().utcoffset()
+
+        created_at = datetime.strftime(user.created_at + time_difference, "%d.%m.%Y | %X")
+        joined_at = datetime.strftime(user.joined_at + time_difference, "%d.%m.%Y | %X")
         roles = " ".join([role.mention for role in reversed(user.roles[1:])])
         description = f"Name am Server: {user.mention}"
 
         if user.premium_since:
-            premium_since = datetime.strftime(user.premium_since, "%d.%m.%Y %H:%M:%S")
+            premium_since = datetime.strftime(user.premium_since + time_difference, "%d.%m.%Y %X")
             description += f"Boostet seit: {premium_since}"
 
-        embed = discord.Embed(title=str(user), description=description,
-                              color=constants.EMBED_COLOR_MODERATION)
+        embed = discord.Embed(title=str(user), description=description, color=constants.EMBED_COLOR_MODERATION)
         embed.set_thumbnail(url=user.avatar_url)
         embed.set_footer(text=f"UserID: {user.id}")
         embed.add_field(name="Erstellt am:", value=created_at, inline=True)
@@ -1151,11 +1155,14 @@ def _build_warnings_embed(user: discord.Member, warnings: List[tuple]) -> discor
     embed.set_footer(text="Stand")
     embed.set_thumbnail(url=user.avatar_url)
 
+    time_difference = datetime.utcnow().astimezone().utcoffset()
     for warning in warnings:
-        timestamp = datetime.strptime(warning[1], '%Y-%m-%d %H:%M:%S.%f').strftime('%d.%m.%Y um %H:%M')
+        timestamp = datetime.strptime(warning[1], '%Y-%m-%d %H:%M:%S.%f')
+        local_timestamp = timestamp + time_difference if time_difference else timestamp
+        str_time = local_timestamp.strftime('%d.%m.%Y um %H:%M')
         reason = warning[2] if warning[2] else "Keine Angabe."
 
-        embed.add_field(name=f"#{warning[0]} :small_orange_diamond: {timestamp}", value=f"**Grund:** {reason}",
+        embed.add_field(name=f"#{warning[0]} :small_orange_diamond: {str_time}", value=f"**Grund:** {reason}",
                         inline=False)
     return embed
 
@@ -1273,11 +1280,14 @@ def _modmail_create_ticket_list(messages: List[tuple]) -> str:
     """
     string = ""
 
+    time_difference = datetime.utcnow().astimezone().utcoffset()
     for message in messages:
-        timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f').strftime('%d.%m.%Y %H:%M')
+        timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f')
+        local_timestamp = timestamp + time_difference if time_difference else timestamp
+        str_time = local_timestamp.strftime('%d.%m.%Y %H:%M')
 
         string += "- {0} | [{1[1]}]({2}/channels/{3}/{4}/{1[0]})\n" \
-            .format(timestamp, message, constants.URL_DISCORD, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
+            .format(str_time, message, constants.URL_DISCORD, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
 
     return string
 
