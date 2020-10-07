@@ -605,7 +605,7 @@ class ModerationCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(name='info', hidden=True)
+    @commands.command(name='userinfo', aliases=["info"], hidden=True)
     @command_log
     async def user_info(self, ctx: commands.Context, *, user: discord.Member):
         """Command Handler for the `info` command.
@@ -622,11 +622,11 @@ class ModerationCog(commands.Cog):
         created_at = datetime.strftime(user.created_at + time_difference, "%d.%m.%Y | %X")
         joined_at = datetime.strftime(user.joined_at + time_difference, "%d.%m.%Y | %X")
         roles = " ".join([role.mention for role in reversed(user.roles[1:])])
-        description = f"Name am Server: {user.mention}"
+        description = f"**Name am Server:** {user.display_name} | {user.mention}"
 
         if user.premium_since:
             premium_since = datetime.strftime(user.premium_since + time_difference, "%d.%m.%Y %X")
-            description += f"Boostet seit: {premium_since}"
+            description += f"\n**Boostet seit:** {premium_since}"
 
         embed = discord.Embed(title=str(user), description=description, color=constants.EMBED_COLOR_MODERATION)
         embed.set_thumbnail(url=user.avatar_url)
