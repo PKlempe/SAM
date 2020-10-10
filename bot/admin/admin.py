@@ -70,7 +70,7 @@ class AdminCog(commands.Cog):
         embed = discord.Embed(title=title, description=description, color=color)
         await channel.send(embed=embed)
 
-    @embed.command(name='json', hidden=True)
+    @embed.command(name='json')
     @command_log
     async def embed_by_json(self, _ctx: commands.Context, channel: discord.TextChannel, *, json_string: str):
         """Command Handler for the embed command.
@@ -101,7 +101,7 @@ class AdminCog(commands.Cog):
         """
         await ctx.send_help(ctx.command)
 
-    @edit.command(name="content", hidden=True)
+    @edit.command(name="content")
     async def edit_msg_content(self, _ctx: commands.Context, message: discord.Message, *, new_content: str):
         """Command handler for editing the content of a message posted by the bot.
 
@@ -117,7 +117,7 @@ class AdminCog(commands.Cog):
         # First entry in embed list is used,
         await message.edit(content=new_content, embed=(message.embeds[0] if message.embeds else None))
 
-    @edit.command(name="embed", hidden=True)
+    @edit.command(name="embed")
     async def edit_msg_embed(self, _ctx: commands.Context, message: discord.Message, *, new_embed: str):
         """Command handler for editing the content of a message posted by the bot.
 
@@ -196,7 +196,7 @@ class AdminCog(commands.Cog):
         """
         await ctx.send_help(ctx.command)
 
-    @cmd_for_bot_stuff.command(name="cogs", hidden=True)
+    @cmd_for_bot_stuff.command(name="cogs")
     @command_log
     async def embed_available_cogs(self, _ctx: commands.Context):
         """Command handler for the `bot` subcommand `cogs`.
@@ -218,9 +218,9 @@ class AdminCog(commands.Cog):
 
         await self.ch_bot.send(embed=embed)
 
-    @cmd_for_bot_stuff.group(name="cog", hidden=True, invoke_without_command=True)
+    @cmd_for_bot_stuff.group(name="cog", invoke_without_command=True)
     @command_log
-    async def management_cog(self, ctx: commands.Context):
+    async def cog_management(self, ctx: commands.Context):
         """Command handler for the `bot` subcommand group `cog`.
 
         This group contains subcommands for reloading, unloading or simply loading Cogs of the bot.
@@ -230,7 +230,7 @@ class AdminCog(commands.Cog):
         """
         await ctx.send_help(ctx.command)
 
-    @management_cog.command(name='load', hidden=True)
+    @cog_management.command(name='load')
     @command_log
     async def load_extension(self, _ctx: commands.Context, extn_name: str):
         """Command handler for the `bot cog` subcommand `load`.
@@ -247,7 +247,7 @@ class AdminCog(commands.Cog):
         log.warning("%s has been loaded.", extn_name)
         await self.ch_bot.send(f":arrow_heading_down: `{extn_name}` has been successfully loaded.")
 
-    @management_cog.command(name='unload', hidden=True)
+    @cog_management.command(name='unload')
     @command_log
     async def unload_extension(self, _ctx: commands.Context, extn_name: str):
         """Command handler for the `bot cog` subcommand `unload`.
@@ -264,7 +264,7 @@ class AdminCog(commands.Cog):
         log.warning("%s has been unloaded.", extn_name)
         await self.ch_bot.send(f":arrow_heading_up: `{extn_name}` has been successfully unloaded.")
 
-    @management_cog.group(name='reload', hidden=True, invoke_without_command=True)
+    @cog_management.group(name='reload', invoke_without_command=True)
     @command_log
     async def reload_extension(self, _ctx: commands.Context, extn_name: str):
         """Command handler for the `bot cog` subcommand `reload`.
@@ -282,7 +282,7 @@ class AdminCog(commands.Cog):
         log.warning("%s has been reloaded.", extn_name)
         await self.ch_bot.send(f":arrows_counterclockwise: `{extn_name}` has been successfully reloaded.")
 
-    @reload_extension.command(name='all', hidden=True)
+    @reload_extension.command(name='all')
     @command_log
     async def reload_all_extension(self, _ctx: commands.Context):
         """Command handler for the `bot cog reload` subcommand `all`.
@@ -303,7 +303,7 @@ class AdminCog(commands.Cog):
     @unload_extension.error
     @reload_extension.error
     @reload_all_extension.error
-    async def management_cog_error(self, _ctx: commands.Context, error: commands.CommandError):
+    async def cog_management_error(self, _ctx: commands.Context, error: commands.CommandError):
         """Error handler for the `bot` subcommand group `cog`.
 
         Special errors occurring during reloading, unloading or loading of a Cog are handled in here.

@@ -186,7 +186,7 @@ class UniversityCog(commands.Cog):
                                                                      self.bot.command_prefix)
             await self._notify_candidates_about_new_offer(potential_candidates, notification_embed)
 
-    @exchange.command(name="remove", hidden=True)
+    @exchange.command(name="remove")
     @command_log
     async def remove_exchange(self, ctx: commands.Context, channel: discord.TextChannel):
         """Removes a group exchange request.
@@ -242,7 +242,7 @@ class UniversityCog(commands.Cog):
                                   "weitere Infos, siehe angepinnte Nachrichten in {0}. :pushpin:"
                                   .format(self.ch_group_exchange.mention))
 
-    @exchange.command(name="list", hidden=True)
+    @exchange.command(name="list")
     @command_log
     async def list_exchanges(self, ctx: commands.Context):
         """Lists all active group exchange requests by a user.
