@@ -621,7 +621,8 @@ class ModerationCog(commands.Cog):
 
         created_at = datetime.strftime(user.created_at + time_difference, "%d.%m.%Y | %X")
         joined_at = datetime.strftime(user.joined_at + time_difference, "%d.%m.%Y | %X")
-        roles = " ".join([role.mention for role in reversed(user.roles[1:])])
+        roles = " ".join([role.mention for role in reversed(user.roles[1:])]) if len(user.roles) > 1 else "\U0000274C" \
+                                                                                                          " - Keine."
         description = f"**Name am Server:** {user.display_name} | {user.mention}"
 
         if user.premium_since:
