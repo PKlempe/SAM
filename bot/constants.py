@@ -9,12 +9,12 @@ load_dotenv(find_dotenv())
 # Bot Settings
 BOT_PREFIX = '!'
 INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
+                 "CommunityCog":        'bot.community.community',
                  "RoleManagementCog":   'bot.role_management.role_management',
                  "ModerationCog":       'bot.moderation.moderation',
                  "UniversityCog":       'bot.university.university',
                  "UtilityCog":          'bot.utility.utility',
-                 "FeedbackCog":         'bot.feedback.feedback',
-                 "GamingCog":           'bot.gaming.gaming'}
+                 "FeedbackCog":         'bot.feedback.feedback'}
 
 
 # Job Times
@@ -43,7 +43,7 @@ LIMIT_WARNINGS_LVL_1 = 3
 LIMIT_WARNINGS_LVL_2 = 5
 LIMIT_WARNINGS_LVL_3 = 6
 
-LIMIT_GAMING_CHANNELS = 20
+LIMIT_COMMUNITY_CHANNELS = 20
 
 
 # Timeouts
@@ -124,6 +124,7 @@ SERVER_ID = os.getenv("SERVER_ID") or "Undefined"
 
 ## Category IDs
 CATEGORY_ID_GAMING_ROOMS = os.getenv("CATEGORY_ID_GAMING_ROOMS") or "Undefined"
+CATEGORY_ID_STUDY_ROOMS = os.getenv("CATEGORY_ID_STUDY_ROOMS") or "Undefined"
 
 ## Channel IDs
 CHANNEL_ID_BOT = os.getenv("CHANNEL_ID_BOT") or "Undefined"
