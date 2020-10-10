@@ -85,7 +85,7 @@ class ModerationCog(commands.Cog):
                                                moderator=ctx.author, user=None, reason=None)
             await self.ch_modlog.send(embed=modlog_embed)
 
-    @lockdown.command(name='lift', hidden=True)
+    @lockdown.command(name='lift')
     @command_log
     async def lockdown_lift(self, ctx: commands.Context,
                             ch_input: Optional[Union[discord.TextChannel, discord.VoiceChannel]]):
@@ -118,7 +118,7 @@ class ModerationCog(commands.Cog):
                                            reason=None)
         await self.ch_modlog.send(embed=modlog_embed)
 
-    @lockdown.group(name='server', hidden=True, invoke_without_command=True)
+    @lockdown.group(name='server', invoke_without_command=True)
     @command_log
     async def lockdown_server(self, ctx: commands.Context):
         """Command Handler for the `server` subcommand of the `lockdown` command.
@@ -153,7 +153,7 @@ class ModerationCog(commands.Cog):
                                                moderator=ctx.author, user=None, reason=None)
             await self.ch_modlog.send(embed=modlog_embed)
 
-    @lockdown_server.command(name='lift', hidden=True)
+    @lockdown_server.command(name='lift')
     @command_log
     async def lockdown_server_lift(self, ctx: commands.Context):
         """Command Handler for the `lift` subcommand of the command `lockdown server`.
@@ -231,7 +231,7 @@ class ModerationCog(commands.Cog):
 
         await self.check_warnings(ctx, user)
 
-    @warn_user.command(name='remove', hidden=True)
+    @warn_user.command(name='remove')
     @command_log
     async def remove_warning(self, ctx: commands.Context, warning_id: int, *, reason: Optional[str]):
         """Command Handler for the subcommand `remove` of the command `warning`.
@@ -273,7 +273,7 @@ class ModerationCog(commands.Cog):
             await ctx.send("Ich konnte leider keine Verwarnung mit der von dir angegebenen ID finden. :cold_sweat: "
                            "Hast du dich möglicherweise vertippt?")
 
-    @warn_user.command(name='clear', hidden=True)
+    @warn_user.command(name='clear')
     @command_log
     async def clear_warnings(self, ctx: commands.Context, user: discord.Member, *, reason: Optional[str]):
         """Command Handler for the subcommand `clear` of the command `warning`.
@@ -707,7 +707,7 @@ class ModerationCog(commands.Cog):
             await ctx.author.send(f"Ich konnte leider keinen Nutzer namens **{user}** finden. :confused: Hast du dich "
                                   f"möglicherweise vertippt?")
 
-    @commands.group(name='purge', hidden=True)
+    @commands.command(name='purge', hidden=True)
     @command_log
     async def purge_messages(self, ctx: commands.Context, channel: Optional[discord.TextChannel], amount: int):
         """Command Handler for the `purge` command.
@@ -797,7 +797,7 @@ class ModerationCog(commands.Cog):
         await ctx.author.send("Deine Nachricht wurde erfolgreich an die Moderatoren weitergeleitet!\n"
                               "__Hier deine Bestätigung:__", embed=embed_confirmation)
 
-    @modmail.command(name='get', hidden=True)
+    @modmail.command(name='get')
     @command_log
     async def get_modmail_with_status(self, ctx: commands.Context, *, status: str):
         """Command Handler for the modmail subcommand `get`.

@@ -131,6 +131,8 @@ class UtilityCog(commands.Cog):
         Args:
             user (discord.Member): The new member on the server.
         """
+        log.info("%s has joined the server!", user)
+
         content = "Hallo! :wave: :grinning:\nIch bin **SAM**, der Management-Bot für den Discord-Server der " \
                   "**__Uni Wien INF/WINF__**. Es freut mich sehr, dass du zu uns gefunden hast!\n\nHier ein paar " \
                   "Tipps damit du sofort durchstarten kannst:"

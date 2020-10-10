@@ -27,7 +27,7 @@ class FeedbackCog(commands.Cog):
         # Channel instances
         self.ch_suggestion = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_SUGGESTIONS))
 
-    @commands.group(name="suggestion", hidden=True, invoke_without_command=True, aliases=["suggest"])
+    @commands.group(name="suggestion", invoke_without_command=True, aliases=["suggest"])
     @command_log
     async def manage_suggestions(self, ctx: commands.Context, *, suggestion: str):
         """Command Handler for the `suggestion` command.
@@ -54,7 +54,7 @@ class FeedbackCog(commands.Cog):
         await message.add_reaction(constants.EMOJI_UPVOTE)
         await message.add_reaction(constants.EMOJI_DOWNVOTE)
 
-    @manage_suggestions.command(name="approve")
+    @manage_suggestions.command(name="approve", hidden=True)
     @commands.is_owner()
     @command_log
     async def suggestion_approve(self, ctx: commands.Context, suggestion_id: int, *, reason: Optional[str]):
@@ -75,7 +75,7 @@ class FeedbackCog(commands.Cog):
         await self._change_suggestion_status(suggestion_id, SuggestionStatus.APPROVED, ctx.author, reason)
         log.info("Suggestion #%s has been approved by %s.", suggestion_id, ctx.author)
 
-    @manage_suggestions.command(name="deny")
+    @manage_suggestions.command(name="deny", hidden=True)
     @commands.is_owner()
     @command_log
     async def suggestion_deny(self, ctx: commands.Context, suggestion_id: int, *, reason: Optional[str]):
@@ -96,7 +96,7 @@ class FeedbackCog(commands.Cog):
         await self._change_suggestion_status(suggestion_id, SuggestionStatus.DENIED, ctx.author, reason)
         log.info("Suggestion #%s has been denied by %s.", suggestion_id, ctx.author)
 
-    @manage_suggestions.command(name="consider")
+    @manage_suggestions.command(name="consider", hidden=True)
     @commands.is_owner()
     @command_log
     async def suggestion_consider(self, ctx: commands.Context, suggestion_id: int, *, reason: Optional[str]):
@@ -117,7 +117,7 @@ class FeedbackCog(commands.Cog):
         await self._change_suggestion_status(suggestion_id, SuggestionStatus.CONSIDERED, ctx.author, reason)
         log.info("Suggestion #%s is being considered by %s.", suggestion_id, ctx.author)
 
-    @manage_suggestions.command(name="implemented")
+    @manage_suggestions.command(name="implemented", hidden=True)
     @commands.is_owner()
     @command_log
     async def suggestion_implemented(self, ctx: commands.Context, suggestion_id: int, *, reason: Optional[str]):
