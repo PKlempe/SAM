@@ -220,7 +220,7 @@ class AdminCog(commands.Cog):
 
     @cmd_for_bot_stuff.group(name="cog", invoke_without_command=True)
     @command_log
-    async def cog_management(self, ctx: commands.Context):
+    async def cogs_management(self, ctx: commands.Context):
         """Command handler for the `bot` subcommand group `cog`.
 
         This group contains subcommands for reloading, unloading or simply loading Cogs of the bot.
@@ -230,7 +230,7 @@ class AdminCog(commands.Cog):
         """
         await ctx.send_help(ctx.command)
 
-    @cog_management.command(name='load')
+    @cogs_management.command(name='load')
     @command_log
     async def load_extension(self, _ctx: commands.Context, extn_name: str):
         """Command handler for the `bot cog` subcommand `load`.
@@ -247,7 +247,7 @@ class AdminCog(commands.Cog):
         log.warning("%s has been loaded.", extn_name)
         await self.ch_bot.send(f":arrow_heading_down: `{extn_name}` has been successfully loaded.")
 
-    @cog_management.command(name='unload')
+    @cogs_management.command(name='unload')
     @command_log
     async def unload_extension(self, _ctx: commands.Context, extn_name: str):
         """Command handler for the `bot cog` subcommand `unload`.
@@ -264,7 +264,7 @@ class AdminCog(commands.Cog):
         log.warning("%s has been unloaded.", extn_name)
         await self.ch_bot.send(f":arrow_heading_up: `{extn_name}` has been successfully unloaded.")
 
-    @cog_management.group(name='reload', invoke_without_command=True)
+    @cogs_management.group(name='reload', invoke_without_command=True)
     @command_log
     async def reload_extension(self, _ctx: commands.Context, extn_name: str):
         """Command handler for the `bot cog` subcommand `reload`.
