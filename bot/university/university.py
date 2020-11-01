@@ -402,8 +402,8 @@ def _initialize_group_exchange_jobs():
                                      hour=opening["hour"], minute=opening["minute"])
 
     for closing in closings:
-        singletons.scheduler.add_job(_scheduled_group_exchange_closing_and_purge(), replace_existing=True, id=closing["job_id"],
-                                     trigger="cron", day=closing["day"], month=closing["month"],
+        singletons.scheduler.add_job(_scheduled_group_exchange_closing_and_purge, replace_existing=True,
+                                     id=closing["job_id"], trigger="cron", day=closing["day"], month=closing["month"],
                                      hour=closing["hour"], minute=closing["minute"])
 
 
