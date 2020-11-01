@@ -13,8 +13,6 @@ scheduler = AsyncIOScheduler(job_defaults={'misfire_grace_time': 24*60*60},
                              jobstores={'default': SQLAlchemyJobStore(
                                  url=f'sqlite:///{DB_FILE_PATH}')})
 
-scheduler.start()
-
 
 @atexit.register
 def cleanup():

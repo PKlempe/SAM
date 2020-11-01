@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 from aiohttp import ClientResponseError
 
-from bot import constants as const
+from bot import constants as const, singletons
 from bot.logger import log
 
 
@@ -25,6 +25,9 @@ async def on_ready():
     print('- Initialising & Loading extensions...')
     for extension in const.INITIAL_EXTNS.values():
         bot.load_extension(extension)
+
+    print('- Starting Job Scheduler...')
+    singletons.scheduler.start()
 
     print("\n\n======== BOT IS UP & RUNNING ========\n\n")
 
