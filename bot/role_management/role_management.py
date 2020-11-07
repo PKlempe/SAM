@@ -48,8 +48,8 @@ class RoleManagementCog(commands.Cog):
             if not self._db_connector.is_botonly(ctx.channel.id):
                 await ctx.message.delete()
 
-            ctx.channel.send(value=f"Dieser Befehl wird nur in {self.ch_role.mention} unterstützt. Bitte "
-                                   f"versuche es dort noch einmal. ", delete_after=constants.TIMEOUT_INFORMATION)
+            await ctx.channel.send(content=f"Dieser Befehl wird nur in {self.ch_role.mention} unterstützt. Bitte "
+                                   f"versuche es dort noch einmal.", delete_after=constants.TIMEOUT_INFORMATION)
             return
 
         converter = commands.RoleConverter()
