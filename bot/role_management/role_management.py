@@ -304,7 +304,19 @@ class RoleManagementCog(commands.Cog):
 
                 for reaction in message.reactions:
                     if reaction.emoji != payload.emoji.name:
-                        await reaction.remove(payload.member)
+                        users = await reaction.users().flatten()
+
+                        if payload.member in users:
+                            await reaction.remove(payload.member)
+                            break
+
+                        role_id = self._db_connector.get_reaction_role(payload.message_id, reaction.emoji)
+                        role = self.bot.get_guild(payload.guild_id).get_role(role_id)
+
+                        if role in payload.member.roles:
+                            await payload.member.remove_roles(role, reason="Automatische/Manuelle Entfernung via "
+                                                                           "Reaction.")
+                            break
 
             role_id = self._db_connector.get_reaction_role(payload.message_id, payload.emoji.name)
             role = self.bot.get_guild(payload.guild_id).get_role(role_id)
