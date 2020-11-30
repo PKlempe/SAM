@@ -43,6 +43,10 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.title = data.get("title")
         self.url = data.get("url")
 
+    # A special method that registers as a commands.check() for every command and subcommand in this cog.
+    async def cog_check(self, ctx):
+        return await self.bot.is_owner(ctx.author)  # Only owners of the bot can use the commands defined in this Cog.
+
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=True) -> List[str]:
         """Method for the video URLs of the provided link.
