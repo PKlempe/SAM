@@ -14,7 +14,7 @@ from bot.logger import log
 intents = discord.Intents.default()
 intents.members = True
 
-bot = commands.Bot(command_prefix=const.BOT_PREFIX, intents=intents)
+bot = commands.Bot(command_prefix=commands.when_mentioned_or(const.BOT_PREFIX), intents=intents)
 
 
 @bot.event

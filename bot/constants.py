@@ -14,7 +14,8 @@ INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
                  "ModerationCog":       'bot.moderation.moderation',
                  "UniversityCog":       'bot.university.university',
                  "UtilityCog":          'bot.utility.utility',
-                 "FeedbackCog":         'bot.feedback.feedback'}
+                 "FeedbackCog":         'bot.feedback.feedback',
+                 "MusicCog":            'bot.music.music'}
 
 
 # Job Times
@@ -44,6 +45,7 @@ LIMIT_WARNINGS_LVL_2 = 5
 LIMIT_WARNINGS_LVL_3 = 6
 
 LIMIT_COMMUNITY_CHANNELS = 20
+LIMIT_SONG_QUEUE = 300
 
 
 # Timeouts
