@@ -51,6 +51,8 @@ class MusicCog(commands.Cog):
             url (str): The URL to the song or playlist.
         """
         _check_if_supported_url(url)
+        log.info("%s has started playback for the URL \"%s\".", ctx.author, url)
+
         media_list = await YTDLSource.from_url(url, loop=self.bot.loop)
 
         if len(self.song_queue) == const.LIMIT_SONG_QUEUE:
@@ -63,7 +65,7 @@ class MusicCog(commands.Cog):
             while True:
                 for song_url in self.song_queue:
                     source = await YTDLSource.get_media(song_url, loop=self.bot.loop)
-                    await _stream_media(ctx.voice_client, source)
+                    await _stream_media(ctx.voice_client, self.bot.loop, source)
 
                 if not self.loop_mode:
                     break
@@ -79,6 +81,7 @@ class MusicCog(commands.Cog):
 
         if ctx.voice_client and ctx.voice_client.is_playing() and ctx.voice_client.channel == ctx.author.voice.channel:
             self.loop_mode = not self.loop_mode
+            log.info("The loop mode of the music player has been changed by %s.", ctx.author)
             await ctx.send("Die aktuelle Wiedergabeliste läuft nun in Dauerschleife.",
                            delete_after=const.TIMEOUT_INFORMATION)
 
@@ -95,6 +98,8 @@ class MusicCog(commands.Cog):
             await ctx.voice_client.disconnect()
             self.song_queue.clear()
             self.loop_mode = False
+
+            log.info("%s stopped the playback", ctx.author)
 
     @play_music.before_invoke
     async def ensure_voice(self, ctx):
@@ -137,7 +142,7 @@ class MusicCog(commands.Cog):
                            delete_after=const.TIMEOUT_INFORMATION)
 
 
-async def _stream_media(voice_client: discord.VoiceClient, source: YTDLSource):
+async def _stream_media(voice_client: discord.VoiceClient, loop: asyncio.BaseEventLoop, source: YTDLSource):
     """Method which starts the streaming and playback of the provided URL.
 
     Args:
@@ -145,8 +150,13 @@ async def _stream_media(voice_client: discord.VoiceClient, source: YTDLSource):
         source (YTDLSource): Audio source which contains the audio stream.
     """
 
-    voice_client.play(source, after=lambda e: log.error("Player error: %s", e) if e else None)
-    await asyncio.sleep(source.data["duration"])  # Wait until the song ends before continuation.
+    future = loop.create_future() if loop else asyncio.get_event_loop().create_future()
+    voice_client.play(source, after=lambda e: log.error("Player error: %s", e) if e else future.set_result(None))
+
+    try:
+        await asyncio.wait_for(future, timeout=source.data["duration"])
+    except asyncio.TimeoutError:
+        log.error("Player error: Timeout for song playback has been reached.")
 
 
 def _check_if_supported_url(url: str):
