@@ -53,7 +53,12 @@ class MusicCog(commands.Cog):
         _check_if_supported_url(url)
         log.info("%s has started playback for the URL \"%s\".", ctx.author, url)
 
-        media_list = await YTDLSource.from_url(url, loop=self.bot.loop)
+        try:
+            media_list = await YTDLSource.from_url(url, loop=self.bot.loop)
+        except discord.InvalidArgument as error:
+            log.error(error)
+            await ctx.send("Der von dir angegebene Link ist leider ungültig.", delete_after=const.TIMEOUT_INFORMATION)
+            return
 
         if len(self.song_queue) == const.LIMIT_SONG_QUEUE:
             self.song_queue = self.song_queue[len(media_list):]
@@ -64,8 +69,15 @@ class MusicCog(commands.Cog):
         if not ctx.voice_client.is_playing():
             while True:
                 for song_url in self.song_queue:
-                    source = await YTDLSource.get_media(song_url, loop=self.bot.loop)
-                    await _stream_media(ctx.voice_client, self.bot.loop, source)
+                    try:
+                        source = await YTDLSource.get_media(song_url, loop=self.bot.loop)
+                        await _stream_media(ctx.voice_client, self.bot.loop, source)
+                    except discord.InvalidArgument as error:
+                        log.error(error)
+                        self.song_queue.remove(song_url)
+
+                        await ctx.send("Der von dir angegebene Link ist leider ungültig.",
+                                       delete_after=const.TIMEOUT_INFORMATION)
 
                 if not self.loop_mode:
                     break
