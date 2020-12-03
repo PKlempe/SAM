@@ -154,7 +154,8 @@ async def _stream_media(voice_client: discord.VoiceClient, loop: asyncio.BaseEve
     voice_client.play(source, after=lambda e: log.error("Player error: %s", e) if e else future.set_result(None))
 
     try:
-        await asyncio.wait_for(future, timeout=source.data["duration"])
+        # 1 extra second to give the bot a chance to end the playback gracefully.
+        await asyncio.wait_for(future, timeout=source.data["duration"] + 1)
     except asyncio.TimeoutError:
         log.error("Player error: Timeout for song playback has been reached.")
 
