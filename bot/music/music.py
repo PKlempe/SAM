@@ -76,9 +76,6 @@ class MusicCog(commands.Cog):
                         log.error(error)
                         self.song_queue.remove(song_url)
 
-                        await ctx.send("Der von dir angegebene Link ist leider ungültig.",
-                                       delete_after=const.TIMEOUT_INFORMATION)
-
                 if not self.loop_mode:
                     break
         else:

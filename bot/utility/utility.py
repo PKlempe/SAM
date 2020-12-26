@@ -246,7 +246,7 @@ def generate_features_list(features: List[str]) -> str:
     if len(features) == 0:
         return ":no_entry_sign: Keine"
 
-    ic_bullet_point = ":white_check_mark: "
+    ic_bullet_point = ":white_check_mark:"
     dict_server_features = {
         "COMMUNITY": "Community-Server",
         "VIP_REGIONS": "VIP-Regionen",
@@ -263,12 +263,14 @@ def generate_features_list(features: List[str]) -> str:
         "BANNER": "Server-Banner",
         "ANIMATED_ICON": "Animiertes Icon",
         "PUBLIC_DISABLED": "Public disabled",
-        "WELCOME_SCREEN_ENABLED": "Begrüßungsbildschirm"
+        "WELCOME_SCREEN_ENABLED": "Begrüßungsbildschirm",
+        "MEMBER_VERIFICATION_GATE_ENABLED": "Member Screening"
     }
     str_features = ""
 
     for feature in features:
-        str_features += ic_bullet_point + dict_server_features[feature] + "\n"
+        name = dict_server_features[feature] if feature in dict_server_features else feature
+        str_features += f"{ic_bullet_point} {name}\n"
 
     return str_features
 
