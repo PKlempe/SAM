@@ -12,7 +12,7 @@ import discord
 from discord.ext import commands
 
 from bot import constants, singletons
-from bot.logger import command_log
+from bot.logger import command_log, log
 from bot.persistence import DatabaseConnector
 from bot.utility import SelectionEmoji
 
@@ -38,7 +38,7 @@ class UniversityCog(commands.Cog):
             .get_channel(int(constants.CHANNEL_ID_GROUP_EXCHANGE))
 
         # Adds jobs needed for reopening/closing the group exchange channel if they don't already exist.
-        _initialize_group_exchange_jobs()
+        _initialize_scheduler_jobs()
 
     @commands.group(name="ufind", invoke_without_command=True)
     @command_log
@@ -366,6 +366,8 @@ async def _scheduled_group_exchange_opening():
     message = await ch_group_exchange.send(embed=embed)
     await message.pin(reason="Tauschbörse: Info-Nachricht")
 
+    log.info("Group Exchange channel has been opened.")
+
 
 async def _scheduled_group_exchange_closing_and_purge():
     """Method which is being called by the scheduler and closes the group exchange channel.
@@ -383,14 +385,30 @@ async def _scheduled_group_exchange_closing_and_purge():
     # Limit is set to a high number because we can't simply remove "all" messages.
     await ch_group_exchange.purge(limit=100000)
 
+    log.info("Group Exchange channel has been closed.")
 
-def _initialize_group_exchange_jobs():
-    """Method which creates scheduler jobs for opening/closing/preparing the group exchange channel.
 
-    Convenience method which adds jobs regarding the exchange channel to the applications scheduler if they don't
-    alreday exist. The job is scheduled yearly as stated by the passed dictionary, which must contain the keys 'job_id',
-    'month', 'day', 'hour' and 'minute'.
+async def _remove_ersti_role():
+    """Method which is being called by the scheduler and removes the 'ersti' role from older members."""
+    role = UniversityCog.bot.get_guild(int(constants.SERVER_ID)).get_role(int(constants.ROLE_ID_ERSTI))
+    date_now = datetime.now()
+    date_threshold = datetime(date_now.year, date_now.month - 2, 1)
+
+    for member in role.members:
+        if member.joined_at < date_threshold:
+            await member.remove_roles(role, reason="Member isn't an Ersti anymore.")
+
+    log.info("Ersti Role members have been purged.")
+
+
+def _initialize_scheduler_jobs():
+    """Method which creates scheduler jobs for various tasks on the server.
+
+    Convenience method which adds jobs to the applications scheduler if they don't alreday exist. The job is scheduled
+    yearly as stated by the passed dictionary, which must contain the keys 'job_id', 'month', 'day', 'hour' and 'minute'.
     """
+
+    # Group Exchange
     openings = [constants.JOB_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER,
                 constants.JOB_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER]
     closings = [constants.JOB_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER,
@@ -405,6 +423,18 @@ def _initialize_group_exchange_jobs():
         singletons.scheduler.add_job(_scheduled_group_exchange_closing_and_purge, replace_existing=True,
                                      id=closing["job_id"], trigger="cron", day=closing["day"], month=closing["month"],
                                      hour=closing["hour"], minute=closing["minute"])
+
+    # Ersti Role
+    start_ws = constants.JOB_START_WINTER_SEMESTER
+    start_ss = constants.JOB_START_SUMMER_SEMESTER
+
+    singletons.scheduler.add_job(_remove_ersti_role, replace_existing=True, id=start_ws["job_id"], trigger="cron",
+                                 day=start_ws["day"], month=start_ws["month"], hour=start_ws["hour"],
+                                 minute=start_ws["minute"])
+
+    singletons.scheduler.add_job(_remove_ersti_role, replace_existing=True, id=start_ss["job_id"], trigger="cron",
+                                 day=start_ss["day"], month=start_ss["month"], hour=start_ss["hour"],
+                                 minute=start_ss["minute"])
 
 
 def _build_candidate_notification_embed(author: discord.User, message: discord.Message,

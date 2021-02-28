@@ -19,6 +19,9 @@ INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
 
 
 # Job Times
+JOB_START_WINTER_SEMESTER = {"job_id": "ersti_ws", "day": "1", "month": "10", "hour": "4", "minute": "0"}
+JOB_START_SUMMER_SEMESTER = {"job_id": "ersti_ss", "day": "1", "month": "3", "hour": "4", "minute": "0"}
+
 JOB_OPEN_GROUP_EXCHANGE_WINTER_SEMESTER = {"job_id": "op_ex_ws", "day": "21", "month": "9", "hour": "4", "minute": "0"}
 JOB_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER = {"job_id": "cl_ex_ws", "day": "1", "month": "11", "hour": "4", "minute": "0"}
 JOB_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER = {"job_id": "op_ex_ss", "day": "20", "month": "2", "hour": "4", "minute": "0"}
@@ -144,6 +147,7 @@ CHANNEL_ID_GROUP_EXCHANGE = os.getenv("CHANNEL_ID_GROUP_EXCHANGE") or "Undefined
 ## Role IDs
 ROLE_ID_MODERATOR = os.getenv("ROLE_ID_MODERATOR") or "Undefined"
 ROLE_ID_MUTED = os.getenv("ROLE_ID_MUTED") or "Undefined"
+ROLE_ID_ERSTI = os.getenv("ROLE_ID_ERSTI") or "Undefined"
 
 ## User IDs
 USER_ID_CONTRIBUTOR = 310100064687226882
