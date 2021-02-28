@@ -497,7 +497,7 @@ def _build_group_exchange_info_embed() -> discord.Embed:
         (discord.Embed): The embed representing the group exchange offer.
     """
     description = "Um ein Tauschangebot einzureichen, verwende den Befehl:\n" \
-                  "```!exchange [channel-mention] [Biete] [Suche]```\n" \
+                  "```!exchange <channel-mention> <Biete> <Suche>```\n" \
                   "__SAM__ wird es daraufhin in diesem Kanal posten und dich regelmäßig über passende Angebote " \
                   "anderer informieren. Um das Tauschangebot für die richtige LV einzureichen, achte bitte immer " \
                   "darauf, den entsprechenden Kanal zu markieren.\n\n" \
@@ -505,9 +505,9 @@ def _build_group_exchange_info_embed() -> discord.Embed:
                   "Man beachte, dass beim letzten Parameter die Ziffern durch einen Beistrich getrennt sind.\n\n" \
                   "Um dein Angebot und somit auch deine jeweiligen Anfragen für einen Kurs zu löschen, nutze den " \
                   "Befehl:\n" \
-                  "```!exchange remove [channel-mention]```\n" \
+                  "```!exchange remove <channel-mention>```\n" \
                   "Bitte verwende diesen auch, sobald du einen Tauschpartner gefunden hast, um zukünftig keine " \
-                  "Benachrichtigungen oder Anfragen andere Nutzer mehr zu erhalten."
+                  "Benachrichtigungen oder Anfragen anderer Nutzer mehr zu erhalten."
 
     field_1 = "Wenn du einen Tauschpartner gefunden hast, __sende ihm eine private Nachricht__. Diskussionen hier zu " \
               "verhindern, hilft dabei den Kanal übersichtlich zu halten."
