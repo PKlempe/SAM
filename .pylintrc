@@ -6,5 +6,7 @@ ignore-imports=yes
 
 [MASTER]
 ignore=test
-
 max-args=6
+
+[MESSAGES CONTROL]
+disable=E0237
