@@ -160,7 +160,7 @@ async def _stream_media(voice_client: discord.VoiceClient, loop: asyncio.BaseEve
     """
 
     future = loop.create_future() if loop else asyncio.get_event_loop().create_future()
-    voice_client.play(source, after=lambda e: log.error("Player error: %s", e) if e else future.set_result(None))
+    voice_client.play(source, after=lambda e: future.set_result(e))
 
     try:
         await asyncio.wait_for(future, timeout=None)
