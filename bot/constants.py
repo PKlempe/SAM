@@ -33,6 +33,8 @@ URL_DISCORD = "https://discordapp.com"
 URL_UFIND = "https://ufind.univie.ac.at/de"
 URL_UFIND_API = "https://m-ufind.univie.ac.at"
 URL_UFIND_LOGO = "https://blog.univie.ac.at/relaunch/wp-content/uploads/2016/07/ufind-1-300x130.png"
+URL_KOFI = "https://ko-fi.com/pklempe"
+URL_KOFI_LOGO = "https://i.imgur.com/q0M4x4g.png"
 URL_HTTP_CAT = "https://http.cat"
 
 
@@ -93,6 +95,7 @@ EMBED_COLOR_MODLOG_LOCKDOWN = 0xFFFFFF
 EMBED_COLOR_GROUP_EXCHANGE = 0xECFF00
 EMBED_COLOR_BOTONLY = 0xFF7900
 EMBED_COLOR_WARNING = 0xFF0000
+EMBED_COLOR_DONATION = 0xFF5E5B
 
 
 # Special Emojis
@@ -137,6 +140,7 @@ CHANNEL_ID_MODLOG = os.getenv("CHANNEL_ID_MODLOG") or "Undefined"
 CHANNEL_ID_NEWS = os.getenv("CHANNEL_ID_NEWS") or "Undefined"
 CHANNEL_ID_RULES = os.getenv("CHANNEL_ID_RULES") or "Undefined"
 CHANNEL_ID_FAQ = os.getenv("CHANNEL_ID_FAQ") or "Undefined"
+CHANNEL_ID_SUPPORTER = os.getenv("CHANNEL_ID_SUPPORTER") or "Undefined"
 CHANNEL_ID_REPORT = os.getenv("CHANNEL_ID_REPORT") or "Undefined"
 CHANNEL_ID_MODMAIL = os.getenv("CHANNEL_ID_MODMAIL") or "Undefined"
 CHANNEL_ID_ROLES = os.getenv("CHANNEL_ID_ROLES") or "Undefined"

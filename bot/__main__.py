@@ -22,12 +22,15 @@ async def on_ready():
     """Event handler for the Bot entering the ready state."""
     print('- Successfully logged in as: {0.user}'.format(bot))
 
-    print('- Initialising & Loading extensions...')
+    print('- Initializing & Loading extensions...')
     for extension in const.INITIAL_EXTNS.values():
         bot.load_extension(extension)
 
     print('- Starting Job Scheduler...')
-    singletons.scheduler.start()
+    singletons.SCHEDULER.start()
+
+    print('- Starting Web Server...')
+    await singletons.start_webserver(bot)
 
     print("\n\n======== BOT IS UP & RUNNING ========\n\n")
 

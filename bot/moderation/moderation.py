@@ -389,7 +389,7 @@ class ModerationCog(commands.Cog):
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
-        singletons.scheduler.add_job(_scheduled_unmute_user, 'date', run_date=run_date, args=[user.id])
+        singletons.SCHEDULER.add_job(_scheduled_unmute_user, 'date', run_date=run_date, args=[user.id])
 
     @commands.command(name='ban', hidden=True)
     @command_log
@@ -456,7 +456,7 @@ class ModerationCog(commands.Cog):
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
-        singletons.scheduler.add_job(_scheduled_unban_user, 'date', run_date=run_date, args=[user.id])
+        singletons.SCHEDULER.add_job(_scheduled_unban_user, 'date', run_date=run_date, args=[user.id])
 
     @tempmute_user.error
     @tempban_user.error
@@ -771,7 +771,8 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
-        if not self._db_connector.is_botonly(ctx.channel.id):
+        if ctx.channel.type not in [discord.ChannelType.private, discord.ChannelType.group] \
+                and not self._db_connector.is_botonly(ctx.channel.id):
             await ctx.message.delete()
 
         msg_content = ctx.message.content[len(ctx.prefix + ctx.command.name):]

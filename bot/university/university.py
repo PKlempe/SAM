@@ -72,7 +72,7 @@ class UniversityCog(commands.Cog):
             search_filters = "%20%2Be%20c%3A6"  # URL Encoding
             query_url = constants.URL_UFIND_API + "/staff/?query=" + search_term + search_filters
 
-            async with singletons.http_session.get(query_url) as response:
+            async with singletons.HTTP_SESSION.get(query_url) as response:
                 response.raise_for_status()
                 data_staff_multiple = await response.text(encoding='utf-8')
                 xml_staff_multiple = ET.fromstring(data_staff_multiple)
@@ -85,7 +85,7 @@ class UniversityCog(commands.Cog):
         staff_url = constants.URL_UFIND_API + "/staff/" + persons[index].attrib["id"]
 
         async with ctx.channel.typing():
-            async with singletons.http_session.get(staff_url) as response2:
+            async with singletons.HTTP_SESSION.get(staff_url) as response2:
                 response2.raise_for_status()
                 data_staff_single = await response2.text(encoding='utf-8')
 
@@ -415,12 +415,12 @@ def _initialize_scheduler_jobs():
                 constants.JOB_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER]
 
     for opening in openings:
-        singletons.scheduler.add_job(_scheduled_group_exchange_opening, replace_existing=True, id=opening["job_id"],
+        singletons.SCHEDULER.add_job(_scheduled_group_exchange_opening, replace_existing=True, id=opening["job_id"],
                                      trigger="cron", day=opening["day"], month=opening["month"],
                                      hour=opening["hour"], minute=opening["minute"])
 
     for closing in closings:
-        singletons.scheduler.add_job(_scheduled_group_exchange_closing_and_purge, replace_existing=True,
+        singletons.SCHEDULER.add_job(_scheduled_group_exchange_closing_and_purge, replace_existing=True,
                                      id=closing["job_id"], trigger="cron", day=closing["day"], month=closing["month"],
                                      hour=closing["hour"], minute=closing["minute"])
 
@@ -428,11 +428,11 @@ def _initialize_scheduler_jobs():
     start_ws = constants.JOB_START_WINTER_SEMESTER
     start_ss = constants.JOB_START_SUMMER_SEMESTER
 
-    singletons.scheduler.add_job(_remove_ersti_role, replace_existing=True, id=start_ws["job_id"], trigger="cron",
+    singletons.SCHEDULER.add_job(_remove_ersti_role, replace_existing=True, id=start_ws["job_id"], trigger="cron",
                                  day=start_ws["day"], month=start_ws["month"], hour=start_ws["hour"],
                                  minute=start_ws["minute"])
 
-    singletons.scheduler.add_job(_remove_ersti_role, replace_existing=True, id=start_ss["job_id"], trigger="cron",
+    singletons.SCHEDULER.add_job(_remove_ersti_role, replace_existing=True, id=start_ss["job_id"], trigger="cron",
                                  day=start_ss["day"], month=start_ss["month"], hour=start_ss["hour"],
                                  minute=start_ss["minute"])
 
