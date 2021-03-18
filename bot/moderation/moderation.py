@@ -771,7 +771,8 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
-        if ctx.channel.type.name not in ["private", "group"] and not self._db_connector.is_botonly(ctx.channel.id):
+        if ctx.channel.type not in [discord.ChannelType.private, discord.ChannelType.group] \
+                and not self._db_connector.is_botonly(ctx.channel.id):
             await ctx.message.delete()
 
         msg_content = ctx.message.content[len(ctx.prefix + ctx.command.name):]

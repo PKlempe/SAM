@@ -66,7 +66,6 @@ async def _send_donation_notification(bot: Bot, donation_data: Dict):
     embed.set_footer(text="Danke! \U00002764\U0000FE0F", icon_url=url_owner_pic)
     embed.set_thumbnail(url=const.URL_KOFI_LOGO)
     embed.add_field(name="Name:", value=name)
-    # embed.add_field(name="Betrag:", value="{0}€".format(data['amount']))
     embed.add_field(name="Nachricht:", value=message)
 
     await channel.send(embed=embed)
