@@ -9,4 +9,4 @@ ignore=test
 max-args=6
 
 [MESSAGES CONTROL]
-disable=E0237
+disable=E0237,W0603
