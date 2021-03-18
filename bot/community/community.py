@@ -20,7 +20,6 @@ class CommunityCog(commands.Cog):
         Args:
             bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
         """
-        self.bot = bot
         self._db_connector = DatabaseConnector(const.DB_FILE_PATH, const.DB_INIT_SCRIPT)
 
         # Channel Category instances

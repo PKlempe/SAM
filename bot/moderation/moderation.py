@@ -389,7 +389,7 @@ class ModerationCog(commands.Cog):
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
-        singletons.scheduler.add_job(_scheduled_unmute_user, 'date', run_date=run_date, args=[user.id])
+        singletons.SCHEDULER.add_job(_scheduled_unmute_user, 'date', run_date=run_date, args=[user.id])
 
     @commands.command(name='ban', hidden=True)
     @command_log
@@ -456,7 +456,7 @@ class ModerationCog(commands.Cog):
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
-        singletons.scheduler.add_job(_scheduled_unban_user, 'date', run_date=run_date, args=[user.id])
+        singletons.SCHEDULER.add_job(_scheduled_unban_user, 'date', run_date=run_date, args=[user.id])
 
     @tempmute_user.error
     @tempban_user.error
