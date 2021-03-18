@@ -26,8 +26,14 @@ async def on_ready():
     for extension in const.INITIAL_EXTNS.values():
         bot.load_extension(extension)
 
+    print('- Initialising other Bot stuff...')
+    singletons.initialise_bot_wrapper(bot)
+
     print('- Starting Job Scheduler...')
     singletons.scheduler.start()
+
+    print('- Starting Web Server...')
+    await singletons.start_webserver()
 
     print("\n\n======== BOT IS UP & RUNNING ========\n\n")
 
