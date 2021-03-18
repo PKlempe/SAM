@@ -49,12 +49,18 @@ async def _send_donation_notification(bot: Bot, donation_data: Dict):
     """
     guild = bot.get_guild(int(const.SERVER_ID))
     channel = guild.get_channel(int(const.CHANNEL_ID_SUPPORTER))
-
-    name = donation_data["from_name"] if donation_data["is_public"] else "`Anonymer Spender`"
-    message = donation_data["message"] if donation_data["is_public"] else "`Geheim.` :shushing_face:"
     url_owner_pic = guild.owner.avatar_url_as(format="png", size=32)
 
-    embed = Embed(title="Neue Spende erhalten!", color=const.EMBED_COLOR_DONATION, url=donation_data["url"],
+    if donation_data["is_public"]:
+        name = donation_data["from_name"]
+        message = donation_data["message"] if donation_data["message"] else "-"
+        url_donation = donation_data["url"]
+    else:
+        name = "`Anonymer Spender`"
+        message = "`Geheim.` :shushing_face:"
+        url_donation = None
+
+    embed = Embed(title="Neue Spende erhalten!", color=const.EMBED_COLOR_DONATION, url=url_donation,
                           description="Jemand hat dem Betreiber des Servers eine Tasse Kaffee ausgegeben. :coffee:")
     embed.set_author(name="Ko-fi", url=const.URL_KOFI)
     embed.set_footer(text="Danke! \U00002764\U0000FE0F", icon_url=url_owner_pic)
