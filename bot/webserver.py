@@ -54,7 +54,7 @@ async def _send_donation_notification(bot: Bot, donation_data: Dict):
     if donation_data["is_public"]:
         name = donation_data["from_name"]
         message = donation_data["message"] if donation_data["message"] else "-"
-        url_donation = donation_data["url"]
+        url_donation = const.URL_KOFI_DONATION.format(donation_data["message_id"])
     else:
         name = "`Anonymer Spender`"
         message = "`Geheim.` :shushing_face:"
