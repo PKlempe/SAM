@@ -58,7 +58,7 @@ async def _send_donation_notification(bot: Bot, donation_data: Dict):
     else:
         name = "`Anonymer Spender`"
         message = "`Geheim.` :shushing_face:"
-        url_donation = None
+        url_donation = ""
 
     embed = Embed(title="Neue Spende erhalten!", color=const.EMBED_COLOR_DONATION, url=url_donation,
                           description="Jemand hat dem Betreiber des Servers eine Tasse Kaffee ausgegeben. :coffee:")
