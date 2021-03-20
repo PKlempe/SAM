@@ -35,6 +35,7 @@ URL_UFIND_API = "https://m-ufind.univie.ac.at"
 URL_UFIND_LOGO = "https://blog.univie.ac.at/relaunch/wp-content/uploads/2016/07/ufind-1-300x130.png"
 URL_KOFI = "https://ko-fi.com/pklempe"
 URL_KOFI_LOGO = "https://i.imgur.com/q0M4x4g.png"
+URL_KOFI_DONATION = "https://ko-fi.com/home/coffeeshop?txid={0}&mode=public"
 URL_HTTP_CAT = "https://http.cat"
 
 
