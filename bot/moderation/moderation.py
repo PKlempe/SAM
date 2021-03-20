@@ -1,9 +1,9 @@
 """Contains a Cog for all functionality regarding Moderation."""
 
+import operator
+import re
 from datetime import datetime
 from typing import List, Optional, Union
-import re
-import operator
 
 import discord
 from discord.ext import commands
@@ -385,8 +385,9 @@ class ModerationCog(commands.Cog):
                                                     f"stummgeschalten.", reason, self.ch_rules)
         await user.send(embed=embed)
 
+        details = "Endet in {0} ({1})".format(pretty_duration, run_date.strftime("%d.%m.%Y %H:%M:%S"))
         modlog_embed = _build_modlog_embed("Temporäre Stummschaltung :mute:", color=constants.EMBED_COLOR_MODLOG_MUTE,
-                                           moderator=ctx.author, user=user, reason=reason)
+                                           moderator=ctx.author, user=user, reason=reason, details=details)
         await self.ch_modlog.send(embed=modlog_embed)
 
         singletons.SCHEDULER.add_job(_scheduled_unmute_user, 'date', run_date=run_date, args=[user.id])
@@ -731,15 +732,17 @@ class ModerationCog(commands.Cog):
 
         confirmation_embed = _build_purge_confirmation_embed(purge_channel, amount)
         is_confirmed = await self._send_confirmation_dialog(ctx, confirmation_embed)
-
+        is_posted_in_purge_channel = purge_channel is ctx.channel
         if is_confirmed:
-            deleted_messages = await purge_channel.purge(limit=amount + 1)
-            await purge_channel.send('**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'
-                                     .format(len(deleted_messages) - 1), delete_after=constants.TIMEOUT_INFORMATION)
+            deleted_messages = await purge_channel.purge(limit=amount + 1 if is_posted_in_purge_channel else amount)
+            await purge_channel.send(
+                '**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'.format(len(deleted_messages)),
+                delete_after=constants.TIMEOUT_INFORMATION)
             log.info("SAM deleted %s messages in [#%s]", len(deleted_messages), purge_channel)
 
+            details = f"Deleted {len(deleted_messages)} mesages in channel {purge_channel.mention}"
             embed = _build_modlog_embed("Purge", color=constants.EMBED_COLOR_MODLOG_PURGE,
-                                        moderator=ctx.author, user=None, reason=None)
+                                        moderator=ctx.author, user=None, reason=None, details=details)
             await self.ch_modlog.send(embed=embed)
 
     @purge_messages.error
@@ -1055,12 +1058,14 @@ async def _scheduled_unban_user(user_id: int):
 
 
 def _build_modlog_embed(action: str, color: discord.Colour, moderator: Union[discord.Member, discord.ClientUser],
-                        user: Optional[discord.Member], reason: Optional[str]) -> discord.Embed:
+                        user: Optional[discord.Member], reason: Optional[str],
+                        details: Optional[str] = None) -> discord.Embed:
     """Creates an embed which gets posted in the configured modlog channel.
 
      The embed serves as an information for other moderators about what happend on the server and is therefore in
      general nothing more than a simple log message. It contains the moderator who performed the action, the affected
-     member (if any) and the optional reason provided by said moderator why this has happened.
+     member (if any) and the optional reason provided by said moderator why this has happened, as well as optional
+     details about the incident.
 
     Returns:
         (discord.Embed): The info embed.
@@ -1069,6 +1074,8 @@ def _build_modlog_embed(action: str, color: discord.Colour, moderator: Union[dis
     description += f"**Moderator:** {moderator}"
     if reason:
         description += f"\n**Begründung:** {reason}"
+    if details:
+        description += f"\n**Details:** {details}"
 
     return discord.Embed(title=action, color=color, description=description)
 
