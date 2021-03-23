@@ -31,18 +31,18 @@ class WebServer:
         log.info("The Web Server has received a request.")
         data = loads((await request.post())["data"])
 
-        if data["type"] == "Donation":
-            await _send_donation_notification(self.bot, data)
-            log.info("Donation Embed has been posted.")
+        if data["type"] in ["Donation", "Subscription"]:
+            await _send_kofi_notification_embed(self.bot, data)
+            log.info("Ko-fi Notification Embed has been posted.")
             return web.Response(status=200, reason="OK")
 
         return web.Response(status=400, reason="Bad Request")
 
 
-async def _send_donation_notification(bot: Bot, donation_data: Dict):
+async def _send_kofi_notification_embed(bot: Bot, donation_data: Dict):
     """Method which is being called by the web server if a notification from Ko-fi has been received.
 
-    Posts an donation embed in the configured supporter channel.
+    Posts an embed informing about a received donation or subscription in the configured supporter channel.
 
     Args:
         donation_data (Dict): A dictionary containing all the information about the received donation.
@@ -50,6 +50,15 @@ async def _send_donation_notification(bot: Bot, donation_data: Dict):
     guild = bot.get_guild(int(const.SERVER_ID))
     channel = guild.get_channel(int(const.CHANNEL_ID_SUPPORTER))
     url_owner_pic = guild.owner.avatar_url_as(format="png", size=32)
+
+    if donation_data["type"] == "Donation":
+        embed_title = "Neue Spende erhalten!"
+        embed_color = const.EMBED_COLOR_DONATION
+        embed_description = "Jemand hat dem Betreiber des Servers eine Tasse Kaffee ausgegeben. :coffee:"
+    else:
+        embed_title = "Neues Abo erhalten! :sparkles:"
+        embed_color = const.EMBED_COLOR_SUBSCRIPTION
+        embed_description = "Jemand möchte den Betreiber des Servers dauerhaft mit Kaffee versorgen! :coffee:"
 
     if donation_data["is_public"]:
         name = donation_data["from_name"]
@@ -60,8 +69,7 @@ async def _send_donation_notification(bot: Bot, donation_data: Dict):
         message = "`Geheim.` :shushing_face:"
         url_donation = ""
 
-    embed = Embed(title="Neue Spende erhalten!", color=const.EMBED_COLOR_DONATION, url=url_donation,
-                          description="Jemand hat dem Betreiber des Servers eine Tasse Kaffee ausgegeben. :coffee:")
+    embed = Embed(title=embed_title, color=embed_color, url=url_donation, description=embed_description)
     embed.set_author(name="Ko-fi", url=const.URL_KOFI)
     embed.set_footer(text="Danke! \U00002764\U0000FE0F", icon_url=url_owner_pic)
     embed.set_thumbnail(url=const.URL_KOFI_LOGO)
