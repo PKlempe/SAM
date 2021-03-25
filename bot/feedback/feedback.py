@@ -6,7 +6,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from bot import constants
+from bot import constants as const
 from bot.persistence import DatabaseConnector
 from bot.logger import command_log, log
 from bot.feedback import SuggestionStatus
@@ -22,10 +22,10 @@ class FeedbackCog(commands.Cog):
             bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
         """
         self.bot = bot
-        self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
+        self._db_connector = DatabaseConnector(const.DB_FILE_PATH, const.DB_INIT_SCRIPT)
 
         # Channel instances
-        self.ch_suggestion = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_SUGGESTIONS))
+        self.ch_suggestion = bot.get_guild(int(const.SERVER_ID)).get_channel(int(const.CHANNEL_ID_SUGGESTIONS))
 
     @commands.group(name="suggestion", invoke_without_command=True, aliases=["suggest"])
     @command_log
@@ -51,11 +51,11 @@ class FeedbackCog(commands.Cog):
 
         self._db_connector.set_suggestion_message_id(suggestion_id, message.id)
 
-        await message.add_reaction(constants.EMOJI_UPVOTE)
-        await message.add_reaction(constants.EMOJI_DOWNVOTE)
+        await message.add_reaction(const.EMOJI_UPVOTE)
+        await message.add_reaction(const.EMOJI_DOWNVOTE)
 
     @manage_suggestions.command(name="approve", hidden=True)
-    @commands.is_owner()
+    @commands.has_role(int(const.ROLE_ID_MODERATOR))
     @command_log
     async def suggestion_approve(self, ctx: commands.Context, suggestion_id: int, *, reason: Optional[str]):
         """Command Handler for the `suggestion` subcommand `approve`.
@@ -76,7 +76,7 @@ class FeedbackCog(commands.Cog):
         log.info("Suggestion #%s has been approved by %s.", suggestion_id, ctx.author)
 
     @manage_suggestions.command(name="deny", hidden=True)
-    @commands.is_owner()
+    @commands.has_role(int(const.ROLE_ID_MODERATOR))
     @command_log
     async def suggestion_deny(self, ctx: commands.Context, suggestion_id: int, *, reason: Optional[str]):
         """Command Handler for the `suggestion` subcommand `deny`.
@@ -97,7 +97,7 @@ class FeedbackCog(commands.Cog):
         log.info("Suggestion #%s has been denied by %s.", suggestion_id, ctx.author)
 
     @manage_suggestions.command(name="consider", hidden=True)
-    @commands.is_owner()
+    @commands.has_role(int(const.ROLE_ID_MODERATOR))
     @command_log
     async def suggestion_consider(self, ctx: commands.Context, suggestion_id: int, *, reason: Optional[str]):
         """Command Handler for the `suggestion` subcommand `consider`.
@@ -118,7 +118,7 @@ class FeedbackCog(commands.Cog):
         log.info("Suggestion #%s is being considered by %s.", suggestion_id, ctx.author)
 
     @manage_suggestions.command(name="implemented", hidden=True)
-    @commands.is_owner()
+    @commands.has_role(int(const.ROLE_ID_MODERATOR))
     @command_log
     async def suggestion_implemented(self, ctx: commands.Context, suggestion_id: int, *, reason: Optional[str]):
         """Command Handler for the `suggestion` subcommand `implemented`.
@@ -154,7 +154,7 @@ class FeedbackCog(commands.Cog):
         """
         if isinstance(error, commands.BadArgument):
             await ctx.send("Ich konnte leider keinen Vorschlag mit der von dir angegebenen Nummer finden. :frowning2:",
-                           delete_after=constants.TIMEOUT_INFORMATION)
+                           delete_after=const.TIMEOUT_INFORMATION)
 
     async def _change_suggestion_status(self, suggestion_id: int, status: SuggestionStatus, author: discord.Member,
                                         reason: Optional[str]):
@@ -195,19 +195,19 @@ class FeedbackCog(commands.Cog):
             message = await self.ch_suggestion.fetch_message(payload.message_id)
             reactions = message.reactions
 
-            if payload.emoji.name in (constants.EMOJI_UPVOTE, constants.EMOJI_DOWNVOTE):
+            if payload.emoji.name in (const.EMOJI_UPVOTE, const.EMOJI_DOWNVOTE):
                 required_difference = (reactions[0].count + reactions[1].count) / 2
                 actual_difference = abs(reactions[0].count - reactions[1].count)
 
                 # Changes the color of the embed depending if one side received at least 10 votes and the difference
                 # between them is bigger than 50% of total votes.
-                if reactions[0].count > int(constants.LIMIT_SUGGESTION_VOTES) and \
+                if reactions[0].count > int(const.LIMIT_SUGGESTION_VOTES) and \
                         reactions[0].count > reactions[1].count and actual_difference > required_difference:
-                    new_embed = _recolor_embed(message.embeds[0], constants.EMBED_COLOR_SUGGESTION_MEMBERS_LIKE)
+                    new_embed = _recolor_embed(message.embeds[0], const.EMBED_COLOR_SUGGESTION_MEMBERS_LIKE)
                     await message.edit(embed=new_embed)
-                elif reactions[1].count > int(constants.LIMIT_SUGGESTION_VOTES) and \
+                elif reactions[1].count > int(const.LIMIT_SUGGESTION_VOTES) and \
                         actual_difference > required_difference:
-                    new_embed = _recolor_embed(message.embeds[0], constants.EMBED_COLOR_SUGGESTION_MEMBERS_DISLIKE)
+                    new_embed = _recolor_embed(message.embeds[0], const.EMBED_COLOR_SUGGESTION_MEMBERS_DISLIKE)
                     await message.edit(embed=new_embed)
 
     async def _notify_user_suggestion_change(self, user_id: int):
@@ -219,7 +219,7 @@ class FeedbackCog(commands.Cog):
         Args:
             user_id (int): The id of the user who submitted the suggestion.
         """
-        member = self.bot.get_guild(int(constants.SERVER_ID)).get_member(user_id)
+        member = self.bot.get_guild(int(const.SERVER_ID)).get_member(user_id)
         text = "Hey, {0}!\nEs gibt Neuigkeiten bezüglich deines Vorschlags. Sieh am besten gleich in {1} nach, wie " \
                "das Urteil ausgefallen ist. :fingers_crossed:".format(member.display_name, self.ch_suggestion.mention)
 
@@ -244,16 +244,16 @@ async def _refresh_suggestion_embed(message: discord.Message, author: discord.Me
 
     dict_embed["title"] = dict_embed["title"].split(" -")[0]
     if status == SuggestionStatus.APPROVED:
-        dict_embed["color"] = constants.EMBED_COLOR_SUGGESTION_APPROVED
+        dict_embed["color"] = const.EMBED_COLOR_SUGGESTION_APPROVED
         dict_embed["title"] = dict_embed["title"] + " - Genehmigt :white_check_mark:"
     elif status == SuggestionStatus.DENIED:
-        dict_embed["color"] = constants.EMBED_COLOR_SUGGESTION_DENIED
+        dict_embed["color"] = const.EMBED_COLOR_SUGGESTION_DENIED
         dict_embed["title"] = dict_embed["title"] + " - Abgelehnt :no_entry_sign:"
     elif status == SuggestionStatus.CONSIDERED:
-        dict_embed["color"] = constants.EMBED_COLOR_SUGGESTION_CONSIDERED
+        dict_embed["color"] = const.EMBED_COLOR_SUGGESTION_CONSIDERED
         dict_embed["title"] = dict_embed["title"] + " - Möglicherweise :thinking:"
     else:
-        dict_embed["color"] = constants.EMBED_COLOR_SUGGESTION_IMPLEMENTED
+        dict_embed["color"] = const.EMBED_COLOR_SUGGESTION_IMPLEMENTED
         dict_embed["title"] = dict_embed["title"] + " - Umgesetzt :tada:"
 
     await message.edit(embed=discord.Embed.from_dict(dict_embed))
@@ -271,7 +271,7 @@ def _build_suggestion_embed(author: discord.Member, suggestion: str, suggestion_
         discord.Embed: The embed representing a user suggestion.
     """
     embed = discord.Embed(title=f"Vorschlag #{suggestion_id}", description=suggestion,
-                          color=constants.EMBED_COLOR_SUGGESTION, timestamp=datetime.utcnow()) \
+                          color=const.EMBED_COLOR_SUGGESTION, timestamp=datetime.utcnow()) \
         .set_author(name=str(author), icon_url=author.avatar_url) \
         .set_footer(text="Eingereicht am")
 
