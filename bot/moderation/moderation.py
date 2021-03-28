@@ -8,7 +8,7 @@ from typing import List, Optional, Union
 import discord
 from discord.ext import commands
 
-from bot import constants, singletons
+from bot import singletons, constants as const
 from bot.logger import command_log, log
 from bot.moderation import ModmailStatus
 from bot.persistence import DatabaseConnector
@@ -24,23 +24,26 @@ class ModerationCog(commands.Cog):
         Args:
             bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
         """
-        self._db_connector = DatabaseConnector(constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT)
+        self.bot = bot
+        self._db_connector = DatabaseConnector(const.DB_FILE_PATH, const.DB_INIT_SCRIPT)
 
-        # Static variable which is needed for running jobs created by the scheduler. A lot of data structures provided
+        # Static variables which are needed for running jobs created by the scheduler. A lot of data structures provided
         # by discord.py can't be pickled (serialized) which is why IDs are being used instead. For converting them into
-        # usable objects, a bot/client object is needed, which should be the same for the whole application anyway.
-        ModerationCog.bot = bot
+        # usable objects, a bot/client object is needed, which should be the same for the whole application anyway. The
+        # same goes for the db connector.
+        ModerationCog.bot = self.bot
+        ModerationCog.db_connector = self._db_connector
 
         # Channel instances
-        self.ch_modlog = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_MODLOG))
-        self.ch_report = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_REPORT))
-        self.ch_modmail = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_MODMAIL))
-        self.ch_rules = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_RULES))
-        self.ch_server_news = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_NEWS))
+        self.ch_modlog = bot.get_guild(int(const.SERVER_ID)).get_channel(int(const.CHANNEL_ID_MODLOG))
+        self.ch_report = bot.get_guild(int(const.SERVER_ID)).get_channel(int(const.CHANNEL_ID_REPORT))
+        self.ch_modmail = bot.get_guild(int(const.SERVER_ID)).get_channel(int(const.CHANNEL_ID_MODMAIL))
+        self.ch_rules = bot.get_guild(int(const.SERVER_ID)).get_channel(int(const.CHANNEL_ID_RULES))
+        self.ch_server_news = bot.get_guild(int(const.SERVER_ID)).get_channel(int(const.CHANNEL_ID_NEWS))
 
         # Role instances
-        self.role_moderator = bot.get_guild(int(constants.SERVER_ID)).get_role(int(constants.ROLE_ID_MODERATOR))
-        self.role_muted = bot.get_guild(int(constants.SERVER_ID)).get_role(int(constants.ROLE_ID_MUTED))
+        self.role_moderator = bot.get_guild(int(const.SERVER_ID)).get_role(int(const.ROLE_ID_MODERATOR))
+        self.role_muted = bot.get_guild(int(const.SERVER_ID)).get_role(int(const.ROLE_ID_MUTED))
 
     # A special method that registers as a commands.check() for every command and subcommand in this cog.
     # Only moderators can use the commands defined in this Cog except for `report` and `modmail`.
@@ -81,7 +84,7 @@ class ModerationCog(commands.Cog):
             embed = _build_lockdown_embed()
             await channel.send(embed=embed)
 
-            modlog_embed = _build_modlog_embed("Channel-Lockdown :lock:", color=constants.EMBED_COLOR_MODLOG_LOCKDOWN,
+            modlog_embed = _build_modlog_embed("Channel-Lockdown :lock:", color=const.EMBED_COLOR_MODLOG_LOCKDOWN,
                                                moderator=ctx.author, user=None, reason=None)
             await self.ch_modlog.send(embed=modlog_embed)
 
@@ -114,7 +117,7 @@ class ModerationCog(commands.Cog):
         await channel.send(embed=embed)
 
         modlog_embed = _build_modlog_embed("Aufhebung: Channel-Lockdown :unlock:",
-                                           color=constants.EMBED_COLOR_MODLOG_REPEAL, moderator=ctx.author, user=None,
+                                           color=const.EMBED_COLOR_MODLOG_REPEAL, moderator=ctx.author, user=None,
                                            reason=None)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -149,7 +152,7 @@ class ModerationCog(commands.Cog):
             embed = _build_server_lockdown_embed()
             await self.ch_server_news.send(embed=embed)
 
-            modlog_embed = _build_modlog_embed("Server-Lockdown :lock:", color=constants.EMBED_COLOR_MODLOG_LOCKDOWN,
+            modlog_embed = _build_modlog_embed("Server-Lockdown :lock:", color=const.EMBED_COLOR_MODLOG_LOCKDOWN,
                                                moderator=ctx.author, user=None, reason=None)
             await self.ch_modlog.send(embed=modlog_embed)
 
@@ -180,7 +183,7 @@ class ModerationCog(commands.Cog):
         await self.ch_server_news.send(embed=embed)
 
         modlog_embed = _build_modlog_embed("Aufhebung: Server-Lockdown :unlock:",
-                                           color=constants.EMBED_COLOR_MODLOG_REPEAL,
+                                           color=const.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=None, reason=None)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -225,7 +228,7 @@ class ModerationCog(commands.Cog):
                                         self.ch_rules)
         await user.send(embed=embed)
 
-        modlog_embed = _build_modlog_embed("Verwarnung :warning:", color=constants.EMBED_COLOR_MODLOG_WARN,
+        modlog_embed = _build_modlog_embed("Verwarnung :warning:", color=const.EMBED_COLOR_MODLOG_WARN,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -248,12 +251,12 @@ class ModerationCog(commands.Cog):
         if not user_id:
             raise commands.BadArgument("The warning with the specified ID doesn't exist.")
 
-        user = self.bot.get_guild(int(constants.SERVER_ID)).get_member(user_id)
+        user = self.bot.get_guild(int(const.SERVER_ID)).get_member(user_id)
 
         self._db_connector.remove_member_warning(warning_id)
         log.info("Warning #%s has been removed from %s.", warning_id, user)
 
-        modlog_embed = _build_modlog_embed("Aufhebung: Verwarnung", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+        modlog_embed = _build_modlog_embed("Aufhebung: Verwarnung", color=const.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -288,7 +291,7 @@ class ModerationCog(commands.Cog):
         self._db_connector.remove_member_warnings(user.id)
         log.info("All warnings have been removed from %s.", user)
 
-        modlog_embed = _build_modlog_embed("Aufhebung: Alle Verwarnungen", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+        modlog_embed = _build_modlog_embed("Aufhebung: Alle Verwarnungen", color=const.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -319,7 +322,7 @@ class ModerationCog(commands.Cog):
                                                            f"stummgeschalten.", reason, self.ch_rules)
         await user.send(embed=embed)
 
-        modlog_embed = _build_modlog_embed("Stummschaltung :mute:", color=constants.EMBED_COLOR_MODLOG_MUTE,
+        modlog_embed = _build_modlog_embed("Stummschaltung :mute:", color=const.EMBED_COLOR_MODLOG_MUTE,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -343,7 +346,7 @@ class ModerationCog(commands.Cog):
         log.info("Member %s has been unmuted.", user)
 
         modlog_embed = _build_modlog_embed("Aufhebung: Stummschaltung :speaker:",
-                                           color=constants.EMBED_COLOR_MODLOG_REPEAL,
+                                           color=const.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -386,11 +389,11 @@ class ModerationCog(commands.Cog):
         await user.send(embed=embed)
 
         details = "Endet in {0} ({1})".format(pretty_duration, run_date.strftime("%d.%m.%Y %H:%M:%S"))
-        modlog_embed = _build_modlog_embed("Temporäre Stummschaltung :mute:", color=constants.EMBED_COLOR_MODLOG_MUTE,
+        modlog_embed = _build_modlog_embed("Temporäre Stummschaltung :mute:", color=const.EMBED_COLOR_MODLOG_MUTE,
                                            moderator=ctx.author, user=user, reason=reason, details=details)
         await self.ch_modlog.send(embed=modlog_embed)
 
-        singletons.SCHEDULER.add_job(_scheduled_unmute_user, 'date', run_date=run_date, args=[user.id])
+        singletons.SCHEDULER.add_job(_scheduled_unmute_user, trigger="date", run_date=run_date, args=[user.id])
 
     @commands.command(name='ban', hidden=True)
     @command_log
@@ -409,7 +412,7 @@ class ModerationCog(commands.Cog):
         prosecutor = self.bot.user if bot_activated else ctx.author
 
         embed = _build_mod_action_embed("Bann", "Du wurdest durch **__{0}__** von **__{1}__** gebannt."
-                                        .format(prosecutor, self.bot.get_guild(int(constants.SERVER_ID))),
+                                        .format(prosecutor, self.bot.get_guild(int(const.SERVER_ID))),
                                         reason, self.ch_rules)
         await user.send(embed=embed)
 
@@ -418,7 +421,7 @@ class ModerationCog(commands.Cog):
 
         await ctx.send(f"{user.mention} wurde gebannt. :do_not_litter:")
 
-        modlog_embed = _build_modlog_embed("Server-Bann :do_not_litter:", color=constants.EMBED_COLOR_MODLOG_BAN,
+        modlog_embed = _build_modlog_embed("Server-Bann :do_not_litter:", color=const.EMBED_COLOR_MODLOG_BAN,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -443,7 +446,7 @@ class ModerationCog(commands.Cog):
         pretty_duration = get_pretty_string_duration(duration)
 
         embed = _build_mod_action_embed("TempBann", "Du wurdest durch **__{0}__** von **__{1}__** für {2} gebannt."
-                                        .format(prosecutor, self.bot.get_guild(int(constants.SERVER_ID)),
+                                        .format(prosecutor, self.bot.get_guild(int(const.SERVER_ID)),
                                                 pretty_duration), reason, self.ch_rules)
         await user.send(embed=embed)
 
@@ -453,11 +456,11 @@ class ModerationCog(commands.Cog):
         await ctx.send(f"{user.mention} wurde für {pretty_duration} gebannt. :do_not_litter:")
 
         modlog_embed = _build_modlog_embed("Temporärer Server-Bann :do_not_litter:",
-                                           color=constants.EMBED_COLOR_MODLOG_BAN,
+                                           color=const.EMBED_COLOR_MODLOG_BAN,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
-        singletons.SCHEDULER.add_job(_scheduled_unban_user, 'date', run_date=run_date, args=[user.id])
+        singletons.SCHEDULER.add_job(_scheduled_unban_user, trigger="date", run_date=run_date, args=[user.id])
 
     @tempmute_user.error
     @tempban_user.error
@@ -486,7 +489,7 @@ class ModerationCog(commands.Cog):
             reason (Optional[str]): The reason provided by the moderator.
         """
         embed = _build_mod_action_embed("Kick", "Du wurdest durch **__{0}__** von **__{1}__** gekickt."
-                                        .format(ctx.author, self.bot.get_guild(int(constants.SERVER_ID))),
+                                        .format(ctx.author, self.bot.get_guild(int(const.SERVER_ID))),
                                         reason, self.ch_rules)
         await user.send(embed=embed)
 
@@ -495,7 +498,7 @@ class ModerationCog(commands.Cog):
 
         await ctx.send(f"{user.mention} wurde gekickt. :anger:")
 
-        modlog_embed = _build_modlog_embed("Server-Kick :anger:", color=constants.EMBED_COLOR_MODLOG_KICK,
+        modlog_embed = _build_modlog_embed("Server-Kick :anger:", color=const.EMBED_COLOR_MODLOG_KICK,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
 
@@ -514,17 +517,17 @@ class ModerationCog(commands.Cog):
         nicknames = self._db_connector.get_member_names(user.id)
         description = "Es werden maximal die __letzten {0} Namen__ eines Mitglieds angezeigt, welche auf diesem " \
                       "Server verwendet wurden." \
-            .format(constants.LIMIT_NICKNAMES)
+            .format(const.LIMIT_NICKNAMES)
 
         if nicknames:
             embed = discord.Embed(title=f"Namensverlauf von {user} :page_with_curl:", description=description,
-                                  color=constants.EMBED_COLOR_MODERATION, timestamp=datetime.utcnow())
+                                  color=const.EMBED_COLOR_MODERATION, timestamp=datetime.utcnow())
             embed.set_footer(text="Stand")
             embed.set_thumbnail(url=user.avatar_url)
             embed.add_field(name=user.display_name, value="aktuell")
 
             time_difference = datetime.utcnow().astimezone().utcoffset()
-            for name in nicknames[:constants.LIMIT_NICKNAMES]:
+            for name in nicknames[:const.LIMIT_NICKNAMES]:
                 timestamp = datetime.strptime(name[1], '%Y-%m-%d %H:%M:%S.%f')
                 local_timestamp = timestamp + time_difference if time_difference else timestamp
                 str_time = local_timestamp.strftime("%d.%m.%Y\num *%X*")
@@ -547,14 +550,14 @@ class ModerationCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             amount (int): The amount of new members which should be displayed.
         """
-        if amount > constants.LIMIT_NEW_MEMBERS:
+        if amount > const.LIMIT_NEW_MEMBERS:
             raise commands.BadArgument("The amount of new members to be displayed is too big.")
 
         members = sorted(ctx.guild.members, key=operator.attrgetter("joined_at"), reverse=True)[:amount]
         description = "Füge an das Ende des Befehls eine beliebige Zahl an, um die Menge an neuen Mitgliedern " \
-                      "individuell festzulegen. **(max. {0})**".format(constants.LIMIT_NEW_MEMBERS)
+                      "individuell festzulegen. **(max. {0})**".format(const.LIMIT_NEW_MEMBERS)
 
-        embed = discord.Embed(title="Neueste Mitglieder :couple:", color=constants.EMBED_COLOR_MODERATION,
+        embed = discord.Embed(title="Neueste Mitglieder :couple:", color=const.EMBED_COLOR_MODERATION,
                               description=description, timestamp=datetime.utcnow())
         embed.set_footer(text="Stand")
 
@@ -578,7 +581,7 @@ class ModerationCog(commands.Cog):
         """
         if isinstance(error, commands.BadArgument):
             await ctx.send("**__Error:__** Die angegebene Menge an neuen Mitgliedern ist entweder nicht numerisch oder "
-                           "leider zu groß. Sie darf **{0}** nicht überschreiten.".format(constants.LIMIT_NEW_MEMBERS))
+                           "leider zu groß. Sie darf **{0}** nicht überschreiten.".format(const.LIMIT_NEW_MEMBERS))
 
     @commands.command(name='avatar', hidden=True)
     @command_log
@@ -599,7 +602,7 @@ class ModerationCog(commands.Cog):
         if user.is_avatar_animated():
             description += " | [.gif]({0})".format(user.avatar_url_as(format="gif"))
 
-        embed = discord.Embed(title=f"Avatar von {user}", color=constants.EMBED_COLOR_MODERATION,
+        embed = discord.Embed(title=f"Avatar von {user}", color=const.EMBED_COLOR_MODERATION,
                               timestamp=datetime.utcnow(), description=description)
         embed.set_footer(text="Erstellt am")
         embed.set_image(url=user.avatar_url)
@@ -630,7 +633,7 @@ class ModerationCog(commands.Cog):
             premium_since = datetime.strftime(user.premium_since + time_difference, "%d.%m.%Y %X")
             description += f"\n**Boostet seit:** {premium_since}"
 
-        embed = discord.Embed(title=str(user), description=description, color=constants.EMBED_COLOR_MODERATION)
+        embed = discord.Embed(title=str(user), description=description, color=const.EMBED_COLOR_MODERATION)
         embed.set_thumbnail(url=user.avatar_url)
         embed.set_footer(text=f"UserID: {user.id}")
         embed.add_field(name="Erstellt am:", value=created_at, inline=True)
@@ -726,9 +729,9 @@ class ModerationCog(commands.Cog):
         """
         purge_channel = channel if channel else ctx.channel
 
-        if amount <= 0 or amount > constants.LIMIT_PURGE_MESSAGES:
+        if amount <= 0 or amount > const.LIMIT_PURGE_MESSAGES:
             raise commands.BadArgument("Invalid amount of messages to be purged was passed. "
-                                       "Maximum: {0}, Passed limit: {1}".format(constants.LIMIT_PURGE_MESSAGES, amount))
+                                       "Maximum: {0}, Passed limit: {1}".format(const.LIMIT_PURGE_MESSAGES, amount))
 
         confirmation_embed = _build_purge_confirmation_embed(purge_channel, amount)
         is_confirmed = await self._send_confirmation_dialog(ctx, confirmation_embed)
@@ -737,11 +740,11 @@ class ModerationCog(commands.Cog):
             deleted_messages = await purge_channel.purge(limit=amount + 1 if is_posted_in_purge_channel else amount)
             await purge_channel.send(
                 '**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'.format(len(deleted_messages)),
-                delete_after=constants.TIMEOUT_INFORMATION)
+                delete_after=const.TIMEOUT_INFORMATION)
             log.info("SAM deleted %s messages in [#%s]", len(deleted_messages), purge_channel)
 
             details = f"Deleted {len(deleted_messages)} mesages in channel {purge_channel.mention}"
-            embed = _build_modlog_embed("Purge", color=constants.EMBED_COLOR_MODLOG_PURGE,
+            embed = _build_modlog_embed("Purge", color=const.EMBED_COLOR_MODLOG_PURGE,
                                         moderator=ctx.author, user=None, reason=None, details=details)
             await self.ch_modlog.send(embed=embed)
 
@@ -759,8 +762,8 @@ class ModerationCog(commands.Cog):
         if isinstance(error, commands.BadArgument):
             await ctx.send(content="**__Error:__** Die Anzahl der Nachrichten welche gelöscht werden sollen, muss im "
                                    "__positiven Bereich__ liegen und darf __{0} nicht überschreiten__!"
-                           .format(constants.LIMIT_PURGE_MESSAGES),
-                           delete_after=constants.TIMEOUT_INFORMATION)
+                           .format(const.LIMIT_PURGE_MESSAGES),
+                           delete_after=const.TIMEOUT_INFORMATION)
 
     @commands.group(name='modmail', invoke_without_command=True)
     @command_log
@@ -783,7 +786,7 @@ class ModerationCog(commands.Cog):
         msg_author_name = str(ctx.message.author)
         msg_timestamp = ctx.message.created_at
 
-        embed = discord.Embed(title="Status: Offen", color=constants.EMBED_COLOR_MODMAIL_OPEN,
+        embed = discord.Embed(title="Status: Offen", color=const.EMBED_COLOR_MODMAIL_OPEN,
                               timestamp=datetime.utcnow(), description=msg_content)
         embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
         embed.set_footer(text="Erhalten am")
@@ -792,12 +795,12 @@ class ModerationCog(commands.Cog):
         self._db_connector.add_modmail(msg_modmail.id, msg_author_name, msg_timestamp)
         log.info("Member %s submitted a modmail.", ctx.author)
 
-        await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_DONE)
-        await msg_modmail.add_reaction(constants.EMOJI_MODMAIL_ASSIGN)
+        await msg_modmail.add_reaction(const.EMOJI_MODMAIL_DONE)
+        await msg_modmail.add_reaction(const.EMOJI_MODMAIL_ASSIGN)
 
         embed_confirmation = embed.to_dict()
         embed_confirmation["title"] = "Deine Nachricht:"
-        embed_confirmation["color"] = constants.EMBED_COLOR_INFO
+        embed_confirmation["color"] = const.EMBED_COLOR_INFO
         embed_confirmation = discord.Embed.from_dict(embed_confirmation)
         await ctx.author.send("Deine Nachricht wurde erfolgreich an die Moderatoren weitergeleitet!\n"
                               "__Hier deine Bestätigung:__", embed=embed_confirmation)
@@ -866,7 +869,7 @@ class ModerationCog(commands.Cog):
             modmail = await self.ch_modmail.fetch_message(payload.message_id)
             reaction = next(x for x in modmail.reactions if x.emoji == payload.emoji.name)
 
-            if payload.emoji.name in (constants.EMOJI_MODMAIL_DONE, constants.EMOJI_MODMAIL_ASSIGN) \
+            if payload.emoji.name in (const.EMOJI_MODMAIL_DONE, const.EMOJI_MODMAIL_ASSIGN) \
                     and reaction.count <= 2:
                 new_embed = await self.change_modmail_status(modmail, payload.emoji.name, True)
                 await modmail.edit(embed=new_embed)
@@ -887,17 +890,20 @@ class ModerationCog(commands.Cog):
         if payload.channel_id == self.ch_modmail.id:
             modmail = await self.ch_modmail.fetch_message(payload.message_id)
 
-            if payload.emoji.name in (constants.EMOJI_MODMAIL_DONE, constants.EMOJI_MODMAIL_ASSIGN) \
+            if payload.emoji.name in (const.EMOJI_MODMAIL_DONE, const.EMOJI_MODMAIL_ASSIGN) \
                     and next(x for x in modmail.reactions if x.emoji == payload.emoji.name).count <= 1:
                 new_embed = await self.change_modmail_status(modmail, payload.emoji.name, False)
                 await modmail.edit(embed=new_embed)
 
     async def check_warnings(self, ctx: commands.Context, user: discord.Member):
-        """Method which checks the amount of warnings a user has and punishes him if necessary.
+        """Method which checks the amount of warnings a user has and punishes him if necessary. It also creates/updates
+        scheduler jobs to remove them after some time.
 
         The individual punishments and the amount of warnings needed to trigger it are stored in a dictionary and can
         therefore be easily modified or expanded. If a specific limit has been reached the bot simply invokes one of his
         own mod commands.
+        For the expiration of warnings, a specific formular is being used to calculate the amount of weeks a warning is
+        valid. After that, a job for the scheduler will be created, or updated, if one already exists.
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
@@ -905,11 +911,12 @@ class ModerationCog(commands.Cog):
         """
         cntr_warnings = len(self._db_connector.get_member_warnings(user.id))
         punishments = {
-            constants.LIMIT_WARNINGS_LVL_1:      ("tempmute", "1 week"),
-            constants.LIMIT_WARNINGS_LVL_2:      ("tempban", "2 weeks"),
-            constants.LIMIT_WARNINGS_LVL_3:      ("ban", None)
+            const.LIMIT_WARNINGS_LVL_1:      ("tempmute", "1 week"),
+            const.LIMIT_WARNINGS_LVL_2:      ("tempban", "2 weeks"),
+            const.LIMIT_WARNINGS_LVL_3:      ("ban", None)
         }
 
+        # Punishment
         if cntr_warnings in punishments:
             punishment = punishments[cntr_warnings]
             reason = f"Automatisch durchgeführte Aktion aufgrund von insgesamt {cntr_warnings} Verwarnungen."
@@ -919,6 +926,12 @@ class ModerationCog(commands.Cog):
                                  bot_activated=True)
             else:
                 await ctx.invoke(self.bot.get_command(punishment[0]), user=user, reason=reason, bot_activated=True)
+
+        # Expiration
+        weeks = (cntr_warnings + 1) * 4 if cntr_warnings > 1 else 4
+        run_date = get_future_timestamp("{0}w".format(weeks))
+        singletons.SCHEDULER.add_job(_scheduled_clear_warnings, trigger="date", run_date=run_date, args=[user.id],
+                                     id=f"warns_expire_{user.id}", replace_existing=True)
 
     async def change_modmail_status(self, modmail: discord.Message, emoji: str, reaction_added: bool) -> discord.Embed:
         """Method which changes the status of a modmail depending on the given emoji.
@@ -937,22 +950,22 @@ class ModerationCog(commands.Cog):
         dict_embed = modmail.embeds[0].to_dict()
         dict_embed["title"] = "Status: "
 
-        if reaction_added and emoji == constants.EMOJI_MODMAIL_DONE:
-            await modmail.clear_reaction(constants.EMOJI_MODMAIL_ASSIGN)
+        if reaction_added and emoji == const.EMOJI_MODMAIL_DONE:
+            await modmail.clear_reaction(const.EMOJI_MODMAIL_ASSIGN)
             self._db_connector.change_modmail_status(modmail.id, ModmailStatus.CLOSED)
             dict_embed["title"] += "Erledigt"
-            dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_CLOSED
-        elif reaction_added and emoji == constants.EMOJI_MODMAIL_ASSIGN:
+            dict_embed["color"] = const.EMBED_COLOR_MODMAIL_CLOSED
+        elif reaction_added and emoji == const.EMOJI_MODMAIL_ASSIGN:
             self._db_connector.change_modmail_status(modmail.id, ModmailStatus.ASSIGNED)
             dict_embed["title"] += "In Bearbeitung"
-            dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_ASSIGNED
+            dict_embed["color"] = const.EMBED_COLOR_MODMAIL_ASSIGNED
         else:
             self._db_connector.change_modmail_status(modmail.id, ModmailStatus.OPEN)
             dict_embed["title"] += "Offen"
-            dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_OPEN
+            dict_embed["color"] = const.EMBED_COLOR_MODMAIL_OPEN
 
-            if emoji == constants.EMOJI_MODMAIL_DONE:
-                await modmail.add_reaction(constants.EMOJI_MODMAIL_ASSIGN)
+            if emoji == const.EMOJI_MODMAIL_DONE:
+                await modmail.add_reaction(const.EMOJI_MODMAIL_ASSIGN)
 
         return discord.Embed.from_dict(dict_embed)
 
@@ -971,22 +984,22 @@ class ModerationCog(commands.Cog):
         Returns:
             (bool):A bool representing the users decision.
         """
-        message = await ctx.send(embed=embed, delete_after=constants.TIMEOUT_USER_SELECTION)
-        await message.add_reaction(constants.EMOJI_CONFIRM)
-        await message.add_reaction(constants.EMOJI_CANCEL)
+        message = await ctx.send(embed=embed, delete_after=const.TIMEOUT_USER_SELECTION)
+        await message.add_reaction(const.EMOJI_CONFIRM)
+        await message.add_reaction(const.EMOJI_CANCEL)
 
         def check_reaction(_reaction, user):
             return user == ctx.author and _reaction.message.id == message.id and \
-                   str(_reaction.emoji) in [constants.EMOJI_CANCEL, constants.EMOJI_CONFIRM]
+                   str(_reaction.emoji) in [const.EMOJI_CANCEL, const.EMOJI_CONFIRM]
 
-        reaction = await self.bot.wait_for('reaction_add', timeout=constants.TIMEOUT_USER_SELECTION,
+        reaction = await self.bot.wait_for('reaction_add', timeout=const.TIMEOUT_USER_SELECTION,
                                            check=check_reaction)
         await message.delete()
 
-        if str(reaction[0].emoji) == constants.EMOJI_CANCEL:
+        if str(reaction[0].emoji) == const.EMOJI_CANCEL:
             await ctx.message.delete()
 
-        return str(reaction[0].emoji) == constants.EMOJI_CONFIRM
+        return str(reaction[0].emoji) == const.EMOJI_CONFIRM
 
     @commands.Cog.listener(name='on_member_update')
     @commands.Cog.listener(name='on_user_update')
@@ -1013,11 +1026,11 @@ async def _scheduled_unmute_user(user_id: int):
     Args:
         user_id (int): The id of the user who should be unmuted.
     """
-    guild = ModerationCog.bot.get_guild(int(constants.SERVER_ID))
+    guild = ModerationCog.bot.get_guild(int(const.SERVER_ID))
     user = guild.get_member(int(user_id))
-    role = guild.get_role(int(constants.ROLE_ID_MUTED))
-    ch_rules = guild.get_channel(int(constants.CHANNEL_ID_RULES))
-    ch_modlog = guild.get_channel(int(constants.CHANNEL_ID_MODLOG))
+    role = guild.get_role(int(const.ROLE_ID_MUTED))
+    ch_rules = guild.get_channel(int(const.CHANNEL_ID_RULES))
+    ch_modlog = guild.get_channel(int(const.CHANNEL_ID_MODLOG))
 
     await user.remove_roles(role, reason="Die für den Tempmute festgelegte Zeitdauer ist ausgelaufen.")
     await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr stummgeschalten! :speaker: Versuch "
@@ -1025,7 +1038,7 @@ async def _scheduled_unmute_user(user_id: int):
                     f"gezwungen sind, härtere Strafen zu verhängen. :scales:")
 
     modlog_embed = _build_modlog_embed("Aufhebung: Temporäre Stummschaltung :speaker:",
-                                       color=constants.EMBED_COLOR_MODLOG_REPEAL, moderator=ModerationCog.bot.user,
+                                       color=const.EMBED_COLOR_MODLOG_REPEAL, moderator=ModerationCog.bot.user,
                                        user=user, reason="Automatisch durchgeführte Aktion, da die spezifizierte Dauer "
                                                          "abgelaufen ist.")
     await ch_modlog.send(embed=modlog_embed)
@@ -1040,17 +1053,39 @@ async def _scheduled_unban_user(user_id: int):
     Args:
         user_id (int): The id of the user who should be unbanned.
     """
-    guild = ModerationCog.bot.get_guild(int(constants.SERVER_ID))
+    guild = ModerationCog.bot.get_guild(int(const.SERVER_ID))
     user = await ModerationCog.bot.fetch_user(int(user_id))
-    ch_rules = guild.get_channel(int(constants.CHANNEL_ID_RULES))
-    ch_modlog = guild.get_channel(int(constants.CHANNEL_ID_MODLOG))
+    ch_rules = guild.get_channel(int(const.CHANNEL_ID_RULES))
+    ch_modlog = guild.get_channel(int(const.CHANNEL_ID_MODLOG))
 
     await user.unban(reason="Die für den Tempban festgelegte Zeitdauer ist ausgelaufen.")
     await user.send(f"Hey, {user.display_name}! :wave:\nDu bist nicht mehr von **__{guild}__** gebannt! :unlock: "
                     f"Versuch bitte, dich in Zukunft besser an unsere {ch_rules.mention} zu halten, da wir ansonsten "
                     f"gezwungen sind, dich dauerhaft zu bannen. :scales:")
 
-    modlog_embed = _build_modlog_embed("Aufhebung: Temporärer Server-Bann", color=constants.EMBED_COLOR_MODLOG_REPEAL,
+    modlog_embed = _build_modlog_embed("Aufhebung: Temporärer Server-Bann", color=const.EMBED_COLOR_MODLOG_REPEAL,
+                                       moderator=ModerationCog.bot.user, user=user,
+                                       reason="Automatisch durchgeführte Aktion, da die spezifizierte Dauer abgelaufen "
+                                              "ist.")
+    await ch_modlog.send(embed=modlog_embed)
+
+
+async def _scheduled_clear_warnings(user_id: int):
+    """Method which is being called by the scheduler if the expiration date of someones warnings has been reached.
+
+    Clears all warnings given to the specified member.
+
+    Args:
+        user_id (int): The id of the user whose warnings should be removed.
+    """
+    guild = ModerationCog.bot.get_guild(int(const.SERVER_ID))
+    user = guild.get_member(int(user_id))
+    ch_modlog = guild.get_channel(int(const.CHANNEL_ID_MODLOG))
+
+    ModerationCog.db_connector.remove_member_warnings(user.id)
+    log.info("All warnings have been removed from %s.", user)
+
+    modlog_embed = _build_modlog_embed("Aufhebung: Alle Verwarnungen", color=const.EMBED_COLOR_MODLOG_REPEAL,
                                        moderator=ModerationCog.bot.user, user=user,
                                        reason="Automatisch durchgeführte Aktion, da die spezifizierte Dauer abgelaufen "
                                               "ist.")
@@ -1092,7 +1127,7 @@ def _build_lockdown_embed() -> discord.Embed:
                   "aktuellen Situation zu kontaktieren, da dies die Wiedereröffnung des Kanals nur unnötig verzögern " \
                   "würde.\n\n**__Wir bitten um Verständnis.__ :heart:**"
 
-    embed = discord.Embed(title=":rotating_light: LOCKDOWN :rotating_light:", color=constants.EMBED_COLOR_WARNING,
+    embed = discord.Embed(title=":rotating_light: LOCKDOWN :rotating_light:", color=const.EMBED_COLOR_WARNING,
                           description=description)
 
     return embed
@@ -1110,7 +1145,7 @@ def _build_server_lockdown_embed() -> discord.Embed:
                   "aktuellen Situation zu kontaktieren, da dies die Wiedereröffnung des Kanals nur unnötig verzögern " \
                   "würde.\n\n**__Wir bitten um Verständnis.__ :heart:**"
 
-    embed = discord.Embed(title=":rotating_light: LOCKDOWN :rotating_light:", color=constants.EMBED_COLOR_WARNING,
+    embed = discord.Embed(title=":rotating_light: LOCKDOWN :rotating_light:", color=const.EMBED_COLOR_WARNING,
                           description=description)
 
     return embed
@@ -1125,7 +1160,7 @@ def _build_lockdown_lift_embed() -> discord.Embed:
     description = "Der Lockdown für diesen Kanal wurde aufgehoben und es können wieder ungehindert Nachrichten " \
                   "versendet werden. \n\n**__Vielen Dank für die Geduld.__** :handshake:"
 
-    embed = discord.Embed(title=":sparkles: Lockdown-Aufhebung :sparkles:", color=constants.EMBED_COLOR_INFO,
+    embed = discord.Embed(title=":sparkles: Lockdown-Aufhebung :sparkles:", color=const.EMBED_COLOR_INFO,
                           description=description)
 
     return embed
@@ -1140,7 +1175,7 @@ def _build_server_lockdown_lift_embed() -> discord.Embed:
     description = "Der serverweite Lockdown wurde aufgehoben und es können wieder ungehindert Nachrichten " \
                   "versendet werden. \n\n**__Vielen Dank für die Geduld.__** :handshake:"
 
-    embed = discord.Embed(title=":sparkles: Lockdown-Aufhebung :sparkles:", color=constants.EMBED_COLOR_INFO,
+    embed = discord.Embed(title=":sparkles: Lockdown-Aufhebung :sparkles:", color=const.EMBED_COLOR_INFO,
                           description=description)
 
     return embed
@@ -1160,7 +1195,7 @@ def _build_warnings_embed(user: discord.Member, warnings: List[tuple]) -> discor
     """
     embed = discord.Embed(title=f"Verwarnungen von {user.display_name} :rotating_light:", timestamp=datetime.utcnow(),
                           description="__Gesamt:__ {0}".format(len(warnings)),
-                          color=constants.EMBED_COLOR_MODERATION)
+                          color=const.EMBED_COLOR_MODERATION)
     embed.set_footer(text="Stand")
     embed.set_thumbnail(url=user.avatar_url)
 
@@ -1191,7 +1226,7 @@ def _build_mod_action_embed(action: str, description: str, reason: Optional[str]
     Returns:
         (discord.Embed): The final info embed dialog
     """
-    embed = discord.Embed(title=f"{action}-Info", description=description, color=constants.EMBED_COLOR_WARNING)
+    embed = discord.Embed(title=f"{action}-Info", description=description, color=const.EMBED_COLOR_WARNING)
 
     if reason:
         embed.add_field(name="Begründung des Moderators:", value=reason)
@@ -1219,7 +1254,7 @@ def _build_purge_confirmation_embed(channel: discord.TextChannel, amount: int) -
                   "tun möchtest.".format(channel.mention, amount)
 
     return discord.Embed(title=":warning: Purge-Bestätigung :warning:", description=description,
-                         color=constants.EMBED_COLOR_WARNING)
+                         color=const.EMBED_COLOR_WARNING)
 
 
 def _build_lockdown_confirmation_embed(channel: Optional[Union[discord.TextChannel, discord.VoiceChannel]]) \
@@ -1240,7 +1275,7 @@ def _build_lockdown_confirmation_embed(channel: Optional[Union[discord.TextChann
                       "Niemand außer den Moderatoren ist dann noch in der Lage, Nachrichten zu versenden."
 
     return discord.Embed(title=":warning: Lockdown-Bestätigung :warning:", description=description,
-                         color=constants.EMBED_COLOR_WARNING)
+                         color=const.EMBED_COLOR_WARNING)
 
 
 def _create_report_embed(offender: discord.Member, reporter: discord.Member, channel: discord.TextChannel,
@@ -1263,7 +1298,7 @@ def _create_report_embed(offender: discord.Member, reporter: discord.Member, cha
     joined_at = offender.joined_at.strftime("%d.%m.%Y - %H:%M")
     created_at = offender.created_at.strftime("%d.%m.%Y - %H:%M")
 
-    embed = discord.Embed(title="Nutzer-Infos", color=constants.EMBED_COLOR_REPORT, timestamp=datetime.utcnow(),
+    embed = discord.Embed(title="Nutzer-Infos", color=const.EMBED_COLOR_REPORT, timestamp=datetime.utcnow(),
                           description=f"**Name:** {offender}\n**Beitritt am:** {joined_at}\n"
                                       f"**Erstellt am:** {created_at}")
     embed.set_author(name=f"Neue Meldung aus [#{channel}]")
@@ -1296,7 +1331,7 @@ def _modmail_create_ticket_list(messages: List[tuple]) -> str:
         str_time = local_timestamp.strftime('%d.%m.%Y %H:%M')
 
         string += "- {0} | [{1[1]}]({2}/channels/{3}/{4}/{1[0]})\n" \
-            .format(str_time, message, constants.URL_DISCORD, constants.SERVER_ID, constants.CHANNEL_ID_MODMAIL)
+            .format(str_time, message, const.URL_DISCORD, const.SERVER_ID, const.CHANNEL_ID_MODMAIL)
 
     return string
 
@@ -1321,20 +1356,20 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
 
         if status == ModmailStatus.OPEN:
             dict_embed["title"] = "Offenen Tickets: " + str(len(modmail))
-            dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_OPEN
+            dict_embed["color"] = const.EMBED_COLOR_MODMAIL_OPEN
         elif status == ModmailStatus.ASSIGNED:
             dict_embed["title"] = "Zugewiesene Tickets: " + str(len(modmail))
-            dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_ASSIGNED
+            dict_embed["color"] = const.EMBED_COLOR_MODMAIL_ASSIGNED
         else:
             raise ValueError("Nicht unterstützter Modmail-Status '{0}'.".format(status.name.title()))
     elif status == ModmailStatus.OPEN:
         dict_embed["title"] = "Keine offenen Tickets! :tada:"
-        dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_CLOSED
+        dict_embed["color"] = const.EMBED_COLOR_MODMAIL_CLOSED
         dict_embed["description"] = "Lehne dich zurück und entspanne ein wenig. Momentan gibt es für dich keine " \
                                     "Tickets, welche du abarbeiten könntest. :beers:"
     elif status == ModmailStatus.ASSIGNED:
         dict_embed["title"] = "Keine Tickets in Bearbeitung! :eyes:"
-        dict_embed["color"] = constants.EMBED_COLOR_MODMAIL_ASSIGNED
+        dict_embed["color"] = const.EMBED_COLOR_MODMAIL_ASSIGNED
         dict_embed["description"] = "**Es ist ruhig, zu ruhig...** Vielleicht gibt es momentan ja ein paar offene " \
                                     "Tickets die bearbeitet werden müssten."
     else:
