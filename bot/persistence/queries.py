@@ -32,6 +32,14 @@ REMOVE_REACTION_ROLE_UNIQUENESS_GROUP = "DELETE FROM ReactionRoleUniquenessGroup
 IS_REACTION_ROLE_UNIQUE = "SELECT EXISTS(SELECT 1 FROM ReactionRoleUniquenessGroup WHERE MessageID = ?)"
 
 
+# Translations
+GET_TRANSLATION = "SELECT Translation FROM Translation WHERE MessageID = ? AND FlagEmoji = ? LIMIT 1"
+INSERT_TRANSLATION = "INSERT INTO Translation (MessageID, FlagEmoji, Translation) VALUES (?,?,?)"
+REMOVE_TRANSLATION = "DELETE FROM Translation WHERE MessageID = ? AND FlagEmoji = ?"
+UPDATE_TRANSLATION = "UPDATE Translation SET Translation = ? WHERE MessageID = ? AND FlagEmoji = ?"
+CLEAR_TRANSLATIONS = "DELETE FROM Translation WHERE MessageID = ?"
+
+
 # Member Warnings
 INSERT_MEMBER_WARNING = "INSERT INTO MemberWarning (UserID, Timestamp, Reason) VALUES (?, ?, ?)"
 DELETE_MEMBER_WARNING = "DELETE FROM MemberWarning WHERE ID = ?"

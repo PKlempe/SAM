@@ -83,9 +83,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_WARNING_USERID, (warning_id,))
 
             row = result.fetchone()
-            if row:
-                return int(row[0])
-            return None
+            return int(row[0]) if row else None
 
     def get_member_warnings(self, user_id: int) -> Optional[List[tuple]]:
         """Gets all the warnings of a specific member.
@@ -101,9 +99,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_MEMBER_WARNINGS, (user_id,))
 
             rows = result.fetchall()
-            if rows:
-                return rows
-            return None
+            return rows
 
     def add_member_name(self, user_id: int, name: str, timestamp: datetime.datetime):
         """Adds a members old nickname to the table "MemberNameHistory".
@@ -131,9 +127,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_MEMBER_NAMES, (user_id,))
 
             rows = result.fetchall()
-            if rows:
-                return rows
-            return None
+            return rows
 
     def add_module_role(self, role_id: int):
         """Adds a role to the table "ModuleRole".
@@ -184,9 +178,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_REACTION_ROLE, (msg_id, emoji))
 
             row = result.fetchone()
-            if row:
-                return int(row[0])
-            return None
+            return int(row[0]) if row else None
 
     def add_reaction_role(self, msg_id: int, emoji: str, role_id: int):
         """Adds information needed for a reaction role to the table "ReactionRole".
@@ -269,6 +261,69 @@ class DatabaseConnector:
 
             return bool(row[0])
 
+    def get_translation(self, msg_id: int, flag_emoji: str) -> Optional[str]:
+        """Gets the translation for the specified message.
+
+        Args:
+            msg_id (int): The id of the message which translation is needed.
+            flag_emoji (str): The emoji representing the language.
+
+        Returns:
+            Optional[str]: The translation of the message.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_TRANSLATION, (msg_id, flag_emoji))
+
+            row = result.fetchone()
+            return row[0]
+
+    def add_translation(self, msg_id: int, flag_emoji: str, translation: str):
+        """Adds a translation for a specific message to the table "Translation".
+
+        Args:
+            msg_id (int): The id of the message which users should react to.
+            flag_emoji (str): The emoji representing the language.
+            translation (str): The translation of the message.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.INSERT_TRANSLATION, (msg_id, flag_emoji, translation))
+            db_manager.commit()
+
+    def remove_translation(self, msg_id: int, flag_emoji: str):
+        """Removes the translation of a specific message from the table "Translation".
+
+        Args:
+            msg_id (int): The id of the message which users should react to.
+            flag_emoji (str): The emoji representing the language.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.REMOVE_TRANSLATION, (msg_id, flag_emoji))
+            db_manager.commit()
+
+    def update_translation(self, msg_id: int, flag_emoji: str, translation: str):
+        """Update the translation of a specific message in the table "Translation".
+
+        Args:
+            msg_id (int): The id of the message which translation should be updated.
+            flag_emoji (str): The emoji representing the language.
+            translation (str): The new translation of the message.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.UPDATE_TRANSLATION, (msg_id, flag_emoji, translation))
+            db_manager.commit()
+
+    def clear_translations(self, msg_id: int) -> int:
+        """Removes all the translations of a specific message from the table "Translation".
+
+        Args:
+            msg_id (int): The id of the message which translations should be removed.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            affected_rows = db_manager.execute(queries.CLEAR_TRANSLATIONS, (msg_id,)).rowcount
+            db_manager.commit()
+
+            return affected_rows != 0
+
     def add_suggestion(self, author_id: int, timestamp: datetime.datetime) -> int:
         """Adds a suggestion to the table "Suggestion".
 
@@ -309,9 +364,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_SUGGESTION_BY_ID, (suggestion_id,))
 
             row = result.fetchone()
-            if row:
-                return row
-            return None
+            return row
 
     def get_suggestion_status(self, message_id: int) -> Optional[SuggestionStatus]:
         """Gets the status of a suggestion with the specified message id.
@@ -326,9 +379,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_SUGGESTION_STATUS, (message_id,))
 
             row = result.fetchone()
-            if row:
-                return SuggestionStatus(row[0])
-            return None
+            return SuggestionStatus(row[0]) if row else None
 
     def set_suggestion_status(self, suggestion_id: int, status: SuggestionStatus) -> bool:
         """Sets the status of a suggestion with the specified id.
@@ -344,6 +395,7 @@ class DatabaseConnector:
             affected_rows = db_manager.execute(queries.SET_SUGGESTION_STATUS, (status.value, suggestion_id)) \
                 .rowcount
             db_manager.commit()
+
             return affected_rows != 0
 
     def get_all_suggestions_with_status(self, status: SuggestionStatus) -> Optional[List[tuple]]:
@@ -359,9 +411,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_ALL_SUGGESTIONS_WITH_STATUS, (status.value,))
 
             rows = result.fetchall()
-            if rows:
-                return rows
-            return None
+            return rows
 
     def add_modmail(self, msg_id: int, author: str, timestamp: datetime.datetime):
         """Inserts the username of the author and the message id of a submitted modmail into the database and
@@ -389,9 +439,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_MODMAIL_STATUS, (msg_id,))
 
             row = result.fetchone()
-            if row:
-                return ModmailStatus(row[0])
-            return None
+            return ModmailStatus(row[0]) if row else None
 
     def change_modmail_status(self, msg_id: int, status: ModmailStatus):
         """Changes the status of a specific modmail with the given id.
@@ -417,9 +465,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_ALL_MODMAIL_WITH_STATUS, (status.value,))
 
             rows = result.fetchall()
-            if rows:
-                return rows
-            return None
+            return rows
 
     def add_group_offer_and_requests(self, user_id: int, course: str, offered_group: int,
                                      requested_groups: Iterator[int]):
@@ -472,9 +518,7 @@ class DatabaseConnector:
                 tuple(parameter_list)
             )
             rows = result.fetchall()
-            if rows:
-                return rows
-            return None
+            return rows
 
     def get_group_exchange_message(self, user_id: int, course: int) -> Optional[int]:
         """Gets message id for the request of a user for a specific course.
@@ -489,10 +533,8 @@ class DatabaseConnector:
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(queries.GET_GROUP_EXCHANGE_MESSAGE, (user_id, course))
 
-            rows = result.fetchone()
-            if rows:
-                return int(rows[0])
-            return None
+            row = result.fetchone()
+            return int(row[0]) if row else None
 
     def remove_group_exchange_offer(self, user_id: int, course: str):
         """Removes all entries of a group exchange offer and request for a user.
@@ -519,9 +561,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_GROUP_EXCHANGE_FOR_USER, (user_id,))
 
             rows = result.fetchall()
-            if rows:
-                return rows
-            return None
+            return rows
 
     def is_botonly(self, channel_id: int) -> bool:
         """Runs a query checking if a channel is marked as bot-only in the db.

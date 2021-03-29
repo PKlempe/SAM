@@ -299,28 +299,30 @@ class RoleManagementCog(commands.Cog):
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
         if payload.channel_id == self.ch_role.id and not payload.member.bot:
-            if self._db_connector.is_reaction_role_uniqueness_group(payload.message_id):
-                message = await self.ch_role.fetch_message(payload.message_id)
-
-                for reaction in message.reactions:
-                    if reaction.emoji != payload.emoji.name:
-                        users = await reaction.users().flatten()
-
-                        if payload.member in users:
-                            await reaction.remove(payload.member)
-                            break
-
-                        role_id = self._db_connector.get_reaction_role(payload.message_id, reaction.emoji)
-                        role = self.bot.get_guild(payload.guild_id).get_role(role_id)
-
-                        if role in payload.member.roles:
-                            await payload.member.remove_roles(role, reason="Automatische/Manuelle Entfernung via "
-                                                                           "Reaction.")
-                            break
-
             role_id = self._db_connector.get_reaction_role(payload.message_id, payload.emoji.name)
-            role = self.bot.get_guild(payload.guild_id).get_role(role_id)
-            await payload.member.add_roles(role, reason="Selbstzuweisung via Reaction.")
+
+            if role_id:
+                role = self.bot.get_guild(payload.guild_id).get_role(role_id)
+                await payload.member.add_roles(role, reason="Selbstzuweisung via Reaction.")
+
+                if self._db_connector.is_reaction_role_uniqueness_group(payload.message_id):
+                    message = await self.ch_role.fetch_message(payload.message_id)
+
+                    for reaction in message.reactions:
+                        if reaction.emoji != payload.emoji.name:
+                            users = await reaction.users().flatten()
+
+                            if payload.member in users:
+                                await reaction.remove(payload.member)
+                                break
+
+                            role_id = self._db_connector.get_reaction_role(payload.message_id, reaction.emoji)
+                            role = self.bot.get_guild(payload.guild_id).get_role(role_id)
+
+                            if role in payload.member.roles:
+                                await payload.member.remove_roles(role, reason="Automatische/Manuelle Entfernung via "
+                                                                               "Reaction.")
+                                break
 
     @commands.Cog.listener(name='on_raw_reaction_remove')
     async def reaction_role_remove(self, payload: discord.RawReactionActionEvent):
@@ -334,10 +336,11 @@ class RoleManagementCog(commands.Cog):
         """
         if payload.channel_id == self.ch_role.id:
             role_id = self._db_connector.get_reaction_role(payload.message_id, payload.emoji.name)
-            role = self.bot.get_guild(payload.guild_id).get_role(role_id)
 
-            member = self.bot.get_guild(payload.guild_id).get_member(payload.user_id)
-            await member.remove_roles(role, reason="Automatische/Manuelle Entfernung via Reaction.")
+            if role_id:
+                role = self.bot.get_guild(payload.guild_id).get_role(role_id)
+                member = self.bot.get_guild(payload.guild_id).get_member(payload.user_id)
+                await member.remove_roles(role, reason="Automatische/Manuelle Entfernung via Reaction.")
 
     @commands.Cog.listener(name='on_raw_message_delete')
     async def delete_reaction_role_group(self, payload: discord.RawReactionActionEvent):

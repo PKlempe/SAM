@@ -15,6 +15,7 @@ INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
                  "UniversityCog":       'bot.university.university',
                  "UtilityCog":          'bot.utility.utility',
                  "FeedbackCog":         'bot.feedback.feedback',
+                 "TranslationCog":      'bot.translation.translation',
                  "MusicCog":            'bot.music.music'}
 
 
@@ -72,6 +73,7 @@ EMBED_COLOR_UNIVERSITY = 0x1E90FF
 EMBED_COLOR_SELECTION = 0xFF6700
 EMBED_COLOR_REPORT = 0xF01414
 EMBED_COLOR_MODERATION = 0x5C2BE2
+EMBED_COLOR_TRANSLATION = 0x6ECD00
 
 EMBED_COLOR_MODMAIL_OPEN = 0xE60000
 EMBED_COLOR_MODMAIL_ASSIGNED = 0xFF7800
