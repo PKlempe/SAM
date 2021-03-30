@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS ReactionRole(
 CREATE TABLE IF NOT EXISTS Translation(
     MessageID TEXT NOT NULL,
     FlagEmoji TEXT NOT NULL,
-    Translation TEXT NOT NULL,
-    PRIMARY KEY (MessageID)
+    TranslatedMessage TEXT NOT NULL,
+    PRIMARY KEY (MessageID, FlagEmoji)
 );
 
 CREATE TABLE IF NOT EXISTS ReactionRoleUniquenessGroup(

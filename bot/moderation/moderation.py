@@ -829,8 +829,9 @@ class ModerationCog(commands.Cog):
         enum_status = ModmailStatus[status.upper()]
         modmail = self._db_connector.get_all_modmail_with_status(enum_status)
 
-        embed = _modmail_create_list_embed(enum_status, modmail)
-        await self.ch_modmail.send(embed=embed)
+        if modmail:
+            embed = _modmail_create_list_embed(enum_status, modmail)
+            await self.ch_modmail.send(embed=embed)
 
     @get_modmail_with_status.error
     async def get_modmail_error(self, _ctx: commands.Context, error: commands.CommandError):

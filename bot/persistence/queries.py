@@ -33,10 +33,10 @@ IS_REACTION_ROLE_UNIQUE = "SELECT EXISTS(SELECT 1 FROM ReactionRoleUniquenessGro
 
 
 # Translations
-GET_TRANSLATION = "SELECT Translation FROM Translation WHERE MessageID = ? AND FlagEmoji = ? LIMIT 1"
-INSERT_TRANSLATION = "INSERT INTO Translation (MessageID, FlagEmoji, Translation) VALUES (?,?,?)"
+GET_TRANSLATION = "SELECT TranslatedMessage FROM Translation WHERE MessageID = ? AND FlagEmoji = ? LIMIT 1"
+INSERT_TRANSLATION = "INSERT INTO Translation (MessageID, FlagEmoji, TranslatedMessage) VALUES (?,?,?)"
 REMOVE_TRANSLATION = "DELETE FROM Translation WHERE MessageID = ? AND FlagEmoji = ?"
-UPDATE_TRANSLATION = "UPDATE Translation SET Translation = ? WHERE MessageID = ? AND FlagEmoji = ?"
+UPDATE_TRANSLATION = "UPDATE Translation SET TranslatedMessage = ? WHERE MessageID = ? AND FlagEmoji = ?"
 CLEAR_TRANSLATIONS = "DELETE FROM Translation WHERE MessageID = ?"
 
 

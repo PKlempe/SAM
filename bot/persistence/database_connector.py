@@ -85,7 +85,7 @@ class DatabaseConnector:
             row = result.fetchone()
             return int(row[0]) if row else None
 
-    def get_member_warnings(self, user_id: int) -> Optional[List[tuple]]:
+    def get_member_warnings(self, user_id: int) -> List[tuple]:
         """Gets all the warnings of a specific member.
 
         Args:
@@ -113,7 +113,7 @@ class DatabaseConnector:
             db_manager.execute(queries.INSERT_MEMBER_NAME, (user_id, name, timestamp))
             db_manager.commit()
 
-    def get_member_names(self, user_id: int) -> Optional[List[tuple]]:
+    def get_member_names(self, user_id: int) -> List[tuple]:
         """Gets all the nicknames used by a member from the table "MemberNameHistory".
 
         Args:
@@ -275,7 +275,7 @@ class DatabaseConnector:
             result = db_manager.execute(queries.GET_TRANSLATION, (msg_id, flag_emoji))
 
             row = result.fetchone()
-            return row[0]
+            return row[0] if row else None
 
     def add_translation(self, msg_id: int, flag_emoji: str, translation: str):
         """Adds a translation for a specific message to the table "Translation".
@@ -398,7 +398,7 @@ class DatabaseConnector:
 
             return affected_rows != 0
 
-    def get_all_suggestions_with_status(self, status: SuggestionStatus) -> Optional[List[tuple]]:
+    def get_all_suggestions_with_status(self, status: SuggestionStatus) -> List[tuple]:
         """Gets data about all suggestions with the specified status.
 
         Args:
@@ -452,7 +452,7 @@ class DatabaseConnector:
             db_manager.execute(queries.CHANGE_MODMAIL_STATUS, (status.value, msg_id))
             db_manager.commit()
 
-    def get_all_modmail_with_status(self, status: ModmailStatus) -> Optional[List[tuple]]:
+    def get_all_modmail_with_status(self, status: ModmailStatus) -> List[tuple]:
         """Returns the message id of every modmail with the specified status.
 
         Args:
