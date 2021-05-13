@@ -744,7 +744,7 @@ class ModerationCog(commands.Cog):
                 delete_after=const.TIMEOUT_INFORMATION)
             log.info("SAM deleted %s messages in [#%s]", deleted_messages_count, purge_channel)
 
-            details = f"Deleted {deleted_messages_count} mesages in channel {purge_channel.mention}"
+            details = f"Deleted {deleted_messages_count} messages in channel {purge_channel.mention}"
             embed = _build_modlog_embed("Purge", color=const.EMBED_COLOR_MODLOG_PURGE,
                                         moderator=ctx.author, user=None, reason=None, details=details)
             await self.ch_modlog.send(embed=embed)
