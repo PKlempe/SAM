@@ -738,12 +738,13 @@ class ModerationCog(commands.Cog):
         is_posted_in_purge_channel = purge_channel is ctx.channel
         if is_confirmed:
             deleted_messages = await purge_channel.purge(limit=amount + 1 if is_posted_in_purge_channel else amount)
+            deleted_messages_count = len(deleted_messages)-1 if is_posted_in_purge_channel else len(deleted_messages)
             await purge_channel.send(
-                '**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'.format(len(deleted_messages)),
+                '**Ich habe __{0} Nachrichten__ erfolgreich gelöscht.**'.format(deleted_messages_count),
                 delete_after=const.TIMEOUT_INFORMATION)
-            log.info("SAM deleted %s messages in [#%s]", len(deleted_messages), purge_channel)
+            log.info("SAM deleted %s messages in [#%s]", deleted_messages_count, purge_channel)
 
-            details = f"Deleted {len(deleted_messages)} mesages in channel {purge_channel.mention}"
+            details = f"Deleted {deleted_messages_count} mesages in channel {purge_channel.mention}"
             embed = _build_modlog_embed("Purge", color=const.EMBED_COLOR_MODLOG_PURGE,
                                         moderator=ctx.author, user=None, reason=None, details=details)
             await self.ch_modlog.send(embed=embed)
