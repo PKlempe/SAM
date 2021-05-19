@@ -23,7 +23,7 @@ numpy==1.20.1
 packaging==20.9
 pluggy==0.13.1
 py==1.10.0
-pylint==2.7.1
+pylint==2.8.2
 pynacl==1.4.0
 pyparsing==2.4.7
 pytest==6.2.2
