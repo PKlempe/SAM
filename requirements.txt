@@ -23,11 +23,11 @@ numpy==1.20.1
 packaging==20.9
 pluggy==0.13.1
 py==1.10.0
-pylint==2.8.2
+pylint==2.7.1
 pynacl==1.4.0
 pyparsing==2.4.7
 pytest==6.2.2
-python-dotenv==0.17.1
+python-dotenv==0.15.0
 pytimeparse==1.1.8
 pytz==2021.1
 requests==2.25.1
