@@ -1,4 +1,4 @@
-aiohttp==3.7.4
+aiohttp==3.7.4.post0
 APScheduler==3.7.0
 astroid==2.5
 async-timeout==3.0.1
@@ -8,7 +8,7 @@ certifi==2020.12.5
 chardet==3.0.4
 colorama==0.4.4
 discord==1.0.1
-discord.py==1.6.0
+discord.py==1.7.2
 django-commands==0.7
 ffmpeg-python==0.2.0
 idna==2.10
@@ -23,11 +23,11 @@ numpy==1.20.1
 packaging==20.9
 pluggy==0.13.1
 py==1.10.0
-pylint==2.7.1
+pylint==2.8.2
 pynacl==1.4.0
 pyparsing==2.4.7
-pytest==6.2.2
-python-dotenv==0.15.0
+pytest==6.2.4
+python-dotenv==0.17.1
 pytimeparse==1.1.8
 pytz==2021.1
 requests==2.25.1
@@ -37,9 +37,9 @@ toml==0.10.2
 typed-ast==1.4.2
 typing-extensions==3.7.4.3
 tzlocal==2.1
-urllib3==1.26.3
+urllib3==1.26.4
 wcwidth==0.2.5
 websockets==8.1
 wrapt==1.12.1
 yarl==1.6.3
-youtube-dl==2021.2.22
+youtube-dl==2021.5.16
