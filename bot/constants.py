@@ -102,21 +102,24 @@ EMBED_COLOR_SUBSCRIPTION = 0xFBAA19
 
 # Special Emojis
 EMOJI_PIN = "\U0001F4CC"
-
 EMOJI_AVAILABLE = "\U0001F7E2"
 EMOJI_UNAVAILABLE = "\U0001F534"
-
 EMOJI_MODMAIL_DONE = "\U00002705"
 EMOJI_MODMAIL_ASSIGN = "\U0001F4DD"
-
 EMOJI_CONFIRM = "\U00002705"
 EMOJI_CANCEL = "\U0000274C"
-
 EMOJI_UPVOTE = "\U00002B06\U0000FE0F"
 EMOJI_DOWNVOTE = "\U00002B07\U0000FE0F"
-
 ZERO_WIDTH_SPACE = "\U0000200B"
 EMOJI_CHANNEL_NAME_SEPARATOR = "\U0001F539"
+
+EMOJI_SUPPORTED_LANGUAGES = {"\U0001F1EC\U0001F1E7":    'english',
+                             "\U0001F1EE\U0001F1F9":    'italian',
+                             "\U0001F1EB\U0001F1F7":    'french',
+                             "\U0001F1E8\U0001F1FF":    'czech',
+                             "\U0001F1F8\U0001F1F0":    'slovak',
+                             "\U0001F1ED\U0001F1FA":    'hungarian',
+                             "\U0001F1F7\U0001F1FA":    'russian'}
 
 
 # API Keys
