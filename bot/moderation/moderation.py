@@ -342,6 +342,11 @@ class ModerationCog(commands.Cog):
             await ctx.send("Dieser Nutzer ist nicht stummgeschalten. :thinking:")
             return
 
+        # Check if the user has been tempmuted and remove the job in the DB if that's the case
+        unmute_job = singletons.SCHEDULER.get_job(f"tempmute_expire_{user.id}")
+        if unmute_job:
+            unmute_job.remove()
+
         await user.remove_roles(self.role_muted, reason=reason)
         log.info("Member %s has been unmuted.", user)
 
@@ -393,7 +398,8 @@ class ModerationCog(commands.Cog):
                                            moderator=ctx.author, user=user, reason=reason, details=details)
         await self.ch_modlog.send(embed=modlog_embed)
 
-        singletons.SCHEDULER.add_job(_scheduled_unmute_user, trigger="date", run_date=run_date, args=[user.id])
+        singletons.SCHEDULER.add_job(_scheduled_unmute_user, trigger="date", run_date=run_date, args=[user.id],
+                                     id=f"tempmute_expire_{user.id}", replace_existing=True)
 
     @commands.command(name='ban', hidden=True)
     @command_log
