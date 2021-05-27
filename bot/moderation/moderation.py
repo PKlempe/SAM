@@ -705,6 +705,8 @@ class ModerationCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             error (commands.CommandError): The error raised during the execution of the command.
         """
+        await ctx.message.delete()
+
         if isinstance(error, commands.BadArgument):
             regex = re.search(r"\"(.*)\"", error.args[0])  # Regex for getting text between two quotes.
             user = regex.group(1) if regex else None
