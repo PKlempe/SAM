@@ -256,6 +256,9 @@ class ModerationCog(commands.Cog):
         self._db_connector.remove_member_warning(warning_id)
         log.info("Warning #%s has been removed from %s.", warning_id, user)
 
+        # Check warnings and recalculate expiration date if needed
+        await self.check_warnings(ctx, user)
+
         modlog_embed = _build_modlog_embed("Aufhebung: Verwarnung", color=const.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=user, reason=reason)
         await self.ch_modlog.send(embed=modlog_embed)
@@ -290,6 +293,11 @@ class ModerationCog(commands.Cog):
         """
         self._db_connector.remove_member_warnings(user.id)
         log.info("All warnings have been removed from %s.", user)
+
+        # Remove scheduler job from DB because it isn't needed anymore
+        clear_warnings_job = singletons.SCHEDULER.get_job(f"warns_expire_{user.id}")
+        if clear_warnings_job:
+            clear_warnings_job.remove()
 
         modlog_embed = _build_modlog_embed("Aufhebung: Alle Verwarnungen", color=const.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=user, reason=reason)
@@ -933,8 +941,11 @@ class ModerationCog(commands.Cog):
                                  bot_activated=True)
             else:
                 await ctx.invoke(self.bot.get_command(punishment[0]), user=user, reason=reason, bot_activated=True)
+        elif cntr_warnings == 0:
+            # Remove scheduler job from DB because it isn't needed anymore
+            singletons.SCHEDULER.get_job(f"warns_expire_{user.id}").remove()
 
-        # Expiration
+        # Expiration Date
         weeks = (cntr_warnings + 1) * 4 if cntr_warnings > 1 else 4
         run_date = get_future_timestamp("{0}w".format(weeks))
         singletons.SCHEDULER.add_job(_scheduled_clear_warnings, trigger="date", run_date=run_date, args=[user.id],
