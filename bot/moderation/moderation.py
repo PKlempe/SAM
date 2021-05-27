@@ -2,7 +2,7 @@
 
 import operator
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Union
 
 import discord
@@ -257,7 +257,7 @@ class ModerationCog(commands.Cog):
         log.info("Warning #%s has been removed from %s.", warning_id, user)
 
         # Check warnings and recalculate expiration date if needed
-        await self.check_warnings(ctx, user)
+        await self.check_warnings(ctx, user, False)
 
         modlog_embed = _build_modlog_embed("Aufhebung: Verwarnung", color=const.EMBED_COLOR_MODLOG_REPEAL,
                                            moderator=ctx.author, user=user, reason=reason)
@@ -910,7 +910,7 @@ class ModerationCog(commands.Cog):
                 new_embed = await self.change_modmail_status(modmail, payload.emoji.name, False)
                 await modmail.edit(embed=new_embed)
 
-    async def check_warnings(self, ctx: commands.Context, user: discord.Member):
+    async def check_warnings(self, ctx: commands.Context, user: discord.Member, was_warning_added: bool = True):
         """Method which checks the amount of warnings a user has and punishes him if necessary. It also creates/updates
         scheduler jobs to remove them after some time.
 
@@ -923,33 +923,41 @@ class ModerationCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             user (discord.Member): The member which has been warned.
+            was_warning_added (bool): Specifies if a warning has been added or not to prevent that a user gets punished multiple times.
         """
-        cntr_warnings = len(self._db_connector.get_member_warnings(user.id))
+        warnings = self._db_connector.get_member_warnings(user.id)
+        cntr_warnings = len(warnings) if warnings else 0
         punishments = {
             const.LIMIT_WARNINGS_LVL_1:      ("tempmute", "1 week"),
             const.LIMIT_WARNINGS_LVL_2:      ("tempban", "2 weeks"),
             const.LIMIT_WARNINGS_LVL_3:      ("ban", None)
         }
 
-        # Punishment
-        if cntr_warnings in punishments:
-            punishment = punishments[cntr_warnings]
-            reason = f"Automatisch durchgeführte Aktion aufgrund von insgesamt {cntr_warnings} Verwarnungen."
+        if cntr_warnings != 0:
+            # Punishment
+            if was_warning_added and (cntr_warnings in punishments):
+                punishment = punishments[cntr_warnings]
+                reason = f"Automatisch durchgeführte Aktion aufgrund von insgesamt {cntr_warnings} Verwarnungen."
 
-            if punishment[1]:
-                await ctx.invoke(self.bot.get_command(punishment[0]), user=user, duration=punishment[1], reason=reason,
-                                 bot_activated=True)
-            else:
-                await ctx.invoke(self.bot.get_command(punishment[0]), user=user, reason=reason, bot_activated=True)
-        elif cntr_warnings == 0:
+                if punishment[1]:
+                    await ctx.invoke(self.bot.get_command(punishment[0]), user=user, duration=punishment[1], reason=reason,
+                                     bot_activated=True)
+                else:
+                    await ctx.invoke(self.bot.get_command(punishment[0]), user=user, reason=reason, bot_activated=True)
+
+            # Expiration Date
+            weeks = (cntr_warnings + 1) * 4 if cntr_warnings > 1 else 4
+            run_date = get_future_timestamp("{0}w".format(weeks))
+
+            if not was_warning_added:
+                expiration_job = singletons.SCHEDULER.get_job(f"warns_expire_{user.id}")
+                run_date = expiration_job.next_run_time - timedelta(weeks=(((cntr_warnings + 2) * 4) - weeks))
+
+            singletons.SCHEDULER.add_job(_scheduled_clear_warnings, trigger="date", run_date=run_date, args=[user.id],
+                                         id=f"warns_expire_{user.id}", replace_existing=True)
+        else:
             # Remove scheduler job from DB because it isn't needed anymore
             singletons.SCHEDULER.get_job(f"warns_expire_{user.id}").remove()
-
-        # Expiration Date
-        weeks = (cntr_warnings + 1) * 4 if cntr_warnings > 1 else 4
-        run_date = get_future_timestamp("{0}w".format(weeks))
-        singletons.SCHEDULER.add_job(_scheduled_clear_warnings, trigger="date", run_date=run_date, args=[user.id],
-                                     id=f"warns_expire_{user.id}", replace_existing=True)
 
     async def change_modmail_status(self, modmail: discord.Message, emoji: str, reaction_added: bool) -> discord.Embed:
         """Method which changes the status of a modmail depending on the given emoji.
