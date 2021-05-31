@@ -205,7 +205,8 @@ class CommunityCog(commands.Cog):
         if highlight_message:
             embed = highlight_message.embeds[0]
             embed.set_field_at(0, name=f"{const.EMOJI_HIGHLIGHT} {reaction_counter}", value=const.ZERO_WIDTH_SPACE)
-            await highlight_message.edit(content=message.content, embed=embed)
+            await highlight_message.edit(content=f"Sieht so aus als hätte sich {message.author.mention} einen Platz in "
+                                                 f"der Ruhmeshalle verdient! :tada:", embed=embed)
 
         elif reaction_counter >= const.LIMIT_HIGHLIGHT:
             # Check if an image has been attached to the original message. If yes, take the first image and pass it to
