@@ -235,7 +235,8 @@ async def _check_if_already_highlight(highlight_channel: discord.TextChannel, me
         (discord.Message): The highlight message if one has already been posted recently.
     """
     async for message in highlight_channel.history(limit=int(const.LIMIT_HIGHLIGHT_LOOKUP)):
-        original_message_id = message.embeds[0].url.split("/")[-1]
+        # Return a message id which can never be valid if the embed doesn't include a Jump URL.
+        original_message_id = message.embeds[0].url.split("/")[-1] if message.embeds[0].url else -1
 
         if int(original_message_id) == message_id:
             return message
