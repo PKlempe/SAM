@@ -20,6 +20,7 @@ class CommunityCog(commands.Cog):
         Args:
             bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
         """
+        self.bot = bot
         self._db_connector = DatabaseConnector(const.DB_FILE_PATH, const.DB_INIT_SCRIPT)
 
         # Channel Category instances
@@ -172,6 +173,102 @@ class CommunityCog(commands.Cog):
             await before.channel.delete(reason=reason)
             await txt_ch.delete(reason=reason)
             log.info("Empty Community Room [%s] has been automatically deleted.", before.channel.name)
+
+    @commands.Cog.listener(name='on_raw_reaction_add')
+    async def mark_as_highlight(self, payload: discord.RawReactionActionEvent):
+        """Event listener which triggers if a reaction has been added to a message.
+
+        If enough users react to a message with the specified highlight emoji, it will be reposted in the configured
+        highlights channel by SAM. This way even users who don't have access to specific channels are able to see
+        interesting content from somewhere on the server.
+        If recently a highlight message has already been posted for a specific message, the reaction counter inside its
+        embed will be modified.
+
+        Args:
+            payload (discord.RawReactionActionEvent): The payload for the triggered event.
+        """
+        if payload.emoji.name != const.EMOJI_HIGHLIGHT or payload.channel_id == int(const.CHANNEL_ID_HIGHLIGHTS) \
+                or self._db_connector.is_botonly(payload.channel_id):
+            return
+
+        guild = self.bot.get_guild(payload.guild_id)
+        message_channel = guild.get_channel(payload.channel_id)
+        message = await message_channel.fetch_message(payload.message_id)
+        reaction = next(x for x in message.reactions if x.emoji == const.EMOJI_HIGHLIGHT)
+
+        has_author_reacted = await reaction.users().get(id=message.author.id)
+        reaction_counter = reaction.count - 1 if has_author_reacted else reaction.count
+
+        highlight_channel = guild.get_channel(int(const.CHANNEL_ID_HIGHLIGHTS))
+        highlight_message = await _check_if_already_highlight(highlight_channel, message.id)
+
+        if highlight_message:
+            embed = highlight_message.embeds[0]
+            embed.set_field_at(0, name=f"{const.EMOJI_HIGHLIGHT} {reaction_counter}", value=const.ZERO_WIDTH_SPACE)
+            await highlight_message.edit(content=message.content, embed=embed)
+
+        elif reaction_counter >= const.LIMIT_HIGHLIGHT:
+            # Check if an image has been attached to the original message. If yes, take the first image and pass it to
+            # the method which builds the embed so that it will be displayed inside it. Every other image or type of
+            # attachment should be attached to a second message which will be send immediately after the highlight embed
+            # because they can't be included in the embed.
+            image = next((a for a in message.attachments if not a.is_spoiler() and "image" in a.content_type), None)
+            files = [await a.to_file(spoiler=a.is_spoiler()) for a in message.attachments if a != image]
+
+            embed = _build_highlight_embed(message, image, guild.get_channel(int(const.CHANNEL_ID_ROLES)).name)
+            await highlight_channel.send(f"Sieht so aus als hätte sich {message.author.mention} einen Platz in der "
+                                         f"Ruhmeshalle verdient! :tada:", embed=embed)
+            if files:
+                async with highlight_channel.typing():
+                    await highlight_channel.send(":paperclip: **Dazugehörige Attachments:**", files=files)
+
+
+async def _check_if_already_highlight(highlight_channel: discord.TextChannel, message_id: int) \
+        -> Optional[discord.Message]:
+    """Checks whether a message has already been reposted as a highlight recently and returns it if true.
+
+    Args:
+        highlight_channel (discord.TextChannel): The configured channel for highlights.
+        message_id (int): The ID of the message which has been marked as a highlight.
+
+    Returns:
+        (discord.Message): The highlight message if one has already been posted recently.
+    """
+    async for message in highlight_channel.history(limit=int(const.LIMIT_HIGHLIGHT_LOOKUP)):
+        original_message_id = message.embeds[0].url.split("/")[-1]
+
+        if int(original_message_id) == message_id:
+            return message
+
+    return None
+
+
+def _build_highlight_embed(message: discord.Message, image: discord.Attachment, role_ch_name: str) -> discord.Embed:
+    """Creates an embed which contains a message that has been marked as a highlight by the server members.
+
+    The embed contains the original message, the name of its author, the channel where it was posted and an image if one
+    has been attached.
+
+    Args:
+        message (discord.Message): The message which should be reposted in the highlight channel.
+        image (discord.Attachment): A possible image which should can be set for the embed.
+        role_ch_name (str): The name of the configured role channel for the info text at the bottom of the embed.
+
+    Returns:
+        (discord.Embed): The new highlight embed.
+    """
+    embed = discord.Embed(title="[ Zur Original-Nachricht ]", url=message.jump_url, color=discord.Colour.gold(),
+                          description=message.content) \
+        .set_author(name=f"{message.author.display_name} in #{message.channel}:", icon_url=message.author.avatar_url) \
+        .set_footer(text=f"Der obige Link funktioniert nur, wenn man zum jeweiligen Kanal auch Zugriff hat. Für mehr "
+                         f"Infos siehe #{role_ch_name}.",
+                    icon_url="https://i.imgur.com/TUN1NcQ.png") \
+        .add_field(name=f"{const.EMOJI_HIGHLIGHT} {const.LIMIT_HIGHLIGHT}", value=const.ZERO_WIDTH_SPACE)
+
+    if image:
+        embed.set_image(url=image.url)
+
+    return embed
 
 
 def _determine_channel_number(ch_category: discord.CategoryChannel, name: str) -> Optional[str]:
