@@ -207,7 +207,11 @@ class CommunityCog(commands.Cog):
             embed.set_field_at(0, name=f"{const.EMOJI_HIGHLIGHT} {reaction_counter}", value=const.ZERO_WIDTH_SPACE)
             await highlight_message.edit(content=message.content, embed=embed)
 
-        elif reaction_counter == const.LIMIT_HIGHLIGHT:
+        elif reaction_counter >= const.LIMIT_HIGHLIGHT:
+            # Check if an image has been attached to the original message. If yes, take the first image and pass it to
+            # the method which builds the embed so that it will be displayed inside it. Every other image or type of
+            # attachment should be attached to a second message which will be send immediately after the highlight embed
+            # because they can't be included in the embed.
             image = next((a for a in message.attachments if not a.is_spoiler() and "image" in a.content_type), None)
             files = [await a.to_file(spoiler=a.is_spoiler()) for a in message.attachments if a != image]
 
