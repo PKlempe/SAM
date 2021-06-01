@@ -207,13 +207,15 @@ class CommunityCog(commands.Cog):
             embed.set_field_at(0, name=f"{const.EMOJI_HIGHLIGHT} {reaction_counter}", value=const.ZERO_WIDTH_SPACE)
             await highlight_message.edit(content=f"Sieht so aus als hätte sich {message.author.mention} einen Platz in "
                                                  f"der Ruhmeshalle verdient! :tada:", embed=embed)
+            log.info("The highlight embed of the message with id \"%s\" has been updated.", message.id)
 
-        elif reaction_counter >= const.LIMIT_HIGHLIGHT:
+        elif reaction_counter == const.LIMIT_HIGHLIGHT:
             # Check if an image has been attached to the original message. If yes, take the first image and pass it to
             # the method which builds the embed so that it will be displayed inside it. Every other image or type of
             # attachment should be attached to a second message which will be send immediately after the highlight embed
             # because they can't be included in the embed.
-            image = next((a for a in message.attachments if not a.is_spoiler() and "image" in a.content_type), None)
+            image = next((a for a in message.attachments if a.filename.split(".")[-1].lower()
+                          in ["jpg", "jpeg", "png", "gif"] and not a.is_spoiler()), None)
             files = [await a.to_file(spoiler=a.is_spoiler()) for a in message.attachments if a != image]
 
             embed = _build_highlight_embed(message, image, guild.get_channel(int(const.CHANNEL_ID_ROLES)).name)
@@ -222,6 +224,9 @@ class CommunityCog(commands.Cog):
             if files:
                 async with highlight_channel.typing():
                     await highlight_channel.send(":paperclip: **Dazugehörige Attachments:**", files=files)
+
+            log.info("A highlight embed for the message with id \"%s\" has been posted in the configured highlights "
+                     "channel.", message.id)
 
 
 async def _check_if_already_highlight(highlight_channel: discord.TextChannel, message_id: int) \
