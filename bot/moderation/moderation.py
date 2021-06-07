@@ -799,16 +799,22 @@ class ModerationCog(commands.Cog):
             await ctx.message.delete()
 
         msg_content = ctx.message.content[len(ctx.prefix + ctx.command.name):]
-        msg_attachments = ctx.message.attachments
         msg_author_name = str(ctx.message.author)
         msg_timestamp = ctx.message.created_at
+
+        image = next((a for a in ctx.message.attachments if a.filename.split(".")[-1].lower()
+                      in ["jpg", "jpeg", "png", "gif"]), None)
+        files = [await a.to_file() for a in ctx.message.attachments if a != image]
 
         embed = discord.Embed(title="Status: Offen", color=const.EMBED_COLOR_MODMAIL_OPEN,
                               timestamp=datetime.utcnow(), description=msg_content)
         embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
         embed.set_footer(text="Erhalten am")
 
-        msg_modmail = await self.ch_modmail.send(embed=embed, files=msg_attachments)
+        if image:
+            embed.set_image(url=image.url)
+
+        msg_modmail = await self.ch_modmail.send(embed=embed, files=files)
         self._db_connector.add_modmail(msg_modmail.id, msg_author_name, msg_timestamp)
         log.info("Member %s submitted a modmail.", ctx.author)
 
