@@ -1,7 +1,7 @@
 """Contains a Cog for all utility functionality."""
 
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import discord
 from discord.ext import commands
@@ -9,6 +9,7 @@ from discord.ext import commands
 from bot import constants
 from bot.logger import command_log, log
 
+from bot.utility import howto_handler
 
 class UtilityCog(commands.Cog):
     """Cog for Utility Functions."""
@@ -93,6 +94,34 @@ class UtilityCog(commands.Cog):
 
         embed.add_field(name="Special Thanks:", value=str_special_thanks)
         embed.add_field(name="Links:", value=str_links)
+        await ctx.send(embed=embed)
+
+    @commands.command(name='howto')
+    @command_log
+    async def howto(self, ctx: commands.Context, what: Optional[str] = None):
+        """Handler for the `howto code` command.
+
+        Explains how to do various things
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            what (Optional[str]): What the user wants to know about
+        """
+        subcommands = {
+            "code": ("How to format code with discord markdown", howto_handler.code),
+        }
+        if what in subcommands:
+            embed = subcommands[what][1]()
+        else:
+            if what is not None:
+                message = f"Ich kenne diesen Befehl leider nicht. Hast du vielleicht einen der folgenden gemeint?\n"
+            else:
+                message = "Eine Sammlung nützlicher Befehle:\n"
+            embed = discord.Embed(
+                title = "How to !howto",
+                color = constants.EMBED_COLOR_INFO,
+                description = message + "\n".join([f"`{each}`: {subcommands[each][0]}" for each in subcommands])
+            )
         await ctx.send(embed=embed)
 
     @commands.Cog.listener(name='on_raw_reaction_add')
