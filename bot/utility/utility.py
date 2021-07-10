@@ -113,7 +113,7 @@ class UtilityCog(commands.Cog):
         if topic in subcommands:
             embed = subcommands[topic][1]()
         else:
-            if topic
+            if topic:
                 message = "Ich kenne diesen Befehl leider nicht. Hast du vielleicht einen der folgenden gemeint?\n"
             else:
                 message = "Eine Sammlung nützlicher Befehle:\n"
