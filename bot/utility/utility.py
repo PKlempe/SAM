@@ -98,8 +98,8 @@ class UtilityCog(commands.Cog):
 
     @commands.command(name='howto')
     @command_log
-    async def howto(self, ctx: commands.Context, what: Optional[str] = None):
-        """Handler for the `howto code` command.
+    async def howto(self, ctx: commands.Context, topic: Optional[str] = None):
+        """Handler for the `howto` command.
 
         Explains how to do various things
 
@@ -110,11 +110,11 @@ class UtilityCog(commands.Cog):
         subcommands = {
             "code": ("How to format code with discord markdown", howto_handler.code),
         }
-        if what in subcommands:
-            embed = subcommands[what][1]()
+        if topic in subcommands:
+            embed = subcommands[topic][1]()
         else:
-            if what is not None:
-                message = f"Ich kenne diesen Befehl leider nicht. Hast du vielleicht einen der folgenden gemeint?\n"
+            if topic
+                message = "Ich kenne diesen Befehl leider nicht. Hast du vielleicht einen der folgenden gemeint?\n"
             else:
                 message = "Eine Sammlung nützlicher Befehle:\n"
             embed = discord.Embed(
