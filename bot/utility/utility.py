@@ -100,7 +100,7 @@ class UtilityCog(commands.Cog):
     async def howto(self, ctx: commands.Context, subcommand: Optional[str]):
         """Handler for the `howto` command.
 
-        Explains how to do various things
+        The available subcommands of this Command Group post individual help messages explaining how to do various things regarding the Discord server itself or other often needed tasks.
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
@@ -109,8 +109,8 @@ class UtilityCog(commands.Cog):
         message = "Ich kenne diesen Befehl leider nicht. Hast du vielleicht einen der folgenden gemeint?\n" if subcommand else None
 
         await ctx.send(message, embed=discord.Embed(
-            title="Howtos",
-            description="\n".join([c.name + ": " + c.description for c in self.howto.commands])
+            title="Available HowTos",
+            description="\n".join(["**- " + c.name + "**: " + c.description for c in self.howto.commands])
         ))
 
     @howto.command(name='code', description="Code in Nachrichten formatieren")
@@ -118,7 +118,7 @@ class UtilityCog(commands.Cog):
     async def howto_code(self, ctx: commands.context):
         """Handler for the `howto code` subcommand.
 
-        Explains how to properly format code using discords code blocks (https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-)
+        Explains how to properly format code using Discords code blocks (https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-).
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
