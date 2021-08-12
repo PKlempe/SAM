@@ -126,7 +126,11 @@ class UtilityCog(commands.Cog):
         embed = discord.Embed(
             title="Code-Formatierung 📝",
             color=11945797,
-            description="Wenn du deinen Code mit anderen teilen willst, dann kannst du hierfür sogenannte Codeblöcke verwenden. Sie sorgen dafür, dass dein Code vom Rest deiner Nachricht visuell abgegrenzt wird und macht ihn lesbarer für alle.\n\nFür einen __Inline-Codeblock__, schreibe deinen Code zwischen zwei Backticks (**`**).\nFür einene __Multi-Line-Codeblock__, verwende stattdessen jeweils drei (**```**).\n\nIm letzteren Fall kannst du außerdem nach den ersten Backticks mit einem Kürzel die jeweilige Programmiersprache angeben, um so sogar passendes Syntax-Highlighting zu erhalten.",
+            description="Wenn du deinen Code mit anderen teilen willst, dann kannst du hierfür sogenannte Codeblöcke verwenden."
+                + "Sie sorgen dafür, dass dein Code vom Rest deiner Nachricht visuell abgegrenzt wird und macht ihn lesbarer für alle.\n\n"
+                + "Für einen __Inline-Codeblock__, schreibe deinen Code zwischen zwei Backticks (**`**).\n"
+                + "Für einene __Multi-Line-Codeblock__, verwende stattdessen jeweils drei (**```**).\n\n"
+                + "Im letzteren Fall kannst du außerdem nach den ersten Backticks mit einem Kürzel die jeweilige Programmiersprache angeben, um so sogar passendes Syntax-Highlighting zu erhalten.",
         )
         embed.set_image(
             url="https://i.imgur.com/A0BGhtz.png")
