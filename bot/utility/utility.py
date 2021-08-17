@@ -3,6 +3,8 @@
 from datetime import datetime
 from typing import List, Optional
 
+import subprocess
+
 import discord
 from discord.ext import commands
 
@@ -127,10 +129,10 @@ class UtilityCog(commands.Cog):
             title="Code-Formatierung 📝",
             color=11945797,
             description="Wenn du deinen Code mit anderen teilen willst, dann kannst du hierfür sogenannte Codeblöcke verwenden."
-                + "Sie sorgen dafür, dass dein Code vom Rest deiner Nachricht visuell abgegrenzt wird und macht ihn lesbarer für alle.\n\n"
-                + "Für einen __Inline-Codeblock__, schreibe deinen Code zwischen zwei Backticks (**`**).\n"
-                + "Für einene __Multi-Line-Codeblock__, verwende stattdessen jeweils drei (**```**).\n\n"
-                + "Im letzteren Fall kannst du außerdem nach den ersten Backticks mit einem Kürzel die jeweilige Programmiersprache angeben, um so sogar passendes Syntax-Highlighting zu erhalten.",
+                        + "Sie sorgen dafür, dass dein Code vom Rest deiner Nachricht visuell abgegrenzt wird und macht ihn lesbarer für alle.\n\n"
+                        + "Für einen __Inline-Codeblock__, schreibe deinen Code zwischen zwei Backticks (**`**).\n"
+                        + "Für einene __Multi-Line-Codeblock__, verwende stattdessen jeweils drei (**```**).\n\n"
+                        + "Im letzteren Fall kannst du außerdem nach den ersten Backticks mit einem Kürzel die jeweilige Programmiersprache angeben, um so sogar passendes Syntax-Highlighting zu erhalten.",
         )
         embed.set_image(
             url="https://i.imgur.com/A0BGhtz.png")
@@ -205,6 +207,50 @@ class UtilityCog(commands.Cog):
             .add_field(name=constants.ZERO_WIDTH_SPACE, value="> **Ein Studium ist nicht immer leicht, aber "
                                                               "__gemeinsam__ schaffen wir das!** :muscle:")
         await user.send(content=content, embed=embed)
+
+    @commands.command(name='format')
+    async def format(self, ctx: commands.Context, language: Optional[str], *code: str):
+        """Handler for the `format` command. Formats the provided message using clang-format and prints it using markdown syntax highlighting
+            Refer to the !howto format for an extended explanation of how to use it
+        Args:
+            language: The language abbreviation to highlight the resulting code with
+
+        """
+        try:
+            if language is None:
+                raise Exception("No language provided")
+            code = " ".join(code) if ctx.message.reference is None else ctx.message.reference.resolved.content
+            # mypy would erroneously find an error in the next two lines because it doesn't notice that at this point, `code` is always a str.
+            # You can verify its correctness by renaming the variable `code` as assignment target in the previous and all subsequent lines
+            code = code.removeprefix("```").removeprefix("`").removesuffix("```").removesuffix("`")   # type: ignore # this allows the command to format single- and multiline code blocks
+            result = subprocess.run("clang-format", text=True, input=code.replace("```", "´´´"), check=True, capture_output=True)  # type: ignore
+            embed = discord.Embed(title="Formatted", description=f"```{language}\n{result.stdout}\n```")
+            await ctx.send(embed=embed)
+        except Exception as error:
+            log.error("Failed to format code: %s", error)
+            await self.howto_format(ctx)
+
+
+    @howto.command(name='format', description="Code in Nachrichten formatieren lassen")
+    @command_log
+    async def howto_format(self, ctx: commands.context):
+        """Handler for the `howto format` subcommand.
+
+        Explains how to use the !format command
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+        """
+        embed = discord.Embed(
+            title="Code formatieren lassen",
+            color=11945797,
+            description="Wenn du deinen Code formatieren willst, kannst du den `!format`Befehl benutzen.\n"
+                        + "Syntax: `!format <Sprachkürzel (1)> <Code (2)>`\n"
+                        + "(1): Ändert nicht die Formatierung, sondern nur das Discord syntax highlighting. Z.B. `c++`, `java`, `py`, ...\n"
+                        + "(2): Der zu formatierende Code. Anführungszeichen sind nicht notwendig.\n"
+                        + "Wird auf eine Nachricht geantwortet, so wird der Inhalt der referenzierten Nachricht formatiert. (1) ist in diesem Fall optional und standardmäßig `c++`, (2) ist optional und wird ignoriert. "
+        )
+        await ctx.send(embed=embed)
 
 
 def build_serverinfo_strings(guild: discord.Guild) -> List[str]:
