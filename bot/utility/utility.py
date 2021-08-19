@@ -209,7 +209,7 @@ class UtilityCog(commands.Cog):
         await user.send(content=content, embed=embed)
 
     @commands.command(name='format')
-    async def format(self, ctx: commands.Context, language: Optional[str], *code: str):
+    async def format(self, ctx: commands.Context, language: str, *code: str):
         """Handler for the `format` command. Formats the provided message using clang-format and prints it using markdown syntax highlighting
             Refer to the !howto format for an extended explanation of how to use it
         Args:
@@ -217,8 +217,6 @@ class UtilityCog(commands.Cog):
 
         """
         try:
-            if language is None:
-                raise Exception("No language provided")
             code = " ".join(code) if ctx.message.reference is None else ctx.message.reference.resolved.content
             # mypy would erroneously find an error in the next two lines because it doesn't notice that at this point, `code` is always a str.
             # You can verify its correctness by renaming the variable `code` as assignment target in the previous and all subsequent lines
@@ -248,7 +246,7 @@ class UtilityCog(commands.Cog):
                         + "Syntax: `!format <Sprachkürzel (1)> <Code (2)>`\n"
                         + "(1): Ändert nicht die Formatierung, sondern nur das Discord syntax highlighting. Z.B. `c++`, `java`, `py`, ...\n"
                         + "(2): Der zu formatierende Code. Anführungszeichen sind nicht notwendig.\n"
-                        + "Wird auf eine Nachricht geantwortet, so wird der Inhalt der referenzierten Nachricht formatiert. (1) ist in diesem Fall optional und standardmäßig `c++`, (2) ist optional und wird ignoriert. "
+                        + "Wird auf eine Nachricht geantwortet, so wird der Inhalt der referenzierten Nachricht formatiert. (2) ist in diesem Fall optional und wird ignoriert. "
         )
         await ctx.send(embed=embed)
 
