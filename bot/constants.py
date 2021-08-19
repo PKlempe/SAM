@@ -1,22 +1,21 @@
 """File which contains constants used for this bot."""
 
 import os
+
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
 
-
 # Bot Settings
 BOT_PREFIX = '!'
-INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
-                 "CommunityCog":        'bot.community.community',
-                 "RoleManagementCog":   'bot.role_management.role_management',
-                 "ModerationCog":       'bot.moderation.moderation',
-                 "UniversityCog":       'bot.university.university',
-                 "UtilityCog":          'bot.utility.utility',
-                 "FeedbackCog":         'bot.feedback.feedback',
-                 "MusicCog":            'bot.music.music'}
-
+INITIAL_EXTNS = {"AdminCog": 'bot.admin.admin',
+                 "CommunityCog": 'bot.community.community',
+                 "RoleManagementCog": 'bot.role_management.role_management',
+                 "ModerationCog": 'bot.moderation.moderation',
+                 "UniversityCog": 'bot.university.university',
+                 "UtilityCog": 'bot.utility.utility',
+                 "FeedbackCog": 'bot.feedback.feedback',
+                 "MusicCog": 'bot.music.music'}
 
 # Job Times
 JOB_START_WINTER_SEMESTER = {"job_id": "ersti_ws", "day": "1", "month": "10", "hour": "4", "minute": "0"}
@@ -27,7 +26,6 @@ JOB_CLOSE_GROUP_EXCHANGE_WINTER_SEMESTER = {"job_id": "cl_ex_ws", "day": "1", "m
 JOB_OPEN_GROUP_EXCHANGE_SUMMER_SEMESTER = {"job_id": "op_ex_ss", "day": "20", "month": "2", "hour": "4", "minute": "0"}
 JOB_CLOSE_GROUP_EXCHANGE_SUMMER_SEMESTER = {"job_id": "cl_ex_ss", "day": "1", "month": "4", "hour": "4", "minute": "0"}
 
-
 # Important URLs
 URL_DISCORD = "https://discordapp.com"
 URL_UFIND = "https://ufind.univie.ac.at/de"
@@ -37,7 +35,6 @@ URL_KOFI = "https://ko-fi.com/pklempe"
 URL_KOFI_LOGO = "https://i.imgur.com/q0M4x4g.png"
 URL_KOFI_DONATION = "https://ko-fi.com/home/coffeeshop?txid={0}&mode=public"
 URL_HTTP_CAT = "https://http.cat"
-
 
 # Limits
 LIMIT_PINS = 10
@@ -55,17 +52,14 @@ LIMIT_WARNINGS_LVL_3 = 6
 LIMIT_COMMUNITY_CHANNELS = 20
 LIMIT_SONG_QUEUE = 300
 
-
 # Timeouts
 TIMEOUT_USER_SELECTION = 15
 TIMEOUT_INFORMATION = 8
-
 
 # Discord Server Boosts
 DISCORD_BOOST_LVL1_CAP = 2
 DISCORD_BOOST_LVL2_CAP = 15
 DISCORD_BOOST_LVL3_CAP = 30
-
 
 # Embed Colors
 EMBED_COLOR_INFO = 0xFFDF00
@@ -74,6 +68,7 @@ EMBED_COLOR_UNIVERSITY = 0x1E90FF
 EMBED_COLOR_SELECTION = 0xFF6700
 EMBED_COLOR_REPORT = 0xF01414
 EMBED_COLOR_MODERATION = 0x5C2BE2
+EMBED_COLOR_HOWTO = 0x6F2DA8
 
 EMBED_COLOR_MODMAIL_OPEN = 0xE60000
 EMBED_COLOR_MODMAIL_ASSIGNED = 0xFF7800
@@ -101,7 +96,6 @@ EMBED_COLOR_WARNING = 0xFF0000
 EMBED_COLOR_DONATION = 0xFF5E5B
 EMBED_COLOR_SUBSCRIPTION = 0xFBAA19
 
-
 # Special Emojis
 EMOJI_PIN = "\U0001F4CC"
 EMOJI_HIGHLIGHT = "\U00002B50"
@@ -121,16 +115,13 @@ EMOJI_DOWNVOTE = "\U00002B07\U0000FE0F"
 ZERO_WIDTH_SPACE = "\U0000200B"
 EMOJI_CHANNEL_NAME_SEPARATOR = "\U0001F539"
 
-
 # API Keys
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN") or "Undefined"
-
 
 # File Paths
 LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
 DB_FILE_PATH = os.getenv("DB_FILE_PATH") or "./database.sqlite3"
 DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
-
 
 # Special Discord IDs
 SERVER_ID = os.getenv("SERVER_ID") or "Undefined"
