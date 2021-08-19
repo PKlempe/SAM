@@ -310,9 +310,14 @@ def generate_features_list(features: List[str]) -> str:
         "NEWS": "News-Kanäle",
         "BANNER": "Server-Banner",
         "ANIMATED_ICON": "Animiertes Icon",
-        "PUBLIC_DISABLED": "Public disabled",
+        "PUBLIC_DISABLED": "Nicht öffentlich",
         "WELCOME_SCREEN_ENABLED": "Begrüßungsbildschirm",
-        "MEMBER_VERIFICATION_GATE_ENABLED": "Member Screening"
+        "MEMBER_VERIFICATION_GATE_ENABLED": "Member Screening",
+        "PREVIEW_ENABLED": "Servervorschau",
+        "THREADS_ENABLED": "Threads",
+        "PRIVATE_THREADS": "Private Threads",
+        "THREE_DAY_THREAD_ARCHIVE": "3-Tage-Archiv für Threads",
+        "SEVEN_DAY_THREAD_ARCHIVE": "7-Tage-Archiv für Threads"
     }
     str_features = ""
 
