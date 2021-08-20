@@ -102,44 +102,47 @@ class UtilityCog(commands.Cog):
     async def howto(self, ctx: commands.Context, subcommand: Optional[str]):
         """Handler for the `howto` command.
 
-        The available subcommands of this Command Group post individual help messages explaining how to do various things regarding the Discord server itself or other often needed tasks.
+        The available subcommands of this Command Group post individual help messages explaining how to do various
+        things regarding the Discord server itself or other often needed tasks.
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             subcommand (Optional[str]): The subcommand the user wants to invoke.
         """
-        message = "Ich kenne diesen Befehl leider nicht. Hast du vielleicht einen der folgenden gemeint?\n" if subcommand else None
+        message = "Ich kenne diesen Befehl leider nicht. Hast du vielleicht einen der folgenden gemeint?\n" \
+            if subcommand else None
 
         await ctx.send(message, embed=discord.Embed(
-            title="Available HowTos",
+            title="Verfügbare HowTos:",
             description="\n".join(["**- " + c.name + "**: " + c.description for c in self.howto.commands])
         ))
 
-    @howto.command(name='code', description="Code in Nachrichten formatieren")
+    @howto.command(name='code', description="Code richtig formatieren")
     @command_log
     async def howto_code(self, ctx: commands.context):
         """Handler for the `howto code` subcommand.
 
-        Explains how to properly format code using Discords code blocks (https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-).
+        Explains how to properly format code using Discords code blocks:
+        https://support.discord.com/hc/articles/210298617
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
         embed = discord.Embed(
             title="Code-Formatierung 📝",
-            color=11945797,
-            description="Wenn du deinen Code mit anderen teilen willst, dann kannst du hierfür sogenannte Codeblöcke verwenden."
-                        + "Sie sorgen dafür, dass dein Code vom Rest deiner Nachricht visuell abgegrenzt wird und macht ihn lesbarer für alle.\n\n"
-                        + "Für einen __Inline-Codeblock__, schreibe deinen Code zwischen zwei Backticks (**`**).\n"
-                        + "Für einene __Multi-Line-Codeblock__, verwende stattdessen jeweils drei (**```**).\n\n"
-                        + "Im letzteren Fall kannst du außerdem nach den ersten Backticks mit einem Kürzel die jeweilige Programmiersprache angeben, um so sogar passendes Syntax-Highlighting zu erhalten.",
+            color=constants.EMBED_COLOR_HOWTO,
+            description="Wenn du deinen Code mit anderen teilen willst, dann kannst du hierfür sogenannte Codeblöcke "
+                        "verwenden. Sie sorgen dafür, dass dein Code vom Rest deiner Nachricht visuell abgegrenzt wird "
+                        "und macht ihn lesbarer für alle.\n\nFür einen __Inline-Codeblock__, schreibe deinen Code "
+                        "zwischen zwei Backticks (**`**).\nFür einen __Multi-Line-Codeblock__, verwende stattdessen "
+                        "jeweils drei (**```**).\n\nIm letzteren Fall kannst du außerdem mit einem Kürzel nach den "
+                        "ersten Backticks die jeweilige Programmiersprache angeben, um so sogar passendes "
+                        "Syntax-Highlighting zu erhalten.",
         )
-        embed.set_image(
-            url="https://i.imgur.com/A0BGhtz.png")
-        embed.add_field(
-            name="Hinweis:",
-            value="Für zusätzliche Infos bzgl. der Formatierung von Nachrichten siehe [Markdown Text 101](https://support.discord.com/hc/de/articles/210298617)."
-        )
+        embed.set_image(url="https://i.imgur.com/A0BGhtz.png")
+        embed.add_field(name="Hinweis:",
+                        value="Für zusätzliche Infos bzgl. der Formatierung von Nachrichten siehe "
+                              "[Markdown Text 101](https://support.discord.com/hc/de/articles/210298617).")
         await ctx.send(embed=embed)
 
     @commands.Cog.listener(name='on_raw_reaction_add')
@@ -351,9 +354,14 @@ def generate_features_list(features: List[str]) -> str:
         "NEWS": "News-Kanäle",
         "BANNER": "Server-Banner",
         "ANIMATED_ICON": "Animiertes Icon",
-        "PUBLIC_DISABLED": "Public disabled",
+        "PUBLIC_DISABLED": "Nicht öffentlich",
         "WELCOME_SCREEN_ENABLED": "Begrüßungsbildschirm",
-        "MEMBER_VERIFICATION_GATE_ENABLED": "Member Screening"
+        "MEMBER_VERIFICATION_GATE_ENABLED": "Member Screening",
+        "PREVIEW_ENABLED": "Servervorschau",
+        "THREADS_ENABLED": "Threads",
+        "PRIVATE_THREADS": "Private Threads",
+        "THREE_DAY_THREAD_ARCHIVE": "3-Tage-Archiv für Threads",
+        "SEVEN_DAY_THREAD_ARCHIVE": "7-Tage-Archiv für Threads"
     }
     str_features = ""
 
