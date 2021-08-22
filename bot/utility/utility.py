@@ -221,14 +221,13 @@ class UtilityCog(commands.Cog):
         """
         try:
             code = " ".join(code) if ctx.message.reference is None else ctx.message.reference.resolved.content
+            code = code.replace(">", ">\n") # type: ignore # this forces everything after an include (e.g. `#include <foo>`) into a new line. otherwise, clang-format won't change the format of messages with everything in one line
             # mypy would erroneously find an error in the next two lines because it doesn't notice that at this point, `code` is always a str.
             # You can verify its correctness by renaming the variable `code` as assignment target in the previous and all subsequent lines
             code = code.removeprefix("```").removeprefix("`").removesuffix("```").removesuffix("`")   # type: ignore # this allows the command to format single- and multiline code blocks
             result = subprocess.run("clang-format", text=True, input=code.replace("```", "´´´"), check=True, capture_output=True)  # type: ignore
-            embed = discord.Embed(title="Formatted", description=f"```{language}\n{result.stdout}\n```")
-            await ctx.send(embed=embed)
-        except Exception as error:
-            log.error("Failed to format code: %s", error)
+            await ctx.send(content = f"```{language}\n{result.stdout}\n```")
+        except Exception:
             await self.howto_format(ctx)
 
 
