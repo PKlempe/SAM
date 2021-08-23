@@ -220,10 +220,13 @@ class UtilityCog(commands.Cog):
 
         """
         await ctx.message.delete()
-        if not code:
-            await self.howto_format(ctx)
-            return
-        code = " ".join(code) if ctx.message.reference is None else ctx.message.reference.resolved.content
+        if ctx.message.reference is None:
+            code = " ".join(code)
+            if not code:
+                await self.howto_format(ctx)
+                return
+        else:
+            code = ctx.message.reference.resolved.content
         code = code.replace(">", ">\n") # type: ignore # this forces everything after an include (e.g. `#include <foo>`) into a new line. otherwise, clang-format won't change the format of messages with everything in one line
         # mypy would erroneously find an error in the next two lines because it doesn't notice that at this point, `code` is always a str.
         # You can verify its correctness by renaming the variable `code` as assignment target in the previous and all subsequent lines
