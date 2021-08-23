@@ -221,7 +221,7 @@ class UtilityCog(commands.Cog):
         """
         await ctx.message.delete()
         if ctx.message.reference is None:
-            code = " ".join(code)
+            code = " ".join(code)   # type: ignore
             if not code:
                 await self.howto_format(ctx)
                 return
