@@ -219,16 +219,17 @@ class UtilityCog(commands.Cog):
             language: The language abbreviation to highlight the resulting code with
 
         """
-        try:
-            code = " ".join(code) if ctx.message.reference is None else ctx.message.reference.resolved.content
-            code = code.replace(">", ">\n") # type: ignore # this forces everything after an include (e.g. `#include <foo>`) into a new line. otherwise, clang-format won't change the format of messages with everything in one line
-            # mypy would erroneously find an error in the next two lines because it doesn't notice that at this point, `code` is always a str.
-            # You can verify its correctness by renaming the variable `code` as assignment target in the previous and all subsequent lines
-            code = code.removeprefix("```").removeprefix("`").removesuffix("```").removesuffix("`")   # type: ignore # this allows the command to format single- and multiline code blocks
-            result = subprocess.run("clang-format", text=True, input=code.replace("```", "´´´"), check=True, capture_output=True)  # type: ignore
-            await ctx.send(content = f"```{language}\n{result.stdout}\n```")
-        except Exception:
+        await ctx.message.delete()
+        if not code:
             await self.howto_format(ctx)
+            return
+        code = " ".join(code) if ctx.message.reference is None else ctx.message.reference.resolved.content
+        code = code.replace(">", ">\n") # type: ignore # this forces everything after an include (e.g. `#include <foo>`) into a new line. otherwise, clang-format won't change the format of messages with everything in one line
+        # mypy would erroneously find an error in the next two lines because it doesn't notice that at this point, `code` is always a str.
+        # You can verify its correctness by renaming the variable `code` as assignment target in the previous and all subsequent lines
+        code = code.removeprefix("```").removeprefix("`").removesuffix("```").removesuffix("`")   # type: ignore # this allows the command to format single- and multiline code blocks
+        result = subprocess.run("clang-format", text=True, input=code.replace("```", "´´´"), check=True, capture_output=True)  # type: ignore
+        await ctx.send(content = f"Formatting requested by <@{ctx.message.author.id}> (ID:{ctx.message.author.id})\n```{language}\n{result.stdout}\n```", reference = ctx.message.reference)
 
 
     @howto.command(name='format', description="Code in Nachrichten formatieren lassen")
