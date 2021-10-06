@@ -303,6 +303,7 @@ def generate_features_list(features: List[str]) -> str:
         "VERIFIED": "Verifiziert",
         "PARTNERED": "Discord-Partner",
         "MORE_EMOJI": "Mehr Emojis",
+        "ROLE_ICONS": "Rollen-Icons",
         "DISCOVERABLE": "In Server-Browser",
         "FEATURABLE": "Featurable",
         "COMMERCE": "Kommerziell",
@@ -316,6 +317,7 @@ def generate_features_list(features: List[str]) -> str:
         "PREVIEW_ENABLED": "Servervorschau",
         "THREADS_ENABLED": "Threads",
         "PRIVATE_THREADS": "Private Threads",
+        "NEW_THREAD_PERMISSIONS": "Neue Thread-Berechtigungen",
         "THREE_DAY_THREAD_ARCHIVE": "3-Tage-Archiv für Threads",
         "SEVEN_DAY_THREAD_ARCHIVE": "7-Tage-Archiv für Threads"
     }
