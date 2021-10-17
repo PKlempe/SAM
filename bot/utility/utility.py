@@ -154,6 +154,9 @@ class UtilityCog(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
+        if not payload.member:  # ignores the event in DMs
+            return
+
         if not payload.member.bot and payload.emoji.name == constants.EMOJI_PIN:
             channel = self.bot.get_guild(int(constants.SERVER_ID)).get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
