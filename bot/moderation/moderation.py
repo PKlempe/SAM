@@ -784,7 +784,7 @@ class ModerationCog(commands.Cog):
 
     @commands.group(name='modmail', invoke_without_command=True)
     @command_log
-    async def modmail(self, ctx: commands.Context):
+    async def modmail(self, ctx: commands.Context, *, message):
         """Command Handler for the `modmail` command.
 
         Allows users to write a message to all the moderators of the server. The message is going to be posted in a
@@ -793,12 +793,12 @@ class ModerationCog(commands.Cog):
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
+            message (str): The message which should be send to the moderators.
         """
         if ctx.channel.type not in [discord.ChannelType.private, discord.ChannelType.group] \
                 and not self._db_connector.is_botonly(ctx.channel.id):
             await ctx.message.delete()
 
-        msg_content = ctx.message.content[len(ctx.prefix + ctx.command.name):]
         msg_author_name = str(ctx.message.author)
         msg_timestamp = ctx.message.created_at
 
@@ -807,7 +807,7 @@ class ModerationCog(commands.Cog):
         files = [await a.to_file() for a in ctx.message.attachments if a != image]
 
         embed = discord.Embed(title="Status: Offen", color=const.EMBED_COLOR_MODMAIL_OPEN,
-                              timestamp=datetime.utcnow(), description=msg_content)
+                              timestamp=datetime.utcnow(), description=message)
         embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
         embed.set_footer(text="Erhalten am")
 
