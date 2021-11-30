@@ -228,7 +228,7 @@ class UtilityCog(commands.Cog):
 
         """
         message = await ctx.fetch_message(msg_id)
-        if constants.DEEPL_API_KEY == "undefined":
+        if constants.DEEPL_API_KEY == "Undefined":
             await message.author.send("Translation is currently unavailable(no api key)")
         translator = deepl.Translator(constants.DEEPL_API_KEY)
         try:
