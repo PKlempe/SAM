@@ -43,3 +43,4 @@ websockets==9.1
 wrapt==1.12.1
 yarl==1.6.3
 youtube-dl==2021.5.16
+deepl==1.3.1
