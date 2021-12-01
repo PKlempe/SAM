@@ -235,7 +235,7 @@ class UtilityCog(commands.Cog):
         try:
             translated_text = translator.translate_text(message.content, target_lang="EN-US").text
         except DeepLException:
-            await message.author.send("Translation is currently unavailable")
+            await message.author.send("**Error:** The translation service is currently unavailable. If this problem persists, please contact the moderators of the server.")
             return
         await message.author.send("Original:\n{}\n\nTranslated:\n{}".format(message.content, translated_text))
 
