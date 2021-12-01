@@ -229,7 +229,8 @@ class UtilityCog(commands.Cog):
         """
         message = await ctx.fetch_message(msg_id)
         if constants.DEEPL_API_KEY == "Undefined":
-            await message.author.send("Translation is currently unavailable(no api key)")
+            await message.author.send("**Error:** No API Key has been specified for using the translation service. Please contact the moderators of the server.")
+            return
         translator = deepl.Translator(constants.DEEPL_API_KEY)
         try:
             translated_text = translator.translate_text(message.content, target_lang="EN-US").text
