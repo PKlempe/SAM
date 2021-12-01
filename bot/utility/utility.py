@@ -217,7 +217,7 @@ class UtilityCog(commands.Cog):
 
     @commands.command(name='translate')
     @command_log
-    async def translate_msg(self, ctx: commands.Context, *, msg_id: int):
+    async def translate_message(self, ctx: commands.Context, message: discord.Message):
         """Command Handler for the `translate` command.
 
         Translates the message with the provided id to english and sends the translation as a dm to the user
