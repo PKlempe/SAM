@@ -183,7 +183,7 @@ class UniversityCog(commands.Cog):
             await self._notify_author_about_candidates(ctx.author, potential_candidates, self.ch_group_exchange,
                                                        channel)
             notification_embed = _build_candidate_notification_embed(ctx.author, message, channel, offered_group,
-                                                                     self.bot.command_prefix)
+                                                                     constants.BOT_PREFIX)
             await self._notify_candidates_about_new_offer(potential_candidates, notification_embed)
 
     @exchange.command(name="remove")
@@ -225,7 +225,7 @@ class UniversityCog(commands.Cog):
             await ctx.author.send(
                 "**__Error:__** Du hast für diesen Kurs bereits ein aktives Tauschangebot.\nDu musst das alte Angebot "
                 "zuerst mit `{0}exchange remove <channel-mention>` löschen, bevor du ein neues einreichen kannst."
-                .format(self.bot.command_prefix))
+                .format(constants.BOT_PREFIX))
         elif isinstance(error, commands.CommandInvokeError) and isinstance(error.original, SyntaxError):
             await ctx.author.send(
                 "**__Error:__** Der von dir eingegebene Befehl, zur Erstellung eines Tauschangebots, ist inkorrekt.\n"
@@ -278,7 +278,7 @@ class UniversityCog(commands.Cog):
         embed = discord.Embed(title="Mögliche Tauschpartner - {0}".format(course_name),
                               description="Bitte vergiss nicht, deine Anfrage mit dem Befehl `{0}exchange remove "
                                           "<channel-mention>` wieder zu löschen, sobald du einen Tauschpartner "
-                                          "gefunden hast.".format(self.bot.command_prefix),
+                                          "gefunden hast.".format(constants.BOT_PREFIX),
                               color=constants.EMBED_COLOR_GROUP_EXCHANGE)
 
         async def group_by_group_nr(cand):
