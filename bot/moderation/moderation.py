@@ -641,6 +641,10 @@ class ModerationCog(commands.Cog):
         joined_at = datetime.strftime(user.joined_at + time_difference, "%d.%m.%Y | %X")
         roles = " ".join([role.mention for role in reversed(user.roles[1:])]) if len(user.roles) > 1 else "\U0000274C" \
                                                                                                           " - Keine."
+        num_total_roles = len(user.roles)
+        if len(roles) > 1024:
+            roles = _trim_role_string(roles, num_total_roles)
+
         description = f"**Name am Server:** {user.display_name} | {user.mention}"
 
         if user.premium_since:
@@ -1410,6 +1414,25 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
         raise ValueError("Nicht unterstützter Modmail-Status '{0}'.".format(status.name.title()))
 
     return discord.Embed.from_dict(dict_embed)
+
+def _trim_role_string(roles: str, num_total_roles: int):
+    """Cuts the role string for the role field to the embed limit of 1024 and appends the text 'und x weitere' where x is the number of cut off roles.
+
+     Args:
+        roles (str): String of all roles the user has by ids (eg. '<@1234...> <@456...> ...' .
+        num_total_roles (int): Number of roles the user has.
+
+    Returns:
+        str: The passed role string, trimmed down to less than 1024 characters.
+    """
+    roles_shortened = roles[:1009]
+    num_printed_roles = roles_shortened.count(">")  # Count number of non-cut roles that are still in the string (they end with '>')
+    remaining_roles = num_total_roles - num_printed_roles
+
+    cut_index = roles_shortened.rfind(" ")
+    roles_shortened = roles_shortened[:cut_index]
+    roles = f"{roles_shortened} und {remaining_roles} weitere."
+    return roles
 
 
 def setup(bot):
