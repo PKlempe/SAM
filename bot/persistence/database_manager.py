@@ -4,6 +4,7 @@ import sqlite3
 from sqlite3 import Error
 
 from bot.persistence.in_memory_db import get_in_memory_connection
+from bot.logger import log
 
 
 class DatabaseManager:
@@ -44,7 +45,7 @@ class DatabaseManager:
             try:
                 self.connection = sqlite3.connect(self._db_file)
             except Error as error:
-                print(error)
+                log.error(error)
         return self.connection
 
     def __exit__(self, exc_type, exc_val, exc_tb):
