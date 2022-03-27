@@ -119,7 +119,7 @@ EMOJI_CHANNEL_NAME_SEPARATOR = "\U0001F539"
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN") or "Undefined"
 
 # File Paths
-LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
+LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or './logfile.log'
 DB_FILE_PATH = os.getenv("DB_FILE_PATH") or "./database.sqlite3"
 DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
 
