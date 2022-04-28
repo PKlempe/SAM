@@ -4,10 +4,13 @@ from datetime import datetime
 from typing import List, Optional
 
 import discord
+from deepl import DeepLException
 from discord.ext import commands
 
 from bot import constants
+from bot.__main__ import intents
 from bot.logger import command_log, log
+import deepl
 
 
 class UtilityCog(commands.Cog):
@@ -211,6 +214,30 @@ class UtilityCog(commands.Cog):
             .add_field(name=constants.ZERO_WIDTH_SPACE, value="> **Ein Studium ist nicht immer leicht, aber "
                                                               "__gemeinsam__ schaffen wir das!** :muscle:")
         await user.send(content=content, embed=embed)
+
+    @commands.command(name='translate')
+    @command_log
+    async def translate_message(self, ctx: commands.Context, message: discord.Message):
+        """Command Handler for the `translate` command.
+
+        Translates the message with the provided id to english and sends the translation as a dm to the user
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            msg_id (int): The id of the message that should be translated
+
+        """
+        message = await ctx.fetch_message(msg_id)
+        if constants.DEEPL_API_KEY == "Undefined":
+            await message.author.send("**Error:** No API Key has been specified for using the translation service. Please contact the moderators of the server.")
+            return
+        translator = deepl.Translator(constants.DEEPL_API_KEY)
+        try:
+            translated_text = translator.translate_text(message.content, target_lang="EN-US").text
+        except DeepLException:
+            await message.author.send("**Error:** The translation service is currently unavailable. If this problem persists, please contact the moderators of the server.")
+            return
+        await message.author.send("Original:\n{}\n\nTranslated:\n{}".format(message.content, translated_text))
 
 
 def build_serverinfo_strings(guild: discord.Guild) -> List[str]:

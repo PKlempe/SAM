@@ -117,6 +117,7 @@ EMOJI_CHANNEL_NAME_SEPARATOR = "\U0001F539"
 
 # API Keys
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN") or "Undefined"
+DEEPL_API_KEY = os.getenv("DEEPL_API_KEY") or "Undefined"
 
 # File Paths
 LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or './logfile.log'
