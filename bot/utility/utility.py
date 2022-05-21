@@ -3,6 +3,8 @@
 from datetime import datetime
 from typing import List, Optional
 
+import subprocess
+
 import discord
 from discord.ext import commands
 
@@ -211,6 +213,51 @@ class UtilityCog(commands.Cog):
             .add_field(name=constants.ZERO_WIDTH_SPACE, value="> **Ein Studium ist nicht immer leicht, aber "
                                                               "__gemeinsam__ schaffen wir das!** :muscle:")
         await user.send(content=content, embed=embed)
+
+    @commands.command(name='format')
+    async def format(self, ctx: commands.Context, language: str, *code: str):
+        """Handler for the `format` command. Formats the provided message using clang-format and prints it using markdown syntax highlighting
+            Refer to the !howto format for an extended explanation of how to use it
+        Args:
+            language: The language abbreviation to highlight the resulting code with
+
+        """
+        await ctx.message.delete()
+        if ctx.message.reference is None:
+            code = " ".join(code)   # type: ignore
+            if not code:
+                await self.howto_format(ctx)
+                return
+        else:
+            code = ctx.message.reference.resolved.content
+        code = code.replace(">", ">\n") # type: ignore # this forces everything after an include (e.g. `#include <foo>`) into a new line. otherwise, clang-format won't change the format of messages with everything in one line
+        # mypy would erroneously find an error in the next two lines because it doesn't notice that at this point, `code` is always a str.
+        # You can verify its correctness by renaming the variable `code` as assignment target in the previous and all subsequent lines
+        code = code.removeprefix("```").removeprefix("`").removesuffix("```").removesuffix("`")   # type: ignore # this allows the command to format single- and multiline code blocks
+        result = subprocess.run("clang-format", text=True, input=code.replace("```", "´´´"), check=True, capture_output=True)  # type: ignore
+        await ctx.send(content = f"Formatting requested by <@{ctx.message.author.id}> (ID:{ctx.message.author.id})\n```{language}\n{result.stdout}\n```", reference = ctx.message.reference)
+
+
+    @howto.command(name='format', description="Code in Nachrichten formatieren lassen")
+    @command_log
+    async def howto_format(self, ctx: commands.context):
+        """Handler for the `howto format` subcommand.
+
+        Explains how to use the !format command
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+        """
+        embed = discord.Embed(
+            title="Code formatieren lassen",
+            color=11945797,
+            description="Wenn du deinen Code formatieren willst, kannst du den `!format`Befehl benutzen.\n"
+                        + "Syntax: `!format <Sprachkürzel (1)> <Code (2)>`\n"
+                        + "(1): Ändert nicht die Formatierung, sondern nur das Discord syntax highlighting. Z.B. `c++`, `java`, `py`, ...\n"
+                        + "(2): Der zu formatierende Code. Anführungszeichen sind nicht notwendig.\n"
+                        + "Wird auf eine Nachricht geantwortet, so wird der Inhalt der referenzierten Nachricht formatiert. (2) ist in diesem Fall optional und wird ignoriert. "
+        )
+        await ctx.send(embed=embed)
 
 
 def build_serverinfo_strings(guild: discord.Guild) -> List[str]:

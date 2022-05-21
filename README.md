@@ -18,4 +18,5 @@ As the development progesses, more information about this project will be shared
 |---------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------:|
 | ![exchange-command](https://user-images.githubusercontent.com/49726903/93120394-98c00c80-f6c3-11ea-9714-6da7dc6d5b73.gif) | ![purge-command](https://user-images.githubusercontent.com/49726903/93122466-ce1a2980-f6c6-11ea-8eb9-f18d4785b176.gif) |
 
+[clang-format](https://clang.llvm.org/docs/ClangFormat.html) must be in the path for the `!format` command to work.
 ###### Robot made by [Freepik](http://www.freepik.com/) from [Flaticon](https://www.flaticon.com/).
