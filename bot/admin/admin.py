@@ -6,6 +6,7 @@ from typing import Optional, Mapping
 
 import discord
 import requests
+from discord import utils
 from discord.ext import commands
 
 from bot import constants
@@ -212,7 +213,7 @@ class AdminCog(commands.Cog):
                       "die jeweilige Erweiterung momentan geladen ist oder nicht."
 
         embed = discord.Embed(title="Verfügbare \"Cogs\"", color=constants.EMBED_COLOR_SYSTEM, description=description,
-                              timestamp=datetime.utcnow())
+                              timestamp=utils.utcnow())
         embed.set_footer(text="Erstellt am")
         embed.add_field(name="Status", value=str_cogs)
 
@@ -243,7 +244,7 @@ class AdminCog(commands.Cog):
         """
         extn_name = _get_cog_name(extn_name)
 
-        self.bot.load_extension(constants.INITIAL_EXTNS[extn_name])
+        await self.bot.load_extension(constants.INITIAL_EXTNS[extn_name])
         log.warning("%s has been loaded.", extn_name)
         await self.ch_bot.send(f":arrow_heading_down: `{extn_name}` has been successfully loaded.")
 
@@ -260,7 +261,7 @@ class AdminCog(commands.Cog):
         """
         extn_name = _get_cog_name(extn_name)
 
-        self.bot.unload_extension(constants.INITIAL_EXTNS[extn_name])
+        await self.bot.unload_extension(constants.INITIAL_EXTNS[extn_name])
         log.warning("%s has been unloaded.", extn_name)
         await self.ch_bot.send(f":arrow_heading_up: `{extn_name}` has been successfully unloaded.")
 
@@ -278,7 +279,7 @@ class AdminCog(commands.Cog):
         """
         extn_name = _get_cog_name(extn_name)
 
-        self.bot.reload_extension(constants.INITIAL_EXTNS[extn_name])
+        await self.bot.reload_extension(constants.INITIAL_EXTNS[extn_name])
         log.warning("%s has been reloaded.", extn_name)
         await self.ch_bot.send(f":arrows_counterclockwise: `{extn_name}` has been successfully reloaded.")
 
@@ -294,7 +295,7 @@ class AdminCog(commands.Cog):
             _ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
         for cog_name, path in constants.INITIAL_EXTNS.items():
-            self.bot.reload_extension(path)
+            await self.bot.reload_extension(path)
             log.warning("%s has been reloaded.", cog_name)
 
         await self.ch_bot.send(":arrows_counterclockwise: All cogs have been successfully reloaded.")
@@ -565,10 +566,10 @@ def _build_botonly_embed(is_enabled_string: str):
     return discord.Embed(title=title, description=description, color=constants.EMBED_COLOR_BOTONLY)
 
 
-def setup(bot):
+async def setup(bot):
     """Enables the cog for the bot.
 
     Args:
         bot (Bot): The bot for which this cog should be enabled.
     """
-    bot.add_cog(AdminCog(bot))
+    await bot.add_cog(AdminCog(bot))

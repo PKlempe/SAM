@@ -55,7 +55,7 @@ class MusicCog(commands.Cog):
 
         try:
             media_list = await YTDLSource.from_url(url, loop=self.bot.loop)
-        except discord.InvalidArgument as error:
+        except ValueError as error:
             log.error(error)
             await ctx.send("Der von dir angegebene Link ist leider ungültig.", delete_after=const.TIMEOUT_INFORMATION)
             return
@@ -71,8 +71,8 @@ class MusicCog(commands.Cog):
                 for song_url in self.song_queue:
                     try:
                         source = await YTDLSource.get_media(song_url, loop=self.bot.loop)
-                        await _stream_media(ctx.voice_client, self.bot.loop, source)
-                    except discord.InvalidArgument as error:
+                        ctx.voice_client.play(source)
+                    except ValueError as error:
                         log.error(error)
                         self.song_queue.remove(song_url)
 
@@ -123,7 +123,7 @@ class MusicCog(commands.Cog):
         """
         if not ctx.voice_client:
             if ctx.author.voice:
-                await ctx.author.voice.channel.connect()
+                await ctx.author.voice.channel.connect(self_deaf=True)
             else:
                 await ctx.send("Für diesen Befehl musst du dich in einem Sprachkanal befinden.",
                                delete_after=const.TIMEOUT_INFORMATION)
@@ -151,26 +151,6 @@ class MusicCog(commands.Cog):
                            delete_after=const.TIMEOUT_INFORMATION)
 
 
-async def _stream_media(voice_client: discord.VoiceClient, loop: asyncio.BaseEventLoop, source: YTDLSource):
-    """Method which starts the streaming and playback of the provided URL.
-
-    Args:
-        voice_client (discord.VoiceClient): The voice client used by the bot.
-        source (YTDLSource): Audio source which contains the audio stream.
-    """
-
-    future = loop.create_future() if loop else asyncio.get_event_loop().create_future()
-    voice_client.play(source, after=lambda e: future.set_result(e))
-
-    try:
-        await asyncio.wait_for(future, timeout=None)
-        error = future.result()
-        if error:
-            log.error("Player error: %s", error)
-    except asyncio.TimeoutError:
-        log.error("Player error: Timeout for song playback has been reached.")
-
-
 def _check_if_supported_url(url: str):
     """Method which raises an exception if the provided URL is not supported.
 
@@ -186,10 +166,10 @@ def _check_if_supported_url(url: str):
         raise commands.BadArgument("Platform not supported.")
 
 
-def setup(bot):
+async def setup(bot):
     """Enables the cog for the bot.
 
     Args:
         bot (Bot): The bot for which this cog should be enabled.
     """
-    bot.add_cog(MusicCog(bot))
+    await bot.add_cog(MusicCog(bot))

@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 import discord
+from discord import utils
 from discord.ext import commands
 
 from bot import constants as const
@@ -271,8 +272,8 @@ def _build_suggestion_embed(author: discord.Member, suggestion: str, suggestion_
         discord.Embed: The embed representing a user suggestion.
     """
     embed = discord.Embed(title=f"Vorschlag #{suggestion_id}", description=suggestion,
-                          color=const.EMBED_COLOR_SUGGESTION, timestamp=datetime.utcnow()) \
-        .set_author(name=str(author), icon_url=author.avatar_url) \
+                          color=const.EMBED_COLOR_SUGGESTION, timestamp=utils.utcnow()) \
+        .set_author(name=str(author), icon_url=author.display_avatar) \
         .set_footer(text="Eingereicht am")
 
     return embed
@@ -293,10 +294,10 @@ def _recolor_embed(embed: discord.Embed, color: discord.Colour) -> discord.Embed
     return discord.Embed.from_dict(dict_embed)
 
 
-def setup(bot):
+async def setup(bot):
     """Enables the cog for the bot.
 
     Args:
         bot (Bot): The bot for which this cog should be enabled.
     """
-    bot.add_cog(FeedbackCog(bot))
+    await bot.add_cog(FeedbackCog(bot))

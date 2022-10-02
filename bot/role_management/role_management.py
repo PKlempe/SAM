@@ -393,10 +393,10 @@ def _create_embed_module_roles(modules_added: List[str], modules_removed: List[s
     return discord.Embed.from_dict(dict_embed)
 
 
-def setup(bot):
+async def setup(bot):
     """Enables the cog for the bot.
 
     Args:
         bot (Bot): The bot for which this cog should be enabled.
     """
-    bot.add_cog(RoleManagementCog(bot))
+    await bot.add_cog(RoleManagementCog(bot))

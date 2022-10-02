@@ -84,7 +84,7 @@ class CommunityCog(commands.Cog):
         elif isinstance(error, commands.CommandInvokeError) and isinstance(error.original, RuntimeWarning):
             await ctx.send("Es gibt zurzeit zu viele aktive Räume in dieser Kategorie. Bitte versuche es später noch "
                            "einmal. :hourglass:", delete_after=const.TIMEOUT_INFORMATION)
-        elif isinstance(error, commands.CommandInvokeError) and isinstance(error.original, discord.InvalidArgument):
+        elif isinstance(error, commands.CommandInvokeError) and isinstance(error.original, ValueError):
             await ctx.send("Das Nutzer-Limit für einen Sprachkanal muss zwischen 1 und 99 liegen. Bitte versuche es "
                            "noch einmal.", delete_after=const.TIMEOUT_INFORMATION)
 
@@ -103,7 +103,7 @@ class CommunityCog(commands.Cog):
         if len(ch_category.voice_channels) >= const.LIMIT_COMMUNITY_CHANNELS:
             raise RuntimeWarning("Too many Community Rooms of this kind at the moment.")
         if user_limit and (user_limit < 1 or user_limit > 99):
-            raise discord.InvalidArgument("User limit cannot be outside range from 1 to 99.")
+            raise ValueError("User limit cannot be outside range from 1 to 99.")
         if any(True for ch in self.cat_gaming_rooms.voice_channels if ctx.author in ch.overwrites) or \
            any(True for ch in self.cat_study_rooms.voice_channels if ctx.author in ch.overwrites):
             raise NotImplementedError("Member already has an active Community Room.")
@@ -114,7 +114,7 @@ class CommunityCog(commands.Cog):
                 limit = int(ch_name)
                 name = f"{ctx.author.display_name}'s Room"
             except ValueError:
-                limit = None
+                limit = 99
                 name = ch_name
         else:
             name = f"{ctx.author.display_name}'s Room" if ch_name is None else ch_name
@@ -266,7 +266,7 @@ def _build_highlight_embed(message: discord.Message, image: discord.Attachment, 
     """
     embed = discord.Embed(title="[ Zur Original-Nachricht ]", url=message.jump_url, color=discord.Colour.gold(),
                           description=message.content) \
-        .set_author(name=f"{message.author.display_name} in #{message.channel}:", icon_url=message.author.avatar_url) \
+        .set_author(name=f"{message.author.display_name} in #{message.channel}:", icon_url=message.author.display_avatar) \
         .set_footer(text=f"Der obige Link funktioniert nur, wenn man zum jeweiligen Kanal auch Zugriff hat. Für mehr "
                          f"Infos siehe #{role_ch_name}.",
                     icon_url="https://i.imgur.com/TUN1NcQ.png") \
@@ -303,10 +303,10 @@ def _determine_channel_number(ch_category: discord.CategoryChannel, name: str) -
     return f" [#{ch_number}]"
 
 
-def setup(bot):
+async def setup(bot):
     """Enables the cog for the bot.
 
     Args:
         bot (Bot): The bot for which this cog should be enabled.
     """
-    bot.add_cog(CommunityCog(bot))
+    await bot.add_cog(CommunityCog(bot))
