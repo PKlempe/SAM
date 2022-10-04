@@ -1,13 +1,14 @@
 """Contains a Cog for all functionality regarding server roles."""
 import re
+import xml.etree.ElementTree as ET
 
 from sqlite3 import IntegrityError
-from typing import List
+from typing import List, Optional
 
 import discord
 from discord.ext import commands
 
-from bot import constants
+from bot import constants, singletons
 from bot.logger import command_log, log
 from bot.persistence import DatabaseConnector
 
@@ -26,6 +27,50 @@ class RoleManagementCog(commands.Cog):
 
         # Channel instances
         self.ch_role = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_ROLES))
+
+    @commands.hybrid_command(name='course', description="Unlock/Lock the specified course channel")
+    @command_log
+    async def toggle_course(self, ctx: commands.Context, name: Optional[str]):
+        # URL Encoding - https://ufind.univie.ac.at/de/help.html
+        search_filters = "%20spl5%20%2Bct%20ctype%3AVU%2CVO%20c%3A25"
+        search_term = name if name else ""
+        query_url = f"{constants.URL_UFIND_API}/courses/?query={search_term}{search_filters}"
+
+        ch_options = []
+
+        async with ctx.channel.typing():
+            async with singletons.HTTP_SESSION.get(query_url) as response:
+                response.raise_for_status()
+                course_data = await response.text(encoding='utf-8')
+                xml_courses = ET.fromstring(course_data)
+
+            courses = xml_courses.findall("course")
+
+            for course in courses:
+                course_id = course.get("id")
+                course_name = course.find("longname").text
+                course_lecturers = ""
+
+                lecturers = course.find("./groups/group/lecturers").findall("lecturer")
+
+                for lecturer in lecturers:
+                    if course_lecturers:
+                        course_lecturers += " | "
+
+                    firstname = lecturer.find("firstname").text
+                    lastname = lecturer.find("lastname").text
+                    course_lecturers += f"{firstname} {lastname}"
+
+                select_option = discord.SelectOption(label=course_name, value=course_id, description=course_lecturers)
+                ch_options.append(select_option)
+
+        ch_selector = discord.ui.Select(placeholder="Wähle die gewünschte LV aus...", options=ch_options)
+        # TODO: Replace with a custom subclass of View and overwrite .callback()...
+        view_selection = discord.ui.View()\
+            .add_item(ch_selector)
+
+        await ctx.send(f"Ich habe anhand deines Suchbegriffs **__{len(ch_options)}__** Lehrveranstaltungen finden könnnen.",
+                       view=view_selection, ephemeral=True)
 
     @commands.group(name='module', invoke_without_command=True)
     @command_log

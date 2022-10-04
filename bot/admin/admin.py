@@ -35,6 +35,22 @@ class AdminCog(commands.Cog):
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author)  # Only owners of the bot can use the commands defined in this Cog.
 
+    @commands.hybrid_command(name='sync', description="Syncs the bot's application commands")
+    @command_log
+    async def sync(self, ctx: commands.Context):
+        """Command Handler for the `sync` command.
+
+        Syncs the bot's application commands and additionally runs the translator to get the translated strings
+        necessary for feeding back into Discord.
+
+        This must be called for the application commands to show up.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+        """
+        synced = await ctx.bot.tree.sync()
+        await ctx.send(f":arrows_clockwise: Synced {len(synced)} commands.", ephemeral=True)
+
     @commands.command(name="echo", hidden=True)
     @command_log
     async def echo(self, ctx: commands.Context, channel: Optional[discord.TextChannel], *, text: str):

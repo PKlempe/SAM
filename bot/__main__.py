@@ -12,8 +12,12 @@ from bot.logger import log
 
 
 class MyBot(discord.ext.commands.Bot):
+    """Custom bot class for overwriting specific methods."""
     async def setup_hook(self):
         print(f'- Successfully logged in as: {self.user}')
+
+        print('- Creating HTTP Session...')
+        await singletons.create_http_session()
 
         print('- Starting Job Scheduler...')
         singletons.SCHEDULER.start()
@@ -58,7 +62,7 @@ class MyBot(discord.ext.commands.Bot):
             status_code = exception.original.status
             reason = exception.original.message
 
-            embed = discord.Embed(title="HTTP Error: {0}".format(status_code), description=reason)
+            embed = discord.Embed(title=f"HTTP Error: {status_code}", description=reason)
             embed.set_image(url=f"{const.URL_HTTP_CAT}/{status_code}.jpg")
             await ctx.channel.send(content="Oh, oh. Anscheinend gibt es momentan ein Verbindungsproblem. :scream_cat:",
                                    embed=embed)

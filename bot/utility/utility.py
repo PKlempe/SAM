@@ -27,7 +27,7 @@ class UtilityCog(commands.Cog):
         # Role instances
         self.role_moderator = bot.get_guild(int(constants.SERVER_ID)).get_role(int(constants.ROLE_ID_MODERATOR))
 
-    @commands.command(name='ping')
+    @commands.hybrid_command(name='ping', description="Measures the current latency to the Discord servers")
     @command_log
     async def ping(self, ctx: commands.Context):
         """Command Handler for the `ping` command.
@@ -39,7 +39,7 @@ class UtilityCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
         latency = round(self.bot.latency * 1000, 2)
-        await ctx.send(":ping_pong: **Pong!** - {0} ms".format(latency))
+        await ctx.send(f":ping_pong: **Pong!** - {latency}ms", ephemeral=True)
 
     @commands.command(name='serverinfo')
     @command_log
