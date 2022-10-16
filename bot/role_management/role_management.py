@@ -1,16 +1,18 @@
 """Contains a Cog for all functionality regarding server roles."""
 import re
-import xml.etree.ElementTree as ET
 
 from sqlite3 import IntegrityError
-from typing import List, Optional
+from typing import List
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 
-from bot import constants, singletons
+from bot import constants
 from bot.logger import command_log, log
 from bot.persistence import DatabaseConnector
+from bot.university import ufind_requests
+from .course_selection import CourseSelect
 
 
 class RoleManagementCog(commands.Cog):
@@ -28,49 +30,72 @@ class RoleManagementCog(commands.Cog):
         # Channel instances
         self.ch_role = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_ROLES))
 
-    @commands.hybrid_command(name='course', description="Unlock/Lock the specified course channel")
+    @commands.hybrid_command(name='course', description="Unlock/Hide the specified course channel")
+    @app_commands.describe(name='The actual name of the course or a search term')
     @command_log
-    async def toggle_course(self, ctx: commands.Context, name: Optional[str]):
-        # URL Encoding - https://ufind.univie.ac.at/de/help.html
-        search_filters = "%20spl5%20%2Bct%20ctype%3AVU%2CVO%20c%3A25"
-        search_term = name if name else ""
-        query_url = f"{constants.URL_UFIND_API}/courses/?query={search_term}{search_filters}"
+    async def toggle_course(self, ctx: commands.Context, name: str):
+        """Command Handler for the `course` command.
 
-        ch_options = []
+        Allows members to assign/remove so called course roles to/from themselves. This way users can toggle the
+        visibility of text channels about specific courses.
+        Keep in mind that this only works if the desired role has been whitelisted as a course role by the bot owner.
 
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            name (str): The name of the university course.
+        """
         async with ctx.channel.typing():
-            async with singletons.HTTP_SESSION.get(query_url) as response:
-                response.raise_for_status()
-                course_data = await response.text(encoding='utf-8')
-                xml_courses = ET.fromstring(course_data)
+            course_options = await ufind_requests.get_course_options(name)
+            course_selector = CourseSelect(course_options, self._db_connector)
+            view_selection = discord.ui.View().add_item(course_selector)
 
-            courses = xml_courses.findall("course")
+        await ctx.send(f"Ich habe anhand deines Suchbegriffs **__{len(course_options)}__** Lehrveranstaltungen finden "
+                       f"könnnen.", view=view_selection, ephemeral=True)
 
-            for course in courses:
-                course_id = course.get("id")
-                course_name = course.find("longname").text
-                course_lecturers = ""
+    @commands.group(name="whitelist", invoke_without_command=True, hidden=True)
+    @commands.is_owner()
+    @command_log
+    async def whitelist_role(self, ctx: commands.Context) -> None:
+        """XXXXXXXXXXXXXX"""
+        await ctx.send_help(ctx.command)
 
-                lecturers = course.find("./groups/group/lecturers").findall("lecturer")
+    @whitelist_role.command(name="add")
+    @commands.is_owner()
+    @command_log
+    async def add_course_role(self, ctx: commands.Context, course_role: discord.Role, course_id: str):
+        """Command Handler for the `whitelist` subcommand `add`.
 
-                for lecturer in lecturers:
-                    if course_lecturers:
-                        course_lecturers += " | "
+        Allows the bot owner to add a specific role to the list of course roles which users can assign to themselves.
 
-                    firstname = lecturer.find("firstname").text
-                    lastname = lecturer.find("lastname").text
-                    course_lecturers += f"{firstname} {lastname}"
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            course_role (discord.Role): The role which should be whitelisted as a course role.
+            course_id (str): The course ID assigned by the university.
+        """
+        try:
+            self._db_connector.add_course_role(course_role.id, course_id)
+            log.info("Role \"%s\" has been whitelisted as a course role.", course_role)
+            await ctx.send(f':white_check_mark: The role **__{course_role}__** has been whitelisted as a course role.')
 
-                select_option = discord.SelectOption(label=course_name, value=course_id, description=course_lecturers)
-                ch_options.append(select_option)
+        except IntegrityError:
+            await ctx.send(f'The role **__{course_role}__** has already been whitelisted as a course role.')
 
-        ch_selector = discord.ui.Select(placeholder="Wähle die gewünschte LV aus...", options=ch_options)
-        # TODO: Replace with a custom subclass of View and overwrite .callback()...
-        view_selection = discord.ui.View()\
-            .add_item(ch_selector)
+    @whitelist_role.command(name="remove")
+    @commands.is_owner()
+    @command_log
+    async def remove_course_role(self, ctx: commands.Context, course_role: discord.Role):
+        """Command Handler for the `whitelist` subcommand `remove`.
 
-        await ctx.send(f"Ich habe anhand deines Suchbegriffs **__{len(ch_options)}__** Lehrveranstaltungen finden könnnen.",
-                       view=view_selection, ephemeral=True)
+        Allows the bot owner to remove a specific role from the list of available course roles.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            course_role (discord.Role): The role which should be removed.
+        """
+        self._db_connector.remove_course_role(course_role.id)
+        log.info("Role \"%s\" has been removed as a course role.", course_role)
+        await ctx.send(f":white_check_mark: Die Rolle \"**__{course_role}__**\" wurde aus den verfügbaren Kurs-Rollen "
+                       f"entfernt.")
 
     @commands.group(name='module', invoke_without_command=True)
     @command_log

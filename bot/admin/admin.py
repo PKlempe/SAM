@@ -1,7 +1,6 @@
 """Contains a Cog for all administrative funcionality."""
 
 import json
-from datetime import datetime
 from typing import Optional, Mapping
 
 import discord
@@ -35,7 +34,7 @@ class AdminCog(commands.Cog):
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author)  # Only owners of the bot can use the commands defined in this Cog.
 
-    @commands.hybrid_command(name='sync', description="Syncs the bot's application commands")
+    @commands.command(name='sync')
     @command_log
     async def sync(self, ctx: commands.Context):
         """Command Handler for the `sync` command.
@@ -49,7 +48,7 @@ class AdminCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
         synced = await ctx.bot.tree.sync()
-        await ctx.send(f":arrows_clockwise: Synced {len(synced)} commands.", ephemeral=True)
+        await ctx.send(f":arrows_clockwise: Synced {len(synced)} commands.")
 
     @commands.command(name="echo", hidden=True)
     @command_log
@@ -130,7 +129,7 @@ class AdminCog(commands.Cog):
             new_content (str). The new content to replace the original one.
         """
         if message.author != self.bot.user:
-            raise commands.BadArgument("Can only edit message from bot user. The message was from: %s" % str(message.author))
+            raise commands.BadArgument(f"Can only edit message from bot user. The message was from: {message.author}")
         # First entry in embed list is used,
         await message.edit(content=new_content, embed=(message.embeds[0] if message.embeds else None))
 
@@ -146,8 +145,7 @@ class AdminCog(commands.Cog):
             new_embed (str). The new embed in JSON format.
         """
         if message.author != self.bot.user:
-            raise commands.BadArgument("Can only edit message from bot user. The message was from: {0}".format(
-                str(message.author)))
+            raise commands.BadArgument(f"Can only edit message from bot user. The message was from: {message.author}")
 
         if is_pastebin_link(new_embed):
             new_embed = parse_pastebin_link(new_embed)
@@ -180,9 +178,8 @@ class AdminCog(commands.Cog):
                 'https://leovoel.github.io/embed-visualizer/.')
 
         async def handle_json_decode_error(ctx: commands.Context, error: json.JSONDecodeError):
-            await ctx.send(
-                "Der übergebene JSON-String konnte nicht geparsed werden. Hier die erhaltene Fehlermeldung:\n{0}".format(
-                    str(error)))
+            await ctx.send(f"Der übergebene JSON-String konnte nicht geparsed werden. Hier die erhaltene Fehlermeldung:"
+                           f"\n{error}")
 
         async def handle_bad_argument_error(ctx: commands.Context, _error: commands.BadArgument):
             await ctx.send(
@@ -561,7 +558,7 @@ def _create_cogs_embed_string(loaded_cogs: Mapping[str, commands.Cog]) -> str:
             string += constants.EMOJI_AVAILABLE
         else:
             string += constants.EMOJI_UNAVAILABLE
-        string += " --> {0}\n".format(cog[:-3])
+        string += f" --> {cog[:-3]}\n"
 
     return string
 
@@ -576,7 +573,7 @@ def _build_botonly_embed(is_enabled_string: str):
     Returns:
         (discord.Embed): An embed containing information, if the bot-only mode was en- or disabled for a channel.
     """
-    title = 'Der Bot-only Mode wurde für diesen Channel {0}'.format(is_enabled_string)
+    title = f'Der Bot-only Mode wurde für diesen Channel {is_enabled_string}'
     description = 'Der Bot-only Mode sorgt dafür, dass nur noch SAM Nachrichten in einem Channel posten darf. Jede ' \
                   'Nachricht von anderen Usern wird sofort gelöscht.'
     return discord.Embed(title=title, description=description, color=constants.EMBED_COLOR_BOTONLY)
