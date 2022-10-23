@@ -30,9 +30,6 @@ jobs:
     - name: Lint code with pylint
       run: |
         pylint */**.py
-    - name: Static type analysis with Mypy
-      run: |
-        mypy .
     - name: Test with pytest
       run: |
         pytest
