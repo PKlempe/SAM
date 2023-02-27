@@ -51,9 +51,9 @@ class RoleManagementCog(commands.Cog):
                 course_selector = CourseSelect(course_options, self._db_connector)
                 view = DestructiveView(timeout=constants.TIMEOUT_USER_INTERACTION).add_item(course_selector)
                 view.message = await ctx.send(f"Ich habe anhand deines Suchbegriffs **__{len(course_options)}__** "
-                                              f"Lehrveranstaltungen finden könnnen.", view=view, ephemeral=True)
+                                              f"Lehrveranstaltungen finden können.", view=view, ephemeral=True)
             else:
-                await ctx.send("Ich habe anhand deines Suchbegriffs leider keine Lehrveranstaltungen finden könnnen. "
+                await ctx.send("Ich habe anhand deines Suchbegriffs leider keine Lehrveranstaltungen finden können. "
                                ":pensive:", ephemeral=True, delete_after=constants.TIMEOUT_INFORMATION)
 
     @commands.group(name="whitelist", invoke_without_command=True, hidden=True)

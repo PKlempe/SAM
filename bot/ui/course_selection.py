@@ -61,8 +61,7 @@ class CourseSelect(discord.ui.Select):
 
             str_response += '```Es wurde für mindestens einen der von dir ausgewählten Kurse noch kein Textkanal ' \
                             'und/oder Rolle erstellt.```\nIch habe die Moderatoren über dieses Problem informiert ' \
-                            'und sie werden sich schnellstmöglich darum kümmern. Bitte versuche es in einigen ' \
-                            'Stunden noch einmal.'
+                            'und sie werden sich schnellstmöglich darum kümmern. Bitte versuche es später noch einmal.'
 
         await interaction.response.edit_message(view=None, content=str_response)
         response = await interaction.original_response()
