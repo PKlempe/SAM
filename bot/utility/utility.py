@@ -39,7 +39,9 @@ class UtilityCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
         latency = round(self.bot.latency * 1000, 2)
-        await ctx.send(f":ping_pong: **Pong!** - {latency}ms", ephemeral=True)
+        await ctx.send(f":ping_pong: **Pong!** - {latency}ms",
+                       delete_after=constants.TIMEOUT_INFORMATION,
+                       ephemeral=True)
 
     @commands.command(name='serverinfo')
     @command_log

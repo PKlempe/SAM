@@ -170,7 +170,7 @@ class DatabaseConnector:
 
             return bool(row[0])
 
-    def get_course_role(self, course_id: str) -> int:
+    def get_course_role(self, course_id: str) -> Optional[int]:
         """Gets the role id to unlock/hide the course's corresponding text channel.
 
         Args:

@@ -9,7 +9,7 @@ async def get_course_options(search_term: str) -> list[SelectOption]:
     """A function which returns a list of SelectOptions representing university courses.
 
     Sends a GET request to the API of the service called `u:find` which is run by the University of Vienna. Based on the
-    hard-coded search filters below, the response should consists of a XML file containing information about university
+    hard-coded search filters below, the response should consist of a XML file containing information about university
     courses matching the given search term. For each result a SelectOption will be created which can then be used for
     Discord's Select Menus.
 

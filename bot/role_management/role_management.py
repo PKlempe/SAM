@@ -12,7 +12,7 @@ from bot import constants
 from bot.logger import command_log, log
 from bot.persistence import DatabaseConnector
 from bot.university import ufind_requests
-from .course_selection import CourseSelect
+from bot.ui import DestructiveView, CourseSelect
 
 
 class RoleManagementCog(commands.Cog):
@@ -30,14 +30,14 @@ class RoleManagementCog(commands.Cog):
         # Channel instances
         self.ch_role = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_ROLES))
 
-    @commands.hybrid_command(name='course', description="Unlock/Hide the specified course channel")
+    @commands.hybrid_command(name='course', description="Unlock/Hide a specific course channel")
     @app_commands.describe(name='The actual name of the course or a search term')
     @command_log
     async def toggle_course(self, ctx: commands.Context, name: str):
         """Command Handler for the `course` command.
 
-        Allows members to assign/remove so called course roles to/from themselves. This way users can toggle the
-        visibility of text channels about specific courses.
+        Allows members to assign/remove so-called course roles to/from themselves. This way users can toggle the
+        visibility of text channels for specific courses.
         Keep in mind that this only works if the desired role has been whitelisted as a course role by the bot owner.
 
         Args:
@@ -46,17 +46,27 @@ class RoleManagementCog(commands.Cog):
         """
         async with ctx.channel.typing():
             course_options = await ufind_requests.get_course_options(name)
-            course_selector = CourseSelect(course_options, self._db_connector)
-            view_selection = discord.ui.View().add_item(course_selector)
 
-        await ctx.send(f"Ich habe anhand deines Suchbegriffs **__{len(course_options)}__** Lehrveranstaltungen finden "
-                       f"könnnen.", view=view_selection, ephemeral=True)
+            if course_options:
+                course_selector = CourseSelect(course_options, self._db_connector)
+                view = DestructiveView(timeout=constants.TIMEOUT_USER_INTERACTION).add_item(course_selector)
+                view.message = await ctx.send(f"Ich habe anhand deines Suchbegriffs **__{len(course_options)}__** "
+                                              f"Lehrveranstaltungen finden könnnen.", view=view, ephemeral=True)
+            else:
+                await ctx.send("Ich habe anhand deines Suchbegriffs leider keine Lehrveranstaltungen finden könnnen. "
+                               ":pensive:", ephemeral=True, delete_after=constants.TIMEOUT_INFORMATION)
 
     @commands.group(name="whitelist", invoke_without_command=True, hidden=True)
     @commands.is_owner()
     @command_log
     async def whitelist_role(self, ctx: commands.Context) -> None:
-        """XXXXXXXXXXXXXX"""
+        """Command Handler for the `whitelist` command.
+
+        Prints a help message which lists all the available subcommands that can be used.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+        """
         await ctx.send_help(ctx.command)
 
     @whitelist_role.command(name="add")
