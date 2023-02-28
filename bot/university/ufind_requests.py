@@ -17,7 +17,7 @@ async def get_course_options(search_term: str) -> list[SelectOption]:
         search_term (str): The search term which should be used to query the available courses.
     """
     # URL Encoding - https://ufind.univie.ac.at/de/help.html
-    search_filters = "%20spl5%20%2Bct%20ctype%3AVU%2CVO%2CSE%2CLP%20c%3A25"
+    search_filters = "%20spl5%20%2Bcy%20ctype%3AVU%2CVO%2CSE%2CLP%20c%3A25"
     query_url = f"{constants.URL_UFIND_API}/courses/?query={search_term}{search_filters}"
     course_options = []
 
@@ -27,9 +27,16 @@ async def get_course_options(search_term: str) -> list[SelectOption]:
         xml_courses = ET.fromstring(course_data)
 
     courses = xml_courses.findall("course")
+    seen_course_ids = set()
 
     for course in courses:
         course_id = course.get("id")
+
+        if course_id in seen_course_ids:
+            continue
+
+        seen_course_ids.add(course_id)
+
         course_name = course.find("longname").text
         course_type = course.find("type").text
         course_ects = course.find("ects").text
