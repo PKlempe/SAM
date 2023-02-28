@@ -1,8 +1,9 @@
 """This module contains subclasses of some UI elements needed for the selection of university courses."""
-import discord
 from typing import List
 
-from bot import constants
+import discord
+
+from bot import constants as const
 from bot.logger import log
 from bot.persistence import DatabaseConnector
 
@@ -51,7 +52,7 @@ class CourseSelect(discord.ui.Select):
             relevant_options = [o for o in self.options if o.value in missing_courses]
             embed_info = _build_missing_course_embed(interaction.user, relevant_options)
 
-            bot_channel = interaction.guild.get_channel(int(constants.CHANNEL_ID_BOT))
+            bot_channel = interaction.guild.get_channel(int(const.CHANNEL_ID_BOT))
             await bot_channel.send(embed=embed_info)
 
             if have_roles_changed:
@@ -63,9 +64,7 @@ class CourseSelect(discord.ui.Select):
                             'und/oder Rolle erstellt.```\nIch habe die Moderatoren über dieses Problem informiert ' \
                             'und sie werden sich schnellstmöglich darum kümmern. Bitte versuche es später noch einmal.'
 
-        await interaction.response.edit_message(view=None, content=str_response)
-        response = await interaction.original_response()
-        await response.delete(delay=constants.TIMEOUT_INFORMATION)
+        await interaction.response.edit_message(view=None, content=str_response, delete_after=const.TIMEOUT_INFORMATION)
 
 
 def _build_missing_course_embed(author: discord.Member, course_options: List[discord.SelectOption]) -> discord.Embed:
@@ -82,7 +81,7 @@ def _build_missing_course_embed(author: discord.Member, course_options: List[dis
     description = f"User {author.mention} versuchte soeben sich folgende Kurse freizuschalten, für die es noch " \
                   f"keinen Kanal und/oder keine Rolle am Server zu geben scheint:"
 
-    embed = discord.Embed(title="Fehlende Kurskanäle!", color=constants.EMBED_COLOR_MODERATION, description=description,
+    embed = discord.Embed(title="Fehlende Kurskanäle!", color=const.EMBED_COLOR_MODERATION, description=description,
                           timestamp=discord.utils.utcnow())
     embed.set_author(name=str(author), icon_url=author.display_avatar)
 

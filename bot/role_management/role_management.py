@@ -85,10 +85,10 @@ class RoleManagementCog(commands.Cog):
         try:
             self._db_connector.add_course_role(course_role.id, course_id)
             log.info("Role \"%s\" has been whitelisted as a course role.", course_role)
-            await ctx.send(f':white_check_mark: The role **__{course_role}__** has been whitelisted as a course role.')
+            await ctx.send(f':white_check_mark: The role {course_role.mention} has been whitelisted as a course role.')
 
         except IntegrityError:
-            await ctx.send(f'The role **__{course_role}__** has already been whitelisted as a course role.')
+            await ctx.send(f'The role {course_role.mention} has already been whitelisted as a course role.')
 
     @whitelist_role.command(name="remove")
     @commands.is_owner()
@@ -104,7 +104,7 @@ class RoleManagementCog(commands.Cog):
         """
         self._db_connector.remove_course_role(course_role.id)
         log.info("Role \"%s\" has been removed as a course role.", course_role)
-        await ctx.send(f":white_check_mark: Die Rolle \"**__{course_role}__**\" wurde aus den verfügbaren Kurs-Rollen "
+        await ctx.send(f":white_check_mark: Die Rolle {course_role.mention} wurde aus den verfügbaren Kurs-Rollen "
                        f"entfernt.")
 
     @commands.group(name='module', invoke_without_command=True)
