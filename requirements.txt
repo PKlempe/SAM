@@ -1,9 +1,9 @@
-aiohttp==3.8.1
+aiohttp==3.8.4
 APScheduler==3.10.0
 async-timeout==4.0.2
 atomicwrites==1.4.1
 attrs==22.1.0
-certifi==2022.6.15
+certifi==2022.12.7
 cffi==1.15.1
 chardet==5.0.0
 charset-normalizer==2.1.1
@@ -13,7 +13,7 @@ dill==0.3.5.1
 discord.py[voice,speed]==2.2.0
 django-commands==0.7
 ffmpeg-python==0.2.0
-future==0.18.2
+future==0.18.3
 greenlet==1.1.2
 idna==3.3
 iniconfig==1.1.1
@@ -24,10 +24,9 @@ more-itertools==8.14.0
 multidict==6.0.2
 mypy==0.971
 mypy-extensions==0.4.3
-numpy==1.23.2
+numpy==1.24.0
 packaging==21.3
 platformdirs==2.5.2
-py==1.11.0
 pycparser==2.21
 pylint==2.15.4
 pyparsing==3.0.9
@@ -43,7 +42,7 @@ toml==0.10.2
 tomli==2.0.1
 tomlkit==0.11.4
 typed-ast==1.5.4
-typing_extensions==4.3.0
+typing_extensions==4.5.0
 tzdata==2022.2
 tzlocal==4.2
 urllib3==1.26.12
