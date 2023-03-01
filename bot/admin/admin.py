@@ -1,11 +1,11 @@
 """Contains a Cog for all administrative funcionality."""
 
 import json
-from datetime import datetime
 from typing import Optional, Mapping
 
 import discord
 import requests
+from discord import utils
 from discord.ext import commands
 
 from bot import constants
@@ -33,6 +33,22 @@ class AdminCog(commands.Cog):
     # A special method that registers as a commands.check() for every command and subcommand in this cog.
     async def cog_check(self, ctx):
         return await self.bot.is_owner(ctx.author)  # Only owners of the bot can use the commands defined in this Cog.
+
+    @commands.command(name='sync')
+    @command_log
+    async def sync(self, ctx: commands.Context):
+        """Command Handler for the `sync` command.
+
+        Syncs the bot's application commands and additionally runs the translator to get the translated strings
+        necessary for feeding back into Discord.
+
+        This must be called for the application commands to show up.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+        """
+        synced = await ctx.bot.tree.sync()
+        await ctx.send(f":arrows_clockwise: Synced {len(synced)} commands.")
 
     @commands.command(name="echo", hidden=True)
     @command_log
@@ -113,7 +129,7 @@ class AdminCog(commands.Cog):
             new_content (str). The new content to replace the original one.
         """
         if message.author != self.bot.user:
-            raise commands.BadArgument("Can only edit message from bot user. The message was from: %s" % str(message.author))
+            raise commands.BadArgument(f"Can only edit message from bot user. The message was from: {message.author}")
         # First entry in embed list is used,
         await message.edit(content=new_content, embed=(message.embeds[0] if message.embeds else None))
 
@@ -129,8 +145,7 @@ class AdminCog(commands.Cog):
             new_embed (str). The new embed in JSON format.
         """
         if message.author != self.bot.user:
-            raise commands.BadArgument("Can only edit message from bot user. The message was from: {0}".format(
-                str(message.author)))
+            raise commands.BadArgument(f"Can only edit message from bot user. The message was from: {message.author}")
 
         if is_pastebin_link(new_embed):
             new_embed = parse_pastebin_link(new_embed)
@@ -163,9 +178,8 @@ class AdminCog(commands.Cog):
                 'https://leovoel.github.io/embed-visualizer/.')
 
         async def handle_json_decode_error(ctx: commands.Context, error: json.JSONDecodeError):
-            await ctx.send(
-                "Der übergebene JSON-String konnte nicht geparsed werden. Hier die erhaltene Fehlermeldung:\n{0}".format(
-                    str(error)))
+            await ctx.send(f"Der übergebene JSON-String konnte nicht geparsed werden. Hier die erhaltene Fehlermeldung:"
+                           f"\n{error}")
 
         async def handle_bad_argument_error(ctx: commands.Context, _error: commands.BadArgument):
             await ctx.send(
@@ -212,7 +226,7 @@ class AdminCog(commands.Cog):
                       "die jeweilige Erweiterung momentan geladen ist oder nicht."
 
         embed = discord.Embed(title="Verfügbare \"Cogs\"", color=constants.EMBED_COLOR_SYSTEM, description=description,
-                              timestamp=datetime.utcnow())
+                              timestamp=utils.utcnow())
         embed.set_footer(text="Erstellt am")
         embed.add_field(name="Status", value=str_cogs)
 
@@ -243,7 +257,7 @@ class AdminCog(commands.Cog):
         """
         extn_name = _get_cog_name(extn_name)
 
-        self.bot.load_extension(constants.INITIAL_EXTNS[extn_name])
+        await self.bot.load_extension(constants.INITIAL_EXTNS[extn_name])
         log.warning("%s has been loaded.", extn_name)
         await self.ch_bot.send(f":arrow_heading_down: `{extn_name}` has been successfully loaded.")
 
@@ -260,7 +274,7 @@ class AdminCog(commands.Cog):
         """
         extn_name = _get_cog_name(extn_name)
 
-        self.bot.unload_extension(constants.INITIAL_EXTNS[extn_name])
+        await self.bot.unload_extension(constants.INITIAL_EXTNS[extn_name])
         log.warning("%s has been unloaded.", extn_name)
         await self.ch_bot.send(f":arrow_heading_up: `{extn_name}` has been successfully unloaded.")
 
@@ -278,7 +292,7 @@ class AdminCog(commands.Cog):
         """
         extn_name = _get_cog_name(extn_name)
 
-        self.bot.reload_extension(constants.INITIAL_EXTNS[extn_name])
+        await self.bot.reload_extension(constants.INITIAL_EXTNS[extn_name])
         log.warning("%s has been reloaded.", extn_name)
         await self.ch_bot.send(f":arrows_counterclockwise: `{extn_name}` has been successfully reloaded.")
 
@@ -294,7 +308,7 @@ class AdminCog(commands.Cog):
             _ctx (discord.ext.commands.Context): The context from which this command is invoked.
         """
         for cog_name, path in constants.INITIAL_EXTNS.items():
-            self.bot.reload_extension(path)
+            await self.bot.reload_extension(path)
             log.warning("%s has been reloaded.", cog_name)
 
         await self.ch_bot.send(":arrows_counterclockwise: All cogs have been successfully reloaded.")
@@ -544,7 +558,7 @@ def _create_cogs_embed_string(loaded_cogs: Mapping[str, commands.Cog]) -> str:
             string += constants.EMOJI_AVAILABLE
         else:
             string += constants.EMOJI_UNAVAILABLE
-        string += " --> {0}\n".format(cog[:-3])
+        string += f" --> {cog[:-3]}\n"
 
     return string
 
@@ -559,16 +573,16 @@ def _build_botonly_embed(is_enabled_string: str):
     Returns:
         (discord.Embed): An embed containing information, if the bot-only mode was en- or disabled for a channel.
     """
-    title = 'Der Bot-only Mode wurde für diesen Channel {0}'.format(is_enabled_string)
+    title = f'Der Bot-only Mode wurde für diesen Channel {is_enabled_string}'
     description = 'Der Bot-only Mode sorgt dafür, dass nur noch SAM Nachrichten in einem Channel posten darf. Jede ' \
                   'Nachricht von anderen Usern wird sofort gelöscht.'
     return discord.Embed(title=title, description=description, color=constants.EMBED_COLOR_BOTONLY)
 
 
-def setup(bot):
+async def setup(bot):
     """Enables the cog for the bot.
 
     Args:
         bot (Bot): The bot for which this cog should be enabled.
     """
-    bot.add_cog(AdminCog(bot))
+    await bot.add_cog(AdminCog(bot))

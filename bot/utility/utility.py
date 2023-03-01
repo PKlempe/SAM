@@ -6,6 +6,7 @@ from typing import List, Optional
 import subprocess
 
 import discord
+from discord import utils
 from discord.ext import commands
 
 from bot import constants
@@ -26,7 +27,7 @@ class UtilityCog(commands.Cog):
         # Role instances
         self.role_moderator = bot.get_guild(int(constants.SERVER_ID)).get_role(int(constants.ROLE_ID_MODERATOR))
 
-    @commands.command(name='ping')
+    @commands.hybrid_command(name='ping', description="Measures the current latency to the Discord servers")
     @command_log
     async def ping(self, ctx: commands.Context):
         """Command Handler for the `ping` command.
@@ -38,7 +39,9 @@ class UtilityCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
         """
         latency = round(self.bot.latency * 1000, 2)
-        await ctx.send(":ping_pong: **Pong!** - {0} ms".format(latency))
+        await ctx.send(f":ping_pong: **Pong!** - {latency}ms",
+                       delete_after=constants.TIMEOUT_INFORMATION,
+                       ephemeral=True)
 
     @commands.command(name='serverinfo')
     @command_log
@@ -53,8 +56,8 @@ class UtilityCog(commands.Cog):
         """
         embed_strings = build_serverinfo_strings(ctx.guild)
 
-        embed = discord.Embed(title=ctx.guild.name, timestamp=datetime.utcnow(), color=constants.EMBED_COLOR_INFO)
-        embed.set_thumbnail(url=ctx.guild.icon_url)
+        embed = discord.Embed(title=ctx.guild.name, timestamp=utils.utcnow(), color=constants.EMBED_COLOR_INFO)
+        embed.set_thumbnail(url=ctx.guild.icon)
         embed.set_footer(text="Erstellungsdatum")
 
         embed.add_field(name="Besitzer :crown:", value=embed_strings[0], inline=True)
@@ -89,7 +92,7 @@ class UtilityCog(commands.Cog):
                     "- [Donate via Ko-fi](https://ko-fi.com/pklempe)"
 
         embed = discord.Embed(title="About", color=constants.EMBED_COLOR_INFO, description=description)
-        embed.set_thumbnail(url=self.bot.user.avatar_url)
+        embed.set_thumbnail(url=self.bot.user.avatar)
         embed.set_footer(text="Made with \U00002764\U0000FE0F and discord.py",
                          icon_url="https://i.imgur.com/JLl8ocp.png")
 
@@ -380,10 +383,10 @@ def generate_features_list(features: List[str]) -> str:
     return str_features
 
 
-def setup(bot):
+async def setup(bot):
     """Enables the cog for the bot.
 
     Args:
         bot (Bot): The bot for which this cog should be enabled.
     """
-    bot.add_cog(UtilityCog(bot))
+    await bot.add_cog(UtilityCog(bot))

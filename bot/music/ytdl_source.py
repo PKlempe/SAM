@@ -56,7 +56,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(clean_url, download=not stream))
 
         if not data:
-            raise discord.InvalidArgument("Invalid video URL.")
+            raise ValueError("Invalid video URL.")
 
         if "entries" in data:
             return ["https://www.youtube.com/watch?v={0}".format(entry["url"]) for entry in data["entries"]]
@@ -77,7 +77,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
         if not data:
-            raise discord.InvalidArgument("Invalid video URL.")
+            raise ValueError("Invalid video URL.")
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)

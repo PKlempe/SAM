@@ -12,9 +12,15 @@ from bot.webserver import WebServer
 
 
 WEBSERVER = None
-HTTP_SESSION = ClientSession()
+HTTP_SESSION = None
 SCHEDULER = AsyncIOScheduler(job_defaults={'misfire_grace_time': 24 * 60 * 60},
                              jobstores={'default': SQLAlchemyJobStore(url=f'sqlite:///{DB_FILE_PATH}')})
+
+
+async def create_http_session():
+    """Function for initializing a ClientSession in order to make HTTP requests."""
+    global HTTP_SESSION
+    HTTP_SESSION = ClientSession()
 
 
 async def start_webserver(bot: Bot):

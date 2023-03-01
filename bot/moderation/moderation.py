@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Union
 
 import discord
+from discord import utils
 from discord.ext import commands
 
 from bot import singletons, constants as const
@@ -143,8 +144,7 @@ class ModerationCog(commands.Cog):
         is_confirmed = await self._send_confirmation_dialog(ctx, confirmation_embed)
 
         if is_confirmed:
-            permissions.send_messages = False
-            permissions.connect = False
+            permissions.update(send_messages=False, connect=False)
             await role.edit(permissions=permissions, reason=f"Der Server wurde von {ctx.author} in einen Lockdown "
                                                             f"versetzt.")
             log.info("The whole Server has been put into Lockdown.")
@@ -174,8 +174,7 @@ class ModerationCog(commands.Cog):
             await ctx.send("Der Server befindet sich derzeit nicht im Lockdown. :face_with_raised_eyebrow:")
             return
 
-        permissions.send_messages = True
-        permissions.connect = True
+        permissions.update(send_messages=True, connect=True)
         await role.edit(permissions=permissions, reason=f"Der serverweite Lockdown wurde von {ctx.author} aufgehoben.")
         log.info("The server-wide Lockdown has been lifted.")
 
@@ -219,7 +218,7 @@ class ModerationCog(commands.Cog):
             user (discord.Member): The member whose has been warned.
             reason (Optional[str]): The reason provided by the moderator.
         """
-        self._db_connector.add_member_warning(user.id, datetime.utcnow(), reason)
+        self._db_connector.add_member_warning(user.id, utils.utcnow(), reason)
         log.info("Member %s has been warned.", user)
 
         await ctx.send(f"{user.mention} wurde verwarnt. :warning:")
@@ -535,16 +534,14 @@ class ModerationCog(commands.Cog):
 
         if nicknames:
             embed = discord.Embed(title=f"Namensverlauf von {user} :page_with_curl:", description=description,
-                                  color=const.EMBED_COLOR_MODERATION, timestamp=datetime.utcnow())
+                                  color=const.EMBED_COLOR_MODERATION, timestamp=utils.utcnow())
             embed.set_footer(text="Stand")
-            embed.set_thumbnail(url=user.avatar_url)
+            embed.set_thumbnail(url=user.display_avatar)
             embed.add_field(name=user.display_name, value="aktuell")
 
-            time_difference = datetime.utcnow().astimezone().utcoffset()
             for name in nicknames[:const.LIMIT_NICKNAMES]:
                 timestamp = datetime.strptime(name[1], '%Y-%m-%d %H:%M:%S.%f')
-                local_timestamp = timestamp + time_difference if time_difference else timestamp
-                str_time = local_timestamp.strftime("%d.%m.%Y\num *%X*")
+                str_time = timestamp.strftime("%d.%m.%Y\num *%X*")
                 embed.add_field(name=name[0], value=f"bis {str_time}")
 
             await ctx.send(embed=embed)
@@ -572,13 +569,11 @@ class ModerationCog(commands.Cog):
                       "individuell festzulegen. **(max. {0})**".format(const.LIMIT_NEW_MEMBERS)
 
         embed = discord.Embed(title="Neueste Mitglieder :couple:", color=const.EMBED_COLOR_MODERATION,
-                              description=description, timestamp=datetime.utcnow())
+                              description=description, timestamp=utils.utcnow())
         embed.set_footer(text="Stand")
 
-        time_difference = datetime.utcnow().astimezone().utcoffset()
         for member in members:
-            local_joined_at = member.joined_at + time_difference
-            embed.add_field(name=str(member), value=datetime.strftime(local_joined_at, "%d.%m.%Y | *%X*"))
+            embed.add_field(name=str(member), value=datetime.strftime(member.joined_at, "%d.%m.%Y | *%X*"))
 
         await ctx.send(embed=embed)
 
@@ -609,17 +604,17 @@ class ModerationCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             user (discord.Member): The member whose avatar is being requested.
         """
-        description = "[.jpg]({0}) | [.png]({1}) | [.webp]({2})".format(user.avatar_url_as(format="jpg"),
-                                                                        user.avatar_url_as(format="png"),
-                                                                        user.avatar_url_as(format="webp"))
+        description = "[.jpg]({0}) | [.png]({1}) | [.webp]({2})".format(user.avatar.replace(format="jpg"),
+                                                                        user.avatar.replace(format="png"),
+                                                                        user.avatar.replace(format="webp"))
 
-        if user.is_avatar_animated():
-            description += " | [.gif]({0})".format(user.avatar_url_as(format="gif"))
+        if user.avatar.is_animated():
+            description += " | [.gif]({0})".format(user.avatar.replace(format="gif"))
 
         embed = discord.Embed(title=f"Avatar von {user}", color=const.EMBED_COLOR_MODERATION,
-                              timestamp=datetime.utcnow(), description=description)
+                              timestamp=utils.utcnow(), description=description)
         embed.set_footer(text="Erstellt am")
-        embed.set_image(url=user.avatar_url)
+        embed.set_image(url=user.display_avatar)
 
         await ctx.send(embed=embed)
 
@@ -635,10 +630,8 @@ class ModerationCog(commands.Cog):
             ctx (discord.ext.commands.Context): The context in which the command was called.
             user (discord.Member): The member whose information is being requested.
         """
-        time_difference = datetime.utcnow().astimezone().utcoffset()
-
-        created_at = datetime.strftime(user.created_at + time_difference, "%d.%m.%Y | %X")
-        joined_at = datetime.strftime(user.joined_at + time_difference, "%d.%m.%Y | %X")
+        created_at = datetime.strftime(user.created_at, "%d.%m.%Y | %X")
+        joined_at = datetime.strftime(user.joined_at, "%d.%m.%Y | %X")
         roles = " ".join([role.mention for role in reversed(user.roles[1:])]) if len(user.roles) > 1 else "\U0000274C" \
                                                                                                           " - Keine."
         num_total_roles = len(user.roles)
@@ -648,11 +641,11 @@ class ModerationCog(commands.Cog):
         description = f"**Name am Server:** {user.display_name} | {user.mention}"
 
         if user.premium_since:
-            premium_since = datetime.strftime(user.premium_since + time_difference, "%d.%m.%Y %X")
+            premium_since = datetime.strftime(user.premium_since, "%d.%m.%Y %X")
             description += f"\n**Boostet seit:** {premium_since}"
 
         embed = discord.Embed(title=str(user), description=description, color=const.EMBED_COLOR_MODERATION)
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_thumbnail(url=user.display_avatar)
         embed.set_footer(text=f"UserID: {user.id}")
         embed.add_field(name="Erstellt am:", value=created_at, inline=True)
         embed.add_field(name="Beigetreten am:", value=joined_at, inline=True)
@@ -811,8 +804,8 @@ class ModerationCog(commands.Cog):
         files = [await a.to_file() for a in ctx.message.attachments if a != image]
 
         embed = discord.Embed(title="Status: Offen", color=const.EMBED_COLOR_MODMAIL_OPEN,
-                              timestamp=datetime.utcnow(), description=message)
-        embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
+                              timestamp=utils.utcnow(), description=message)
+        embed.set_author(name=str(ctx.author), icon_url=ctx.author.display_avatar)
         embed.set_footer(text="Erhalten am")
 
         if image:
@@ -1052,7 +1045,7 @@ class ModerationCog(commands.Cog):
             after (discord.Member): The new member object after the update.
         """
         if before.display_name != after.display_name:
-            self._db_connector.add_member_name(before.id, before.display_name, datetime.utcnow())
+            self._db_connector.add_member_name(before.id, before.display_name, utils.utcnow())
 
 
 async def _scheduled_unmute_user(user_id: int):
@@ -1231,17 +1224,15 @@ def _build_warnings_embed(user: discord.Member, warnings: List[tuple]) -> discor
     Returns:
         (discord.Embed): The embed listing the warnings of a user.
     """
-    embed = discord.Embed(title=f"Verwarnungen von {user.display_name} :rotating_light:", timestamp=datetime.utcnow(),
+    embed = discord.Embed(title=f"Verwarnungen von {user.display_name} :rotating_light:", timestamp=utils.utcnow(),
                           description="__Gesamt:__ {0}".format(len(warnings)),
                           color=const.EMBED_COLOR_MODERATION)
     embed.set_footer(text="Stand")
-    embed.set_thumbnail(url=user.avatar_url)
+    embed.set_thumbnail(url=user.display_avatar)
 
-    time_difference = datetime.utcnow().astimezone().utcoffset()
     for warning in warnings:
         timestamp = datetime.strptime(warning[1], '%Y-%m-%d %H:%M:%S.%f')
-        local_timestamp = timestamp + time_difference if time_difference else timestamp
-        str_time = local_timestamp.strftime('%d.%m.%Y um %H:%M')
+        str_time = timestamp.strftime('%d.%m.%Y um %H:%M')
         reason = warning[2] if warning[2] else "Keine Angabe."
 
         embed.add_field(name=f"#{warning[0]} :small_orange_diamond: {str_time}", value=f"**Grund:** {reason}",
@@ -1336,13 +1327,13 @@ def _create_report_embed(offender: discord.Member, reporter: discord.Member, cha
     joined_at = offender.joined_at.strftime("%d.%m.%Y - %H:%M")
     created_at = offender.created_at.strftime("%d.%m.%Y - %H:%M")
 
-    embed = discord.Embed(title="Nutzer-Infos", color=const.EMBED_COLOR_REPORT, timestamp=datetime.utcnow(),
+    embed = discord.Embed(title="Nutzer-Infos", color=const.EMBED_COLOR_REPORT, timestamp=utils.utcnow(),
                           description=f"**Name:** {offender}\n**Beitritt am:** {joined_at}\n"
                                       f"**Erstellt am:** {created_at}")
     embed.set_author(name=f"Neue Meldung aus [#{channel}]")
-    embed.set_footer(text=f"Gemeldet von {reporter}", icon_url=reporter.avatar_url)
+    embed.set_footer(text=f"Gemeldet von {reporter}", icon_url=reporter.display_avatar)
     embed.add_field(name="Beschreibung:", value=f"{description}\n[Gehe zum Channel]({message.jump_url})")
-    embed.set_thumbnail(url=offender.avatar_url)
+    embed.set_thumbnail(url=offender.display_avatar)
 
     return embed
 
@@ -1362,11 +1353,9 @@ def _modmail_create_ticket_list(messages: List[tuple]) -> str:
     """
     string = ""
 
-    time_difference = datetime.utcnow().astimezone().utcoffset()
     for message in messages:
         timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f')
-        local_timestamp = timestamp + time_difference if time_difference else timestamp
-        str_time = local_timestamp.strftime('%d.%m.%Y %H:%M')
+        str_time = timestamp.strftime('%d.%m.%Y %H:%M')
 
         string += "- {0} | [{1[1]}]({2}/channels/{3}/{4}/{1[0]})\n" \
             .format(str_time, message, const.URL_DISCORD, const.SERVER_ID, const.CHANNEL_ID_MODMAIL)
@@ -1384,7 +1373,7 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
     Returns:
         discord.Embed: The embed containing the list of hyperlinks with the authors name as the link text.
     """
-    embed = discord.Embed(timestamp=datetime.utcnow())
+    embed = discord.Embed(timestamp=utils.utcnow())
     embed.set_footer(text="Erstellt am")
     dict_embed = embed.to_dict()
 
@@ -1415,6 +1404,7 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
 
     return discord.Embed.from_dict(dict_embed)
 
+
 def _trim_role_string(roles: str, num_total_roles: int):
     """Cuts the role string for the role field to the embed limit of 1024 and appends the text 'und x weitere' where x is the number of cut off roles.
 
@@ -1435,10 +1425,10 @@ def _trim_role_string(roles: str, num_total_roles: int):
     return roles
 
 
-def setup(bot):
+async def setup(bot):
     """Enables the cog for the bot.
 
     Args:
         bot (Bot): The bot for which this cog should be enabled.
     """
-    bot.add_cog(ModerationCog(bot))
+    await bot.add_cog(ModerationCog(bot))

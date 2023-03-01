@@ -36,7 +36,7 @@ class DatabaseConnector:
                     try:
                         db_manager.execute(query)
                     except Error as error:
-                        print("Command could not be executed, skipping it: {0}".format(error))
+                        print(f"Command could not be executed, skipping it: {error}")
 
     def add_member_warning(self, user_id: int, timestamp: datetime.datetime, reason: Optional[str]):
         """Adds a warning to the table "MemberWarning".
@@ -169,6 +169,44 @@ class DatabaseConnector:
             row = result.fetchone()
 
             return bool(row[0])
+
+    def get_course_role(self, course_id: str) -> Optional[int]:
+        """Gets the role id to unlock/hide the course's corresponding text channel.
+
+        Args:
+            course_id (str): The id of the course for which the corresponding text channel should be unlocked or hidden.
+
+        Returns:
+            str: The role id to unlock/hide the corresponding text channel.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_COURSE_ROLE, (course_id,))
+
+            row = result.fetchone()
+            if row:
+                return int(row[0])
+            return None
+
+    def add_course_role(self, role_id: int, course_id: str):
+        """Adds a role to the table "CourseRole".
+
+        Args:
+            role_id (int): The id of the role which should be added.
+            course_id (int): The id of the course offered by the university.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.INSERT_COURSE_ROLE, (role_id, course_id))
+            db_manager.commit()
+
+    def remove_course_role(self, role_id: int):
+        """Removes a role from the table "CourseRole".
+
+        Args:
+            role_id (int): The id of the role which should be removed.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.REMOVE_COURSE_ROLE, (role_id,))
+            db_manager.commit()
 
     def get_reaction_role(self, msg_id: int, emoji: str) -> Optional[int]:
         """Gets the role id for the specified reaction on a specific message.
@@ -568,7 +606,6 @@ class DatabaseConnector:
         Returns:
             List[str]: A list of strings with each entry being a SQL query.
         """
-        file = open(filename, 'r')
-        sql_file = file.read()
-        file.close()
-        return sql_file.split(';')
+        with open(filename, 'r') as file:
+            sql_content = file.read()
+            return sql_content.split(';')

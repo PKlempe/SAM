@@ -49,7 +49,7 @@ async def _send_kofi_notification_embed(bot: Bot, donation_data: Dict):
     """
     guild = bot.get_guild(int(const.SERVER_ID))
     channel = guild.get_channel(int(const.CHANNEL_ID_SUPPORTER))
-    url_owner_pic = guild.owner.avatar_url_as(format="png", size=32)
+    url_owner_pic = guild.owner.avatar.replace(format="png", size=32)
 
     if donation_data["type"] == "Donation":
         embed_title = "Neue Spende erhalten!"

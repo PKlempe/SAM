@@ -456,7 +456,7 @@ def _build_candidate_notification_embed(author: discord.User, message: discord.M
                                      "<channel-mention>` wieder zu löschen, sobald du einen Tauschpartner gefunden "
                                      "hast.".format(command_prefix),
                          color=constants.EMBED_COLOR_GROUP_EXCHANGE) \
-        .set_thumbnail(url=author.avatar_url) \
+        .set_thumbnail(url=author.display_avatar) \
         .add_field(name="Kurs:", value=course_name) \
         .add_field(name="User:", value=author) \
         .add_field(name="Bietet:", value="Gruppe {0}".format(offered_group)) \
@@ -482,7 +482,7 @@ def _build_group_exchange_offer_embed(author: discord.User, channel: discord.Tex
         (discord.Embed): The embed representing the group exchange offer.
     """
     embed = discord.Embed(title=_parse_course_from_channel_name(channel), color=constants.EMBED_COLOR_GROUP_EXCHANGE) \
-        .set_thumbnail(url=author.avatar_url) \
+        .set_thumbnail(url=author.display_avatar) \
         .add_field(name="Biete:", value="Gruppe {0}".format(offered_group)) \
         .add_field(name="Suche:", value="Gruppe {0}".format(", ".join(map(str, requested_groups)))) \
         .add_field(name="Eingereicht von:", value="{0}\n{0.mention}".format(author), inline=False)
@@ -792,10 +792,10 @@ def _create_embed_staff(staff_data: Dict[str, Union[datetime, str, None]]) -> di
     return embed
 
 
-def setup(bot):
+async def setup(bot):
     """Enables the cog for the bot.
 
     Args:
         bot (Bot): The bot for which this cog should be enabled.
     """
-    bot.add_cog(UniversityCog(bot))
+    await bot.add_cog(UniversityCog(bot))

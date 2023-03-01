@@ -16,10 +16,14 @@ GET_ALL_SUGGESTIONS_WITH_STATUS = "SELECT ID, MessageID, AuthorID, Timestamp FRO
 GET_SUGGESTION_BY_ID = "SELECT MessageID, StatusID, AuthorID FROM Suggestion WHERE ID = ? LIMIT 1"
 
 
-# Module Roles
+# Module/Course Roles
 INSERT_MODULE_ROLE = "INSERT INTO ModuleRole (RoleID) VALUES (?)"
 REMOVE_MODULE_ROLE = "DELETE FROM ModuleRole WHERE RoleID = ?"
 CHECK_IF_MODULE_ROLE = "SELECT EXISTS(SELECT 1 FROM ModuleRole WHERE RoleID = ?)"
+
+INSERT_COURSE_ROLE = "INSERT INTO CourseRole (RoleID, CourseID) VALUES (?, ?)"
+REMOVE_COURSE_ROLE = "DELETE FROM CourseRole WHERE RoleID = ?"
+GET_COURSE_ROLE = "SELECT RoleID FROM CourseRole WHERE CourseID = ?"
 
 
 # Reaction Roles
