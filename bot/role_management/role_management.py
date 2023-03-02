@@ -31,9 +31,10 @@ class RoleManagementCog(commands.Cog):
         self.ch_role = bot.get_guild(int(constants.SERVER_ID)).get_channel(int(constants.CHANNEL_ID_ROLES))
 
     @commands.hybrid_command(name='course', description="Unlock/Hide a specific course channel")
+    @app_commands.rename(is_winf_course='winf_mode')
     @app_commands.describe(name='The actual name of the course or a search term')
     @command_log
-    async def toggle_course(self, ctx: commands.Context, name: str):
+    async def toggle_course(self, ctx: commands.Context, name: str, is_winf_course: bool = False):
         """Command Handler for the `course` command.
 
         Allows members to assign/remove so-called course roles to/from themselves. This way users can toggle the
@@ -43,9 +44,10 @@ class RoleManagementCog(commands.Cog):
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             name (str): The name of the university course.
+            is_winf_course (bool): Indicates that the desired course is part of the "SPL 4 - Wirtschaftswissenschaften"
         """
         async with ctx.channel.typing():
-            course_options = await ufind_requests.get_course_options(name)
+            course_options = await ufind_requests.get_course_options(name, is_winf_course)
 
             if course_options:
                 course_selector = CourseSelect(course_options, self._db_connector)

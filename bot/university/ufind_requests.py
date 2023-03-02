@@ -5,7 +5,7 @@ from discord import SelectOption
 from bot import constants, singletons
 
 
-async def get_course_options(search_term: str) -> list[SelectOption]:
+async def get_course_options(search_term: str, is_winf_course: bool) -> list[SelectOption]:
     """A function which returns a list of SelectOptions representing university courses.
 
     Sends a GET request to the API of the service called `u:find` which is run by the University of Vienna. Based on the
@@ -15,11 +15,12 @@ async def get_course_options(search_term: str) -> list[SelectOption]:
 
     Args:
         search_term (str): The search term which should be used to query the available courses.
+        is_winf_course (bool): Indicates if the desired course is part of the "SPL 4 - Wirtschaftswissenschaften"
     """
     # URL Encoding - https://ufind.univie.ac.at/de/help.html
-    search_filters = "%20spl5%20%2Bcy%20ctype%3AVU%2CVO%2CSE%2CLP%20c%3A25"
+    search_filters = "%20%2Bcy%20ctype%3AVU%2CVO%2CSE%2CLP%2CUK%20c%3A25"
+    search_filters = "%20spl5" + search_filters if not is_winf_course else "%20spl4" + search_filters
     query_url = f"{constants.URL_UFIND_API}/courses/?query={search_term}{search_filters}"
-    course_options = []
 
     async with singletons.HTTP_SESSION.get(query_url) as response:
         response.raise_for_status()
@@ -28,6 +29,7 @@ async def get_course_options(search_term: str) -> list[SelectOption]:
 
     courses = xml_courses.findall("course")
     seen_course_ids = set()
+    course_options = []
 
     for course in courses:
         course_id = course.get("id")
