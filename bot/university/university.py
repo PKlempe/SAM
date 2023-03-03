@@ -523,8 +523,7 @@ def _build_group_exchange_info_embed() -> discord.Embed:
 def _parse_course_from_channel_name(channel: discord.TextChannel):
     """Parses the course name from a discord text channel.
 
-    The channel name must contain at least one channel name separator emoji (as specified in constants.py) and it will
-    reformat the name to replace all dashes with spaces and capitalize every word.
+    This method will reformat the channel name to replace all dashes with spaces and capitalize every word.
 
     Args:
         channel (discord.TextChannel): The channel to parse.
@@ -532,9 +531,7 @@ def _parse_course_from_channel_name(channel: discord.TextChannel):
     Returns:
         (str): The course name corresponding to the channel name.
     """
-    course_name_words = channel.name.split(constants.EMOJI_CHANNEL_NAME_SEPARATOR)[1] \
-        .replace('-', ' ') \
-        .split(' ')
+    course_name_words = channel.name.replace('-', ' ').split(' ')
     return ' '.join(map(str.capitalize, course_name_words))
 
 
