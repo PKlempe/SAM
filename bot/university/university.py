@@ -157,9 +157,6 @@ class UniversityCog(commands.Cog):
             offered_group (int): The group that the user offers.
             requested_groups_str (List[int]): A list of all groups the user would be willing to take.
         """
-        if constants.EMOJI_CHANNEL_NAME_SEPARATOR not in channel.name:
-            raise SyntaxError("Invalid course channel.")
-
         try:
             requested_groups = list(map(int, requested_groups_str.split(',')))
         except ValueError:
