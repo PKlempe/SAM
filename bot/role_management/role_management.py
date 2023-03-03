@@ -109,120 +109,24 @@ class RoleManagementCog(commands.Cog):
         await ctx.send(f":white_check_mark: Die Rolle {course_role.mention} wurde aus den verfügbaren Kurs-Rollen "
                        f"entfernt.")
 
-    @commands.group(name='module', invoke_without_command=True)
+    @commands.command(name='module', invoke_without_command=True)
     @command_log
     async def toggle_module(self, ctx: commands.Context, *, str_modules: str):
         """Command Handler for the `module` command.
 
-        Allows members to assign/remove so called mod roles to/from themselves. This way users can toggle text channels
-        about specific courses to be visible or not to them. When the operation is finished, SAM will send an overview
-        about the changes he did per direct message to the user who invoked the command.
-        Keep in mind that this only works if the desired role has been whitelisted as a module role by the bot owner.
+        Posts a message which informs members that this command has been replaced by the `/course` command.
 
-        If the command is invoked outside of the configured role channel, the bot will post a short info that this
-        command should only be invoked there and delete this message shortly after.
+        In the past, it allowed members to assign/remove so called mod roles to/from themselves in order to toggle text channels
+        about specific courses to be visible or not to them.
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
             str_modules (str): A string containing abbreviations of all the modules a user would like to toggle.
         """
-        if ctx.channel.id != self.ch_role.id:
-            if not self._db_connector.is_botonly(ctx.channel.id):
-                await ctx.message.delete()
-
-            await ctx.channel.send(content=f"Dieser Befehl wird nur in {self.ch_role.mention} unterstützt. Bitte "
-                                   f"versuche es dort noch einmal.", delete_after=constants.TIMEOUT_INFORMATION)
-            return
-
-        converter = commands.RoleConverter()
-        modules = list(set(str_modules.split()))  # Removes duplicates
-
-        modules_error = []
-        modules_added = []
-        modules_removed = []
-
-        for module in modules:
-            module_upper = module.upper()
-            try:
-                role = await converter.convert(ctx, module_upper)
-
-                if not self._db_connector.check_module_role(role.id):
-                    raise commands.BadArgument("The specified role hasn't been whitelisted as a module role.")
-
-                if role in ctx.author.roles:
-                    await ctx.author.remove_roles(role, atomic=True, reason="Selbstständig entfernt via SAM.")
-                    modules_removed.append(module_upper)
-                else:
-                    await ctx.author.add_roles(role, atomic=True, reason="Selbstständig zugewiesen via SAM.")
-                    modules_added.append(module_upper)
-            except commands.BadArgument:
-                modules_error.append(module_upper)
-
-        if len(modules_error) < len(modules):
-            log.info("Module roles of the member %s have been changed.", ctx.author)
-
-        embed = _create_embed_module_roles(modules_added, modules_removed, modules_error)
-        await ctx.author.send(embed=embed)
-
-    @toggle_module.command(name="add", hidden=True)
-    @commands.is_owner()
-    @command_log
-    async def add_module_role(self, ctx: commands.Context, module_name: str):
-        """Command Handler for the `module` subcommand `add`.
-
-        Allows the bot owner to add a specific role to the module roles.
-
-        Args:
-            ctx (discord.ext.commands.Context): The context in which the command was called.
-            module_name (str): The name of the role which should be added.
-        """
-        module_role = await commands.RoleConverter().convert(ctx, module_name.upper())
-
-        try:
-            self._db_connector.add_module_role(module_role.id)
-            log.info("Role \"%s\" has been whitelisted as a module role.", module_role)
-
-            await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde erfolgreich zu den verfügbaren Modul-Rollen "
-                           f"hinzugefügt.")
-        except IntegrityError:
-            await ctx.send(f"Die Rolle \"**__{module_role}__**\" gehört bereits zu den verfügbaren Modul-Rollen.")
-
-    @toggle_module.command(name="remove", hidden=True)
-    @commands.is_owner()
-    @command_log
-    async def remove_module_role(self, ctx: commands.Context, module_name: str):
-        """Command Handler for the `module` subcommand `remove`.
-
-        Allows the bot owner to remove a specific role from the module roles.
-
-        Args:
-            ctx (discord.ext.commands.Context): The context in which the command was called.
-            module_name (str): The name of the role which should be removed.
-        """
-        module_role = await commands.RoleConverter().convert(ctx, module_name.upper())
-
-        self._db_connector.remove_module_role(module_role.id)
-        log.info("Role \"%s\" has been disabled as a module role.", module_role)
-
-        await ctx.send(f"Die Rolle \"**__{module_role}__**\" wurde aus den verfügbaren Modul-Rollen entfernt.")
-
-    @add_module_role.error
-    @remove_module_role.error
-    async def module_role_error(self, ctx: commands.Context, error: commands.CommandError):
-        """Error Handler for the `module` subcommand `remove`.
-
-        Handles specific exceptions which occur during the execution of this command. The global error handler will
-        still be called for every error thrown.
-
-        Args:
-            ctx (discord.ext.commands.Context): The context in which the command was called.
-            error (commands.CommandError): The error raised during the execution of the command.
-        """
-        if isinstance(error, commands.BadArgument):
-            role = re.search(r"\"(.*)\"", error.args[0])  # Regex for getting text between two quotes.
-            role = role.group(1) if role is not None else None
-
-            await ctx.author.send(f"Die von dir angegebene Rolle \"**__{role}__**\" existiert leider nicht.")
+        await ctx.send(content="**Der Befehl `!module` wurde durch das neue Slash Command `/course` ersetzt.**\nDieses "
+                               "bietet zahlreiche Verbesserungen (bspw. UI-Elemente, Suchfunktion, etc.) und kann "
+                               "überall am Server verwendet werden. Bei etwaigen Fragen oder Problemen wende dich "
+                               "bitte an die Moderatoren.", delete_after=constants.TIMEOUT_INFORMATION)
 
     @commands.group(name="reactionrole", aliases=["rr"], hidden=True, invoke_without_command=True)
     @commands.is_owner()
