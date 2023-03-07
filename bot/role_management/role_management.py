@@ -290,7 +290,7 @@ class RoleManagementCog(commands.Cog):
 
                 for reaction in message.reactions:
                     if reaction.emoji != payload.emoji.name:
-                        users = await reaction.users().flatten()
+                        users = [user async for user in reaction.users()]
 
                         if payload.member in users:
                             await reaction.remove(payload.member)

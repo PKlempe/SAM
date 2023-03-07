@@ -196,7 +196,7 @@ class CommunityCog(commands.Cog):
         message = await message_channel.fetch_message(payload.message_id)
         reaction = next(x for x in message.reactions if x.emoji == const.EMOJI_HIGHLIGHT)
 
-        has_author_reacted = await reaction.users().get(id=message.author.id)
+        has_author_reacted = await discord.utils.get(reaction.users(), id=message.author.id)
         reaction_counter = reaction.count - 1 if has_author_reacted else reaction.count
 
         highlight_channel = guild.get_channel(int(const.CHANNEL_ID_HIGHLIGHTS))
