@@ -209,7 +209,7 @@ class CommunityCog(commands.Cog):
                                                  f"der Ruhmeshalle verdient! :tada:", embed=embed)
             log.info("The highlight embed of the message with id \"%s\" has been updated.", message.id)
 
-        elif reaction_counter == const.LIMIT_HIGHLIGHT:
+        elif reaction_counter >= const.LIMIT_HIGHLIGHT:
             # Check if an image has been attached to the original message. If yes, take the first image and pass it to
             # the method which builds the embed so that it will be displayed inside it. Every other image or type of
             # attachment should be attached to a second message which will be send immediately after the highlight embed
