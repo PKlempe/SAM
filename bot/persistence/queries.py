@@ -7,15 +7,6 @@ GET_MODMAIL_STATUS = "SELECT StatusID FROM Modmail WHERE ID = ? LIMIT 1"
 GET_ALL_MODMAIL_WITH_STATUS = "SELECT ID, Author, Timestamp FROM Modmail WHERE StatusID = ?"
 
 
-# Suggestions
-INSERT_SUGGESTION = "INSERT INTO Suggestion (AuthorID, Timestamp) VALUES (?, ?)"
-SET_SUGGESTION_MESSAGE_ID = "UPDATE Suggestion SET MessageID = ? WHERE ID = ?"
-SET_SUGGESTION_STATUS = "UPDATE Suggestion SET StatusID = ? WHERE ID = ?"
-GET_SUGGESTION_STATUS = "SELECT StatusID FROM Suggestion WHERE MessageID = ? LIMIT 1"
-GET_ALL_SUGGESTIONS_WITH_STATUS = "SELECT ID, MessageID, AuthorID, Timestamp FROM Suggestion WHERE StatusID = ?"
-GET_SUGGESTION_BY_ID = "SELECT MessageID, StatusID, AuthorID FROM Suggestion WHERE ID = ? LIMIT 1"
-
-
 # Module/Course Roles
 INSERT_MODULE_ROLE = "INSERT INTO ModuleRole (RoleID) VALUES (?)"
 REMOVE_MODULE_ROLE = "DELETE FROM ModuleRole WHERE RoleID = ?"
