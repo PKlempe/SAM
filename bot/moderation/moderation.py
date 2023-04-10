@@ -1,5 +1,5 @@
 """Contains a Cog for all functionality regarding Moderation."""
-
+import asyncio
 import operator
 import re
 from datetime import datetime, timedelta
@@ -52,6 +52,100 @@ class ModerationCog(commands.Cog):
         if ctx.command.name in ["report", "modmail"]:
             return True
         return self.role_moderator in ctx.author.roles
+
+    @commands.command(name="pin", hidden=True)
+    @command_log
+    async def pin_thread(self, ctx: commands.Context):
+        """Command Handler for the `pin` command.
+
+        If used in a thread inside a forum channel, the corresponding thread will be pinned. Otherwise, the message
+        containing the command invocation will simply be removed.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+        """
+        if isinstance(ctx.channel, discord.Thread) and isinstance(ctx.channel.parent, discord.ForumChannel):
+            await ctx.channel.edit(pinned=True)
+        else:
+            await ctx.message.delete()
+
+    @commands.command(name="tag", hidden=True)
+    @command_log
+    async def tag_thread(self, ctx: commands.Context, *tags: str):
+        """Command Handler for the `pin` command.
+
+        If used in a thread inside a forum channel, the specified tags will be added to it. Otherwise, the message
+        containing the command invocation will simply be removed.
+
+        If the execution of this command would result in more than 5 tags for a single thread, no tags won't be added
+        at all. This is due to a limitation imposed by Discord.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            tags (tuple[str, ...]): A tuple of strings representing the forum tags that should be added.
+        """
+        if isinstance(ctx.channel, discord.Thread) and isinstance(ctx.channel.parent, discord.ForumChannel):
+            if len(tags) + len(ctx.channel.applied_tags) > 5:
+                await ctx.send(content=":x: Ein Forenpost kann nicht mehr als 5 Tags auf einmal haben. Bitte entferne "
+                                       "bestehende und versuche es erneut.", delete_after=const.TIMEOUT_INFORMATION)
+                return
+
+            lowercase_tags = [tag.lower() for tag in tags]
+            forum_tags = [tag for tag in ctx.channel.parent.available_tags if tag.name.lower() in lowercase_tags]
+            await ctx.channel.add_tags(*forum_tags)
+        else:
+            await ctx.message.delete()
+
+    @commands.command(name="close", hidden=True)
+    @command_log
+    async def close_thread(self, ctx: commands.Context, *, reason: str = None):
+        """Command Handler for the `pin` command.
+
+        Closes/Archives the thread in which the command was used. If used outside one, the message containing the
+        command invocation will simply be removed.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            reason (str): The reason why the thread has been closed.
+        """
+        if isinstance(ctx.channel, discord.Thread):
+            await ctx.channel.edit(archived=True, reason=reason)
+        else:
+            await ctx.message.delete()
+
+    @commands.command(name="lock", hidden=True)
+    @command_log
+    async def lock_thread(self, ctx: commands.Context, *, reason: str = None):
+        """Command Handler for the `pin` command.
+
+        Locks the thread in which the command was used. If used outside one, the message containing the command
+        invocation will simply be removed.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            reason (str): The reason why the thread has been locked.
+        """
+        if isinstance(ctx.channel, discord.Thread):
+            await ctx.channel.edit(locked=True, reason=reason)
+        else:
+            await ctx.message.delete()
+
+    @commands.command(name="delete", hidden=True)
+    @command_log
+    async def delete_thread(self, ctx: commands.Context, *, reason: str = None):
+        """Command Handler for the `pin` command.
+
+        Deletes the thread in which the command was used. If used outside one, the message containing the command
+        invocation will simply be removed.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+            reason (str): The reason why the thread has been deleted.
+        """
+        if isinstance(ctx.channel, discord.Thread):
+            await ctx.channel.delete(reason=reason)
+        else:
+            await ctx.message.delete()
 
     @commands.group(name='lockdown', hidden=True, invoke_without_command=True)
     @command_log
