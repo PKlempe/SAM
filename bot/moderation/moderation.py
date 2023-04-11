@@ -72,7 +72,7 @@ class ModerationCog(commands.Cog):
     @commands.command(name="tag", hidden=True)
     @command_log
     async def tag_thread(self, ctx: commands.Context, *tags: str):
-        """Command Handler for the `pin` command.
+        """Command Handler for the `tag` command.
 
         If used in a thread inside a forum channel, the specified tags will be added to it. Otherwise, the message
         containing the command invocation will simply be removed.
@@ -99,7 +99,7 @@ class ModerationCog(commands.Cog):
     @commands.command(name="close", hidden=True)
     @command_log
     async def close_thread(self, ctx: commands.Context, *, reason: str = None):
-        """Command Handler for the `pin` command.
+        """Command Handler for the `close` command.
 
         Closes/Archives the thread in which the command was used. If used outside one, the message containing the
         command invocation will simply be removed.
@@ -116,7 +116,7 @@ class ModerationCog(commands.Cog):
     @commands.command(name="lock", hidden=True)
     @command_log
     async def lock_thread(self, ctx: commands.Context, *, reason: str = None):
-        """Command Handler for the `pin` command.
+        """Command Handler for the `lock` command.
 
         Locks the thread in which the command was used. If used outside one, the message containing the command
         invocation will simply be removed.
@@ -133,7 +133,7 @@ class ModerationCog(commands.Cog):
     @commands.command(name="delete", hidden=True)
     @command_log
     async def delete_thread(self, ctx: commands.Context, *, reason: str = None):
-        """Command Handler for the `pin` command.
+        """Command Handler for the `delete` command.
 
         Deletes the thread in which the command was used. If used outside one, the message containing the command
         invocation will simply be removed.
