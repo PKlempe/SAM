@@ -58,14 +58,13 @@ def command_log(func):
 
     @functools.wraps(func)  # Important to preserve name because `command` uses it
     async def wrapper(*args, **kwargs):
-        ctx = args[1]
-        msg = ctx.message.content
-        command = ctx.command
-        if is_deepest_subcommand(command, msg):
-            user = ctx.author
-            full_command_name = str(ctx.command)
-            ch_name = 'direct message' if isinstance(ctx.channel, discord.DMChannel) else ctx.channel.name
-            log.info("Command \"%s\" called by %s in channel [#%s]", full_command_name, user, ch_name)
+        is_app_command = isinstance(args[1], discord.Interaction)
+
+        if is_app_command or (args[1].valid and is_deepest_subcommand(args[1].command, args[1].message.content)):
+            command = args[1].command
+            user = args[1].user if is_app_command else args[1].author
+            ch_name = 'Direct Messages' if isinstance(args[1].channel, discord.DMChannel) else str(args[1].channel)
+            log.info("Command \"%s\" called by %s in channel [#%s]", command, user, ch_name)
 
         await func(*args, **kwargs)
 
