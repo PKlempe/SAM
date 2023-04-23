@@ -35,6 +35,8 @@ class CommunityCog(commands.Cog):
 
     @commands.hybrid_command(name='studyroom', description="Creates a temporary voice channel in the study room "
                                                            "category")
+    @app_commands.rename(ch_name='name')
+    @app_commands.describe(ch_name='The name of the voice channel', user_limit='The amount of users that can join')
     @command_log
     async def create_study_room(self, ctx: commands.Context, ch_name: str = None, user_limit: int = 99):
         """Command Handler for the `studyroom` command.
@@ -52,6 +54,8 @@ class CommunityCog(commands.Cog):
         await self.create_community_room(ctx, self.cat_study_rooms, ch_name, user_limit)
 
     @commands.hybrid_command(name='gameroom', description="Creates a temporary voice channel in the game room category")
+    @app_commands.rename(ch_name='name')
+    @app_commands.describe(ch_name='The name of the voice channel', user_limit='The amount of users that can join')
     @command_log
     async def create_gaming_room(self, ctx: commands.Context, ch_name: str = None, user_limit: int = 99):
         """Command Handler for the `gameroom` command.
