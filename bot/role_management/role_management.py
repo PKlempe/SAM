@@ -1,6 +1,4 @@
 """Contains a Cog for all functionality regarding server roles."""
-import re
-
 from sqlite3 import IntegrityError
 from typing import List
 
