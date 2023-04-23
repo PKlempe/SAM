@@ -1,5 +1,4 @@
 """Contains a Cog for all functionality regarding Moderation."""
-import asyncio
 import operator
 import re
 from datetime import datetime, timedelta
