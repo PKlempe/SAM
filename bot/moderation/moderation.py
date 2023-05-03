@@ -1324,7 +1324,7 @@ def _build_warnings_embed(user: discord.Member, warnings: List[tuple]) -> discor
     embed.set_thumbnail(url=user.display_avatar)
 
     for warning in warnings:
-        timestamp = datetime.strptime(warning[1], '%Y-%m-%d %H:%M:%S.%f')
+        timestamp = datetime.strptime(warning[1], '%Y-%m-%d %H:%M:%S.%f%z')
         str_time = timestamp.strftime('%d.%m.%Y um %H:%M')
         reason = warning[2] if warning[2] else "Keine Angabe."
 
@@ -1447,7 +1447,7 @@ def _modmail_create_ticket_list(messages: List[tuple]) -> str:
     string = ""
 
     for message in messages:
-        timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f')
+        timestamp = datetime.strptime(message[2], '%Y-%m-%d %H:%M:%S.%f%z')
         str_time = timestamp.strftime('%d.%m.%Y %H:%M')
 
         string += "- {0} | [{1[1]}]({2}/channels/{3}/{4}/{1[0]})\n" \
