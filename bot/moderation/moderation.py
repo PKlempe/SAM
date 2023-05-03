@@ -633,7 +633,7 @@ class ModerationCog(commands.Cog):
             embed.add_field(name=user.display_name, value="aktuell")
 
             for name in nicknames[:const.LIMIT_NICKNAMES]:
-                timestamp = datetime.strptime(name[1], '%Y-%m-%d %H:%M:%S.%f')
+                timestamp = datetime.strptime(name[1], '%Y-%m-%d %H:%M:%S.%f%z')
                 str_time = timestamp.strftime("%d.%m.%Y\num *%X*")
                 embed.add_field(name=name[0], value=f"bis {str_time}")
 
