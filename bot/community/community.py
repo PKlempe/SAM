@@ -4,7 +4,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 
 import discord
-from discord import app_commands
+from discord import app_commands, utils
 from discord.ext import commands
 
 from bot import singletons, constants as const
@@ -183,25 +183,31 @@ class CommunityCog(commands.Cog):
         guild = self.bot.get_guild(payload.guild_id)
         message_channel = guild.get_channel(payload.channel_id)
         message = await message_channel.fetch_message(payload.message_id)
+        message_age = utils.utcnow() - message.created_at
         reaction = next(x for x in message.reactions if x.emoji == const.EMOJI_HIGHLIGHT)
 
         has_author_reacted = await discord.utils.get(reaction.users(), id=message.author.id)
         reaction_counter = reaction.count - 1 if has_author_reacted else reaction.count
 
-        highlight_channel = guild.get_channel(int(const.CHANNEL_ID_HIGHLIGHTS))
-        highlight_message = await _check_if_already_highlight(highlight_channel, message.id)
+        if reaction_counter >= const.LIMIT_HIGHLIGHT and message_age.days <= const.LIMIT_HIGHLIGHT_AGE:
+            highlight_channel = guild.get_channel(int(const.CHANNEL_ID_HIGHLIGHTS))
+            highlight_message = await _check_if_already_highlight(highlight_channel, message.id)
 
-        if highlight_message:
-            embed = highlight_message.embeds[0]
-            embed.set_field_at(0, name=f"{const.EMOJI_HIGHLIGHT} {reaction_counter}", value=const.ZERO_WIDTH_SPACE)
-            await highlight_message.edit(content=f"Sieht so aus als hätte sich {message.author.mention} einen Platz in "
-                                                 f"der Ruhmeshalle verdient! :tada:", embed=embed)
-            log.info("The highlight embed of the message with id \"%s\" has been updated.", message.id)
+            if highlight_message:
+                embed = highlight_message.embeds[0]
+                embed.set_field_at(len(embed.fields)-1, name=f"{const.EMOJI_HIGHLIGHT} {reaction_counter}",
+                                   value=const.ZERO_WIDTH_SPACE)
 
-        elif reaction_counter >= const.LIMIT_HIGHLIGHT:
+                await highlight_message.edit(
+                    content=f"Sieht so aus als hätte sich {message.author.mention} einen Platz in "
+                            f"der Ruhmeshalle verdient! :tada:", embed=embed)
+
+                log.info("The highlight embed of the message with id \"%s\" has been updated.", message.id)
+                return
+
             # Check if an image has been attached to the original message. If yes, take the first image and pass it to
             # the method which builds the embed so that it will be displayed inside it. Every other image or type of
-            # attachment should be attached to a second message which will be send immediately after the highlight embed
+            # attachment should be attached to a second message which will be sent immediately after the highlight embed
             # because they can't be included in the embed.
             image = next((a for a in message.attachments if a.filename.split(".")[-1].lower()
                           in ["jpg", "jpeg", "png", "gif"] and not a.is_spoiler()), None)
@@ -214,8 +220,9 @@ class CommunityCog(commands.Cog):
                 async with highlight_channel.typing():
                     await highlight_channel.send(":paperclip: **Dazugehörige Attachments:**", files=files)
 
-            log.info("A highlight embed for the message with id \"%s\" has been posted in the configured highlights "
-                     "channel.", message.id)
+            log.info(
+                "A highlight embed for the message with id \"%s\" has been posted in the configured highlights "
+                "channel.", message.id)
 
 
 async def _delete_community_room(channel_id: int, reason: str):
@@ -249,25 +256,39 @@ async def _check_if_already_highlight(highlight_channel: discord.TextChannel, me
 def _build_highlight_embed(message: discord.Message, image: discord.Attachment, role_ch_name: str) -> discord.Embed:
     """Creates an embed which contains a message that has been marked as a highlight by the server members.
 
-    The embed contains the original message, the name of its author, the channel where it was posted and an image if one
-    has been attached.
+    The embed contains the original message, the name of its author, the channel where it was posted, an image if one
+    has been attached and a possible message which has been responded to.
 
     Args:
         message (discord.Message): The message which should be reposted in the highlight channel.
-        image (discord.Attachment): A possible image which should can be set for the embed.
+        image (discord.Attachment): A possible image which should be set for the embed.
         role_ch_name (str): The name of the configured role channel for the info text at the bottom of the embed.
 
     Returns:
         (discord.Embed): The new highlight embed.
     """
-    embed = discord.Embed(title="[ Zur Original-Nachricht ]", url=message.jump_url, color=discord.Colour.gold(),
-                          description=message.content) \
-        .set_author(name=f"{message.author.display_name} in #{message.channel}:",
+    embed = discord.Embed(title="[ Zur Original-Nachricht ]", url=message.jump_url, color=discord.Colour.gold()) \
+        .set_author(name=f"{message.author.display_name} in [#{message.channel}]:",
                     icon_url=message.author.display_avatar) \
         .set_footer(text=f"Der obige Link funktioniert nur, wenn man zum jeweiligen Kanal auch Zugriff hat. Für mehr "
                          f"Infos siehe #{role_ch_name}.",
                     icon_url="https://i.imgur.com/TUN1NcQ.png") \
         .add_field(name=f"{const.EMOJI_HIGHLIGHT} {const.LIMIT_HIGHLIGHT}", value=const.ZERO_WIDTH_SPACE)
+
+    if message.reference:
+        ref_msg = message.reference.resolved
+
+        if isinstance(ref_msg, discord.DeletedReferencedMessage):
+            ref_msg_author = "Unknown"
+            ref_msg_content = "*- Original message has been deleted*"
+        else:
+            ref_msg_author = ref_msg.author.display_name
+            ref_msg_content = ref_msg.content
+
+        embed.description = f">>> **{ref_msg_author}:**\n{ref_msg_content}"
+        embed.insert_field_at(index=0, name=f"{message.author.display_name}:", value=message.content, inline=False)
+    else:
+        embed.description = message.content
 
     if image:
         embed.set_image(url=image.url)
