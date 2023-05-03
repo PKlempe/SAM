@@ -1,6 +1,5 @@
 """Contains a Cog for all utility functionality."""
 
-from datetime import datetime
 from typing import List, Optional
 
 import subprocess
