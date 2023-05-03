@@ -268,7 +268,7 @@ def _build_highlight_embed(message: discord.Message, image: discord.Attachment, 
         (discord.Embed): The new highlight embed.
     """
     embed = discord.Embed(title="[ Zur Original-Nachricht ]", url=message.jump_url, color=discord.Colour.gold()) \
-        .set_author(name=f"{message.author.display_name} in #{message.channel}:",
+        .set_author(name=f"{message.author.display_name} in [#{message.channel}]:",
                     icon_url=message.author.display_avatar) \
         .set_footer(text=f"Der obige Link funktioniert nur, wenn man zum jeweiligen Kanal auch Zugriff hat. Für mehr "
                          f"Infos siehe #{role_ch_name}.",
