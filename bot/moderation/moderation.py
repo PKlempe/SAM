@@ -48,7 +48,7 @@ class ModerationCog(commands.Cog):
     # A special method that registers as a commands.check() for every command and subcommand in this cog.
     # Only moderators can use the commands defined in this Cog except for `report` and `modmail`.
     def cog_check(self, ctx):
-        if ctx.command.name in ["report", "modmail"]:
+        if ctx.command.name in ["report", "modmail", "answered"]:
             return True
         return self.role_moderator in ctx.author.roles
 
@@ -94,6 +94,37 @@ class ModerationCog(commands.Cog):
             await ctx.channel.add_tags(*forum_tags)
         else:
             await ctx.message.delete()
+
+    @commands.command(name="answered")
+    @command_log
+    async def tag_thread_answered(self, ctx: commands.Context):
+        """Command Handler for the `tag` command.
+
+        If used in a thread inside a forum channel, the "answered" tag will be added to it, if available. Additionally,
+        it will be closed as well. If marking a thread as answered doesn't succeed, the message containing the command
+        invocation will simply be removed.
+
+        If the execution of this command would result in more than 5 tags for a single thread, the last tag will be
+        replaced. This is due to a limitation imposed by Discord.
+
+        Args:
+            ctx (discord.ext.commands.Context): The context in which the command was called.
+        """
+        if isinstance(ctx.channel, discord.Thread) and isinstance(ctx.channel.parent, discord.ForumChannel):
+            if ctx.author == ctx.channel.owner or ctx.author.get_role(int(const.ROLE_ID_MODERATOR)):
+                answered_tag = next((t for t in ctx.channel.parent.available_tags if t.name == "Answered"), None)
+
+                if answered_tag:
+                    if len(ctx.channel.applied_tags) >= 5:
+                        await ctx.channel.remove_tags(ctx.channel.applied_tags[-1],
+                                                      reason="Marked as answered but had too many tags already")
+
+                    await ctx.channel.add_tags(answered_tag)
+                    await ctx.channel.edit(archived=True, reason="Automatically archived due to being marked as "
+                                                                 "\"answered\"")
+                    return
+
+        await ctx.message.delete()
 
     @commands.command(name="close", hidden=True)
     @command_log
