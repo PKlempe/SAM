@@ -18,7 +18,7 @@ async def get_course_options(search_term: str, is_winf_course: bool) -> list[Sel
         is_winf_course (bool): Indicates if the desired course is part of the "SPL 4 - Wirtschaftswissenschaften"
     """
     # URL Encoding - https://ufind.univie.ac.at/de/help.html
-    search_filters = "%20%2Bcy%20ctype%3AVU%2CVO%2CSE%2CLP%2CUK%20c%3A25"
+    search_filters = "%20%2Bct%20%2Blt%20ctype%3AVU%2CVO%2CSE%2CLP%2CUK%20c%3A25"
     search_filters = "%20spl5" + search_filters if not is_winf_course else "%20spl4" + search_filters
     query_url = f"{constants.URL_UFIND_API}/courses/?query={search_term}{search_filters}"
 
